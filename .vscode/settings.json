@@ -1,0 +1,16 @@
+{
+  // 預設使用這個專案的虛擬環境
+  "python.defaultInterpreterPath": "C:\\Python\\Virtual_Env\\yFinance\\Scripts\\python.exe",
+
+  // 開啟終端機自動啟用 venv
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "args": ["-NoExit", "-Command", "C:\\Python\\Virtual_Env\\yFinance\\Scripts\\activate.ps1"]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  // （可選）開啟檔案時自動切換到此 interpreter
+  "python.terminal.activateEnvironment": true
+}
