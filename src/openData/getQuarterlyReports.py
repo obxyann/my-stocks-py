@@ -381,9 +381,9 @@ def adjustRatioDfs (dfs):
 #       takes only one of key1:valueA or key2:valueA, and there is no conflict (aka key1, key2
 #       will not appear in the same renaming call)
 income_columns_rename = {
-'公司代號': '公司代號',     # no change
-'公司 代號': '公司代號',
-'公司名稱': '公司名稱',     # no change
+'公司代號': 'Stock_id',
+'公司 代號': 'Stock_id',
+'公司名稱': 'Name',
 # 收入
 '營業收入': '營業收入',     # no change
 '收益': '收益',             # no change
@@ -471,9 +471,9 @@ income_adjust = {
 }
 
 balance_columns_rename = {
-'公司代號': '公司代號',     # no change
-'公司 代號': '公司代號',
-'公司名稱': '公司名稱',     # no change
+'公司代號': 'Stock_id',
+'公司 代號': 'Stock_id',
+'公司名稱': 'Name',
 # 資產
 '流動資產': '流動資產',     # no change
 '非流動資產': '非流動資產', # no change
@@ -601,9 +601,9 @@ balance_adjust = {
 }
 
 cash_columns_rename = {
-'公司代號': '公司代號',     # no change
-'公司 代號': '公司代號',
-'公司名稱': '公司名稱',     # no change
+'公司代號': 'Stock_id',
+'公司 代號': 'Stock_id',
+'公司名稱': 'Name',
 #
 '營業活動之淨現金流入（流出）': '營業活動之淨現金流入',
 '投資活動之淨現金流入（流出）': '投資活動之淨現金流入',
@@ -625,8 +625,8 @@ cash_adjust = {
 }
 
 ratio_columns_rename = {
-'公司代號': '公司代號' ,    # no change
-'公司名稱': '公司名稱' ,    # no change
+'公司代號': 'Stock_id' ,
+'公司名稱': 'Name' ,
 '營業收入 (百萬元)': '營業收入', # -> to be removed (not used)
 '毛利率(%) (營業毛利)/ (營業收入)': '毛利率' ,
 '營業利益率(%) (營業利益)/ (營業收入)': '營業利益率',
@@ -948,7 +948,7 @@ def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013
 
 def test ():
     try:
-        output_dir = '../_storage/openData_qr'
+        output_dir = '../_storage/openData/quarterly'
 
         logger_start(log_name = '_log_qr', log_dir = output_dir, add_start_time_to_name = False)
 

@@ -126,7 +126,7 @@ def download_stock_list_in_market (market,
     df = df.drop([1, 2, 6], axis = 1)
 
     # set new column names (integer label to string label)
-    df.columns = ['Symbol_name', 'Market', 'Industry', 'CFI_code']
+    df.columns = ['Stock_id_Name', 'Market', 'Industry', 'CFI_code']
 
     # remove the 1st row [有價證券代號及名稱,市場別,產業別,CFICode]
     # remove row 0 (NOTE: integer 0 interpreted as label not position)
@@ -188,6 +188,11 @@ def download_stock_list_in_market (market,
     # add new 'Type' column from 'CFI_code'
     df['Type'] = df['CFI_code'].map(CFI_to_type)
 
+    # replace NaN in 'Industry' column to '-' (for those non-share types has no Industry value)
+    # df["Industry"] = df["Industry"].fillna('-')
+    # or 
+    # retain as NaN and save as an empty string when exported to CSV
+
     # remove '上市臺灣創新板' (TIB) rows
     # TODO: as an option includeTIB
     df = df[df['Market'] != '上市臺灣創新板']
@@ -218,15 +223,15 @@ def download_stock_list_in_market (market,
 
     df = df[[filter(a) for a in df['Type']]]
 
-    # split Symbol_name column into two columns ('1234A\u3000XYZ' -> '1234A', 'XYZ')
-    # df[['Symbol', 'Name']] = df['Symbol_name'].str.split('\u3000', n = 1, expand = True) <- see NOTE
+    # split Stock_id_Name column into two columns ('1234A\u3000XYZ' -> '1234A', 'XYZ')
+    # df[['Stock_id', 'Name']] = df['Stock_id_Name'].str.split('\u3000', n = 1, expand = True) <- see NOTE
     #
     # NOTE: got an strange td cell '4148&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&emsp;全宇生技-KY' in html
     #       which has multiple (half) spaces before the (full) 'EM Space' and
     #       those spaces will be removed to one \u0020 space (aka '4148 全宇生技-KY') after pd.read_html
     #       we need to use regex to split on \u3000 (normal cases) and also space (this case)
     #       - 20241130
-    df[['Symbol', 'Name']] = df['Symbol_name'].str.split(r'\u3000| ', n = 1, expand = True)
+    df[['Stock_id', 'Name']] = df['Stock_id_Name'].str.split(r'\u3000| ', n = 1, expand = True)
 
     # reset index
     df.index = pd.RangeIndex(len(df.index))
@@ -237,10 +242,10 @@ def download_stock_list_in_market (market,
     print(f'  Total {len(df)} records')
 
     # return only the columns needed and correct the order
-    return df[['Symbol', 'Name', 'Market', 'Industry', 'Type']]
+    return df[['Stock_id', 'Name', 'Market', 'Industry', 'Type']]
     # or
     # TODO: add an option to return as a compact list
-    # return df[['Symbol', 'Name', 'Market']]
+    # return df[['Stock_id', 'Name', 'Market']]
 
 # Download the stock list (across all markets)
 #
@@ -254,7 +259,7 @@ def download_stock_list ():
         '''
         return DataFrame is like
         ------------------------
-          Symbol Name Market Industry Type
+          Stock_id Name Market Industry Type
         0 1101   台泥 tse    水泥工業 s
         1 1102   亞泥 tse    水泥工業 s
         2 1103   嘉泥 tse    水泥工業 s

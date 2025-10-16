@@ -22,13 +22,13 @@ data_pool = {
 # Get the stock price for a specific date from local files
 #
 # param
-#   symbol   - specific stock symbol
+#   stock_id - specific stock id
 #   date     - specific date in 'YYYYMMDD'
 #   data_dir - directory containing the files
 #
 # return the result in pandas.Series
 #        maybe an empty pandas.Series if failed
-def get_stock_price_from_local (symbol, date, data_dir):
+def get_stock_price_from_local (stock_id, date, data_dir):
     # read from data pool first
     df = data_pool.get(date, pd.DataFrame())    # default is an empty DataFrame
 
@@ -102,18 +102,18 @@ def get_stock_price_from_local (symbol, date, data_dir):
         # and insert it as a new 'Date' column at position 0
         df.insert(0, 'Date', ymd)
 
-        # set index to the 'Symbol' column so we can lookup symbol by index
-        df = df.set_index(['Symbol'])
+        # set index to the 'Stock_id' column so we can lookup stock_id by index
+        df = df.set_index(['Stock_id'])
 
         # add to pool
         data_pool[date] = df
 
-    # get the row of the symbol
+    # get the row of the stock_id
     try:
-        result = df.loc[symbol]
+        result = df.loc[stock_id]
 
     except KeyError:
-        print(f'Warning: Not found symbol \'{symbol}\' in the save of {date}')
+        print(f'Warning: Not found stock_id \'{stock_id}\' in the save of {date}')
 
         return result   # empty result
 

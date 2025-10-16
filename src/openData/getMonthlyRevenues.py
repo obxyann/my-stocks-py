@@ -146,7 +146,7 @@ def download_monthly_revenues (market, year, month):
         raise Exception(f'Data not available for \'{year}{month}\'')
 
     # set new column names
-    df.columns = ['Symbol', 'Name', 'Revenue', 'Note'] # ,
+    df.columns = ['Stock_id', 'Name', 'Revenue', 'Note'] # ,
         # NOTE: belows can be missed, they can be calculated after retrieving the historical data
         # 'MoM', 'Last_year', 'YoY',
         # 'Cumulative', 'Cum_last_year', 'CumYoY']
@@ -329,7 +329,7 @@ def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', out
 
 def test ():
     try:
-        output_dir = '../_storage/openData_mo'
+        output_dir = '../_storage/openData/monthly'
 
         logger_start(log_name = '_log_mo', log_dir = output_dir, add_start_time_to_name = False)
 

@@ -266,7 +266,7 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
 
         # set new column names
         prices.columns = [
-            'Symbol', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Stock_id', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
 
         # add 'Market' column
         prices['Market'] = 'tse'
@@ -330,7 +330,7 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
 
         # set new column names
         prices.columns = [
-            'Symbol', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Stock_id', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
 
         # add 'Market' column
         prices['Market'] = 'otc'
@@ -428,7 +428,7 @@ def fetch_daily_prices (output_dir = '.'):
 
 def test ():
     try:
-        output_dir = '../_storage/openData_da'
+        output_dir = '../_storage/openData/daily'
 
         logger_start(log_name = '_log_da', log_dir = output_dir, add_start_time_to_name = False)
 
