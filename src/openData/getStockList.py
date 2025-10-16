@@ -152,16 +152,16 @@ def download_stock_list_in_market (market,
     '''
     def CFI_to_type (cfi):
         if cfi[0] == 'E' and cfi[1] == 'S': # ESVUFR
-            return 's'      # as Share
+            return 's'      # as Share (or Stock)
 
         if cfi[0] == 'R' and cfi[1] == 'W': # RW*
             return 'w'      # as Warrant
 
         if cfi[0] == 'E' and cfi[1] == 'P': # EP*
-            return 'ps'     # as Preferred Share
+            return 'ps'     # as Preferred Share (or Preferred Stock)
 
         if cfi[0] == 'E' and cfi[1] == 'F': # EF*
-            return 'ps'     # as Preferred Share
+            return 'ps'     # as Preferred Share (or Preferred Stock)
 
         if cfi[0] == 'C' and cfi[1] == 'E': # CEO*
             return 'etf'    # as Exchange Traded Fund
