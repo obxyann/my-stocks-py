@@ -142,6 +142,17 @@ def file_is_old (path_name, hour = 0, minute = 0, second = 0, quiet = True):
     quiet or print('    File need to update to yesterday\'s update')
     return True
 
+#############
+# directory #
+#############
+
+# Create directory if it doesn't exist
+def ensure_directory_exists (path_name):       
+    dir_name = os.path.dirname(path_name)
+    
+    if dir_name and not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok = True)
+
 ##########
 # backup #
 ##########
