@@ -1,0 +1,5 @@
+# Pythos cache files
+*.pyc
+
+# Storage related directories and files
+/storage
