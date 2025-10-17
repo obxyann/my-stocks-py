@@ -1,8 +1,8 @@
-import sqlite3
-import pandas as pd
 import sys
-import os
+import sqlite3
 from datetime import datetime
+import os
+import pandas as pd
 
 # add the parent directory for importing foo from sibling directory
 # sys.path.append('..')
@@ -13,11 +13,14 @@ class StockDatabase:
     """Database manager for stock data using SQLite"""
 
     def __init__ (self, db_path = 'storage/stock_data.db'):
-        """Initialize database connection
+        """Initialize database
 
         Args:
             db_path (str): Path to SQLite database file
-        """
+        """        
+        self.metadata_table_initialized = False
+        self.stock_list_table_initialized = False
+
         ensure_directory_exists(db_path)
 
         self.db_path = db_path
@@ -27,11 +30,14 @@ class StockDatabase:
         return sqlite3.connect(self.db_path)
 
     ##################
-    # metadata table #
+    # Metadata table #
     ##################
 
-    def create_metadata_table(self):
+    def ensure_metadata_table(self):
         """Create metadata table to track table update times if it doesn't exist"""
+        if self.metadata_table_initialized:
+            return
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -42,17 +48,22 @@ class StockDatabase:
             ''')
             conn.commit()
 
+        self.metadata_table_initialized = True    
+
     def update_table_timestamp(self, table_name, timestamp = None):
-        """Update last_updated timestamp for specific table
+        """Update last updated timestamp for specific table
+
+        Creates metadata table if missing. Uses current time if no timestamp provided.
 
         Args:
-            timestamp (str): 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
+            table_name (str): Name of the table to update
+            timestamp (str): Optional timestamp in 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
         """
+        # Create table if not exists
+        self.ensure_metadata_table()
+
         if not timestamp:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Create table if not exists
-        self.create_metadata_table()
 
         # Update data to database
         with self.get_connection() as conn:
@@ -63,11 +74,15 @@ class StockDatabase:
             ''', (table_name, timestamp))
             conn.commit()
 
-    def get_last_update_time(self, table_name):
-        """Get last update time for specific table
+    def get_last_update_timestamp(self, table_name):
+        """Get last update timestamp for specific table
+
+        Args:
+            table_name (str): Name of the table to query
 
         Returns:
-            str: Last updated time in 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
+            str: Last updated timestamp in 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
+                 or None if not found
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
@@ -79,11 +94,14 @@ class StockDatabase:
         return df['last_updated'][0] if not df.empty else None
 
     ####################
-    # stock list table #
+    # Stock List table #
     ####################
 
-    def create_stock_list_table(self):
+    def ensure_stock_list_table(self):
         """Create stock_list table if it doesn't exist"""
+        if self.stock_list_table_initialized:
+            return
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -97,6 +115,8 @@ class StockDatabase:
             ''')
             conn.commit()
 
+        self.stock_list_table_initialized = True              
+
     def import_stock_list_csv_to_database(self, csv_path):
         """Import stock list from CSV file to database
 
@@ -106,15 +126,17 @@ class StockDatabase:
         Returns:
             int: Number of records imported
         """
+        # Create table if not exists
+        self.ensure_stock_list_table()
+
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
         # Read CSV file
-        # df = pd.read_csv(csv_path, na_filter = False) # dont detect missing value markers (empty strings and the value of na_values)
         df = pd.read_csv(csv_path)
-
-        # Create table if not exists
-        self.create_stock_list_table()
+        # or
+        # dont detect missing value markers (empty strings and the value of na_values)
+        # df = pd.read_csv(csv_path, na_filter = False) 
 
         # Import data to database
         with self.get_connection() as conn:
@@ -150,7 +172,7 @@ class StockDatabase:
         return df
 
     def get_stock_by_id(self, stock_id):
-        """Get specific stock by stock_id
+        """Get specific stock by stock id
 
         Args:
             stock_id (str): Stock id
@@ -168,7 +190,7 @@ class StockDatabase:
         return df
 
     def search_stocks(self, keyword):
-        """Search stocks by name or stock_id
+        """Search stocks by name or stock id
 
         Args:
             keyword (str): Search keyword
@@ -190,7 +212,7 @@ class StockDatabase:
         """Get stocks by market
 
         Args:
-            market (str): Market code (tse, otc, esb)
+            market (str): Market name ('tse', 'otc', 'esb')
 
         Returns:
             pandas.DataFrame: Stocks in specified market
@@ -233,11 +255,16 @@ class StockDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Get total count
+            # Get all tables in the database
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            tables = [table[0] for table in cursor.fetchall()]
+
+            # for Stock List Table
+            # 1. Get total count 
             cursor.execute('SELECT COUNT(*) FROM stock_list')
             total_count = cursor.fetchone()[0]
 
-            # Get market distribution
+            # 2. Get market distribution 
             cursor.execute('''
                 SELECT market, COUNT(*)
                 FROM stock_list
@@ -246,14 +273,15 @@ class StockDatabase:
             ''')
             market_stats = dict(cursor.fetchall())
 
-            # Get last update time from metadata
-            updated_at = self.get_last_update_time('stock_list')
+            # 3. Get last update time from metadata
+            updated_at = self.get_last_update_timestamp('stock_list')
 
         return {
             'database_path': self.db_path,
+            'tables': tables,
 
-            # stock list table
+            # Stock List table
             'total_stocks': total_count,
             'market_distribution': market_stats,
-            'updated_at': updated_at
+            'stock_list_updated_at': updated_at
         }

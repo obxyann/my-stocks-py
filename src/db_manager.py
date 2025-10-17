@@ -63,6 +63,7 @@ def show_db_info(db_path=None):
         
         print('=== Database Information ===')
         print(f'Database path: {info['database_path']}')
+        print(f'Table list: {info['tables']}')
         print('');
         print('Stock List Table');
         print('----------------');
@@ -70,7 +71,7 @@ def show_db_info(db_path=None):
         print(f'Market distribution:')        
         for market, count in info['market_distribution'].items():
             print(f'  {market}: {count}')
-        print(f'Last update: {info['updated_at']}')
+        print(f'Last update: {info['stock_list_updated_at']}')
             
         return True
         

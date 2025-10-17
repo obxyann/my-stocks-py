@@ -31,6 +31,7 @@ def test_database_operations ():
         print("\n=== Database Information ===")
         info = db.get_database_info()
         print(f'Database path: {info['database_path']}')
+        print(f'Table list: {info['tables']}')
         print('');
         print('Stock List Table');
         print('----------------');
@@ -38,7 +39,7 @@ def test_database_operations ():
         print(f'Market distribution:')        
         for market, count in info['market_distribution'].items():
             print(f'  {market}: {count}')
-        print(f'Last update: {info['updated_at']}')
+        print(f'Last update: {info['stock_list_updated_at']}')
         
         print("\n=== Sample Stock List (First 10) ===")
         stock_list = db.get_stock_list()
