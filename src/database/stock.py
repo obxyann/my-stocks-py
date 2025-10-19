@@ -153,12 +153,12 @@ class StockDatabase:
             # insert new data
             df.to_sql('stock_list', conn, if_exists = 'append', index = False)
 
-            # update timestamps in metadata
+            conn.commit()
+
+            # update timestamp in metadata
             timestamp = datetime.fromtimestamp(modification_time(csv_path)).strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('stock_list', timestamp)
-
-            conn.commit()
 
         return len(df)
 
@@ -300,6 +300,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
+        last_mod_time = 0  # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -340,8 +341,18 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
+                mod_time = modification_time(csv_path)
+                # update last_mod_time if this file is newer
+                if (mod_time > last_mod_time):
+                    last_mod_time = mod_time
+
             conn.commit()
 
+        # update timestamp in metadata
+        if last_mod_time:
+            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+
+            self.update_table_timestamp('monthly_revenue', timestamp)
 
         # update calculated fields after all data is imported
         # self.update_monthly_revenue_calculations()
@@ -445,7 +456,7 @@ class StockDatabase:
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
             tables = [table[0] for table in cursor.fetchall()]
 
-            # for Stock List Table
+            # for stock list table
             stock_list = {}
             # 1. Get total count
             cursor.execute('SELECT COUNT(*) FROM stock_list')
@@ -463,9 +474,25 @@ class StockDatabase:
             # 3. Get last update time from metadata
             stock_list['last_updated'] = self.get_last_update_timestamp('stock_list')
 
+            # for monthly revenue table
+            monthly_revenue = {}
+            # 1. Get total count
+            cursor.execute('SELECT COUNT(*) FROM monthly_revenue')
+            monthly_revenue['total_count'] = cursor.fetchone()[0]
+
+            # 2. Get min and max year-month
+            cursor.execute('SELECT MIN(year * 100 + month), MAX(year * 100 + month) FROM monthly_revenue')
+            min_max_result = cursor.fetchone()
+            monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None
+            monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
+            
+            # 3. Get last update time from metadata
+            monthly_revenue['last_updated'] = self.get_last_update_timestamp('monthly_revenue')
+
         return {
             'database_path': self.db_path,
             'tables': tables,
 
-            'stock_list': stock_list
+            'stock_list': stock_list,
+            'monthly_revenue': monthly_revenue
         }

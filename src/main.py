@@ -27,13 +27,17 @@ def test_database (db):
     info = db.get_database_info()
     print(f'Database path: {info['database_path']}')
     print(f'Tables: {info['tables']}')
-    print('')
 
-    print(f'Total stocks: {info['stock_list']['total_count']}')
+    print(f'\nTotal stocks: {info['stock_list']['total_count']}')
     print(f'Market distribution:')
     for market, count in info['stock_list']['market_stats'].items():
         print(f'  {market}: {count}')
     print(f'Last updated: {info['stock_list']['last_updated']}')
+
+    print(f'\nTotal monthly revenues: {info['monthly_revenue']['total_count']}')
+    print(f'  min month: {info['monthly_revenue']['min_year_month']}')
+    print(f'  max month: {info['monthly_revenue']['max_year_month']}')
+    print(f'Last updated: {info['monthly_revenue']['last_updated']}')
 
 def test_stock_list (db):
     """Test various database operations"""
