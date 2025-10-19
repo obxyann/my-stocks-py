@@ -446,9 +446,10 @@ class StockDatabase:
             tables = [table[0] for table in cursor.fetchall()]
 
             # for Stock List Table
+            stock_list = {}
             # 1. Get total count
             cursor.execute('SELECT COUNT(*) FROM stock_list')
-            total_count = cursor.fetchone()[0]
+            stock_list['total_count'] = cursor.fetchone()[0]
 
             # 2. Get market distribution
             cursor.execute('''
@@ -457,17 +458,14 @@ class StockDatabase:
                 GROUP BY market
                 ORDER BY market
             ''')
-            market_stats = dict(cursor.fetchall())
+            stock_list['market_stats'] = dict(cursor.fetchall())
 
             # 3. Get last update time from metadata
-            updated_at = self.get_last_update_timestamp('stock_list')
+            stock_list['last_updated'] = self.get_last_update_timestamp('stock_list')
 
         return {
             'database_path': self.db_path,
             'tables': tables,
 
-            # Stock List table
-            'total_stocks': total_count,
-            'market_distribution': market_stats,
-            'stock_list_updated_at': updated_at
+            'stock_list': stock_list
         }
