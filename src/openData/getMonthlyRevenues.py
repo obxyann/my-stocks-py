@@ -3,7 +3,7 @@ import requests
 from io import StringIO
 #import re
 import os
-from datetime import datetime, date
+from datetime import datetime
 import time
 
 import pandas as pd
@@ -15,7 +15,7 @@ import pandas as pd
 sys.path.append('..')
 # then
 from utils.logger import log, logger_start, logger_end
-from utils.ass import wait
+from utils.ass import wait, parse_date_string
 from utils.ansiColors import Colors, use_color
 
 # Data source:
@@ -232,7 +232,7 @@ def get_monthly_revenues (year, month):
 
 # Fetch (get data and save to file) the last monthly revenues
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv' 
+# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
 #
 # param
@@ -255,7 +255,7 @@ def fetch_last_monthly_revenues (output_dir = '.'):
 
 # Fetch (get data and save to file) the monthly revenues from a specific date
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv' 
+# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
 #
 # param
@@ -269,16 +269,14 @@ def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', out
     os.makedirs(output_dir, exist_ok = True)
 
     # start year, month
-    start = date.fromisoformat(start_date)
-    year = start.year
-    month = start.month
+    start = parse_date_string(start_date)
+    year, month = start.year, start.month
 
     # end year, month
     end_year, end_month = get_last_revenue_year_month()
     # or
-    # end = date.fromisoformat(end_date)
-    # end_year = end.year
-    # end_month = end.month
+    # end = parse_date_string(end_date)
+    # end_year, end_month = end.year, end.month
 
     downloaded = 0
     failed = 0

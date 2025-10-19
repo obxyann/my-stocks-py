@@ -190,7 +190,7 @@ def download_stock_list_in_market (market,
 
     # replace NaN in 'Industry' column to '-' (for those non-share types has no Industry value)
     # df["Industry"] = df["Industry"].fillna('-')
-    # or 
+    # or
     # retain as NaN and save as an empty string when exported to CSV
 
     # remove '上市臺灣創新板' (TIB) rows

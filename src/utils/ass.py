@@ -5,7 +5,7 @@ import re
 import platform
 import os
 
-# return YYYMMDD or YYYY[separator]MM[separator]DD
+# return date string in 'YYYMMDD' or 'YYYY[separator]MM[separator]DD'
 def get_last_market_close_day (close_hour = 15, close_minute = 0, min_guo_year = False, separator = None):
     # current time
     curr_time = datetime.now()
@@ -47,7 +47,7 @@ def get_last_market_close_day (close_hour = 15, close_minute = 0, min_guo_year =
 # Get date part '20241108' from path\any_text_20241108.ext
 #                            or path\any_text_1131108.ext
 #
-# return date string in YYYYMMDD
+# return date string in 'YYYYMMDD'
 #        or empty string if failed
 def get_date_from_path_name (path_name):
     # case 1: path\STOCK_DAY_ALL_20241108.csv
@@ -67,6 +67,41 @@ def get_date_from_path_name (path_name):
         raise Exception(f'Can\'t get date string from \'{path_name}\'')
 
     return ''
+
+# Parse a date string into a datetime object
+#
+# Supported formats:
+#   - 'YYYY-MM'      treated as the 1st day of that month
+#   - 'YYYYMM'       treated as the 1st day of that month
+#   - ISO 8601 format (e.g., 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS')
+#
+# param
+#   date_str - the input date string
+#
+# return datetime object
+#
+# raise a ValueError if the string cannot be parsed into a valid date
+def parse_date_string (date_str):
+    # try ISO 8601 format first (datetime.fromisoformat can parse most cases)
+    try:
+        return datetime.fromisoformat(date_str)
+    except ValueError:
+        pass
+
+    # handle 'YYYY-MM' (e.g., '2025-01')
+    try:
+        return datetime.strptime(date_str, "%Y-%m")
+    except ValueError:
+        pass
+
+    # handle 'YYYYMM' (e.g., '202501')
+    try:
+        return datetime.strptime(date_str, "%Y%m")
+    except ValueError:
+        pass
+
+    # if all parsing attempts fail, raise an error
+    raise ValueError(f'Unsupported date format: {date_str}')
 
 #############
 # file time #
@@ -147,9 +182,9 @@ def file_is_old (path_name, hour = 0, minute = 0, second = 0, quiet = True):
 #############
 
 # Create directory if it doesn't exist
-def ensure_directory_exists (path_name):       
+def ensure_directory_exists (path_name):
     dir_name = os.path.dirname(path_name)
-    
+
     if dir_name and not os.path.exists(dir_name):
         os.makedirs(dir_name, exist_ok = True)
 
@@ -342,7 +377,7 @@ def spinner_end ():
 
 # wait N sceonds, for 0 < a <= N <= b
 def wait (a, b):
-    secs = random.uniform(a, b) 
+    secs = random.uniform(a, b)
 
     if secs > 0:
         spinner_start()

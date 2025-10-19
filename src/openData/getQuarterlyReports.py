@@ -15,7 +15,7 @@ import pandas as pd
 sys.path.append('..')
 # then
 from utils.logger import log, logger_start, logger_end
-from utils.ass import wait
+from utils.ass import wait, parse_date_string
 from utils.ansiColors import Colors, use_color
 
 # Data source:
@@ -65,7 +65,7 @@ from utils.ansiColors import Colors, use_color
 #               and return everything in a DataFrame. Columns outside the intersection will be
 #               filled with NaN values
 #               False for return each DataFrame in a dictionary with key is the name of the sector
-#                  
+#
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
@@ -841,7 +841,7 @@ def get_quarterly_reports (year, quarter, statement):
 
 # Fetch (get data and save to file) the last quarterly reports
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv' 
+# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
 #
 # param
@@ -869,7 +869,7 @@ def fetch_last_quarterly_reports (statement, output_dir = '.'):
 
 # Fetch (get data and save to file) the quarterly reports from a specific date
 #
-# This will try to get data from remote and save to local file '{statement}_reports_{YYYY}Q{Q}.csv' 
+# This will try to get data from remote and save to local file '{statement}_reports_{YYYY}Q{Q}.csv'
 # without return the data.
 #
 # param
@@ -888,14 +888,14 @@ def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013
     os.makedirs(output_dir, exist_ok = True)
 
     # start year, month
-    start = date.fromisoformat(start_date)
+    start = parse_date_string(start_date)
     year = start.year
     quarter = int((start.month - 1) / 3) + 1
 
     # end year, month
     end_year, end_quarter = get_last_report_year_quarter()
     # or
-    # end = date.fromisoformat(end_date)
+    # end = parse_date_string(end_date)
     # end_year = end.year
     # end_quarter = int((end.month - 1) / 3) + 1
 
