@@ -268,7 +268,7 @@ class StockDatabase:
                     stock_id TEXT NOT NULL,
                     year INTEGER NOT NULL,
                     month INTEGER NOT NULL,
-                    revenue INTEGER,
+                    revenue INTEGER NOT NULL,
                     revenue_last_year INTEGER,
                     cumulative_revenue INTEGER,
                     cumulative_revenue_last_year INTEGER,
