@@ -43,7 +43,7 @@ def test_stock_list (db):
     """Test various database operations"""
     try:
         # Test retrieving data
-        print('• Retrieving stock list (first 10)...')
+        print('• Retrieving stock list (first 10) ...')
         stock_list = db.get_stock_list()
         print(stock_list.head(10))
 
@@ -51,11 +51,11 @@ def test_stock_list (db):
         search_results = db.search_stocks('台積')
         print(search_results)
 
-        print('\n• Retrieving TSE market stocks (first 5)...')
+        print('\n• Retrieving TSE market stocks (first 5) ...')
         tse_stocks = db.get_stocks_by_market('tse')
         print(tse_stocks.head(5))
 
-        print('\n• Retrieving semiconductor industry stocks...')
+        print('\n• Retrieving semiconductor industry stocks ...')
         semiconductor_stocks = db.get_stocks_by_industry('半導體業')
         if not semiconductor_stocks.empty:
             print(semiconductor_stocks.head(3))
@@ -72,7 +72,7 @@ def test_monthly_revenue(db):
     """Test function for monthly revenue data"""
     try:
         # Test retrieving data
-        print('• Retrieving monthly revenue for stock 2330...')
+        print('• Retrieving monthly revenue for stock 2330 ...')
 
         df = db.get_revenue_by_id('2330', '2025-01')
 

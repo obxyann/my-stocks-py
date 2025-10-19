@@ -23,7 +23,7 @@ from utils.logger import log, logger_start, logger_end
 #
 # raise an exception on failure
 def download_twse_daily_prices (output_dir = '.'):
-    log('Downloading TWSE daily prices ...\n')
+    log('Downloading TWSE daily prices...\n')
 
     # get the last daily trading prices
     #
@@ -104,7 +104,7 @@ def download_twse_daily_prices (output_dir = '.'):
 #
 # raise an exception on failure
 def download_tpex_daily_prices (output_dir = '.', include_warrant = False):
-    log('Downloading TPEx daily prices ...\n')
+    log('Downloading TPEx daily prices...\n')
 
     # get the last daily trading prices
     #
@@ -256,7 +256,7 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
     try:
         file_date = get_date_from_path_name(path_name)
 
-        log(f'Reading TWSE daily prices on {file_date} saved ...\n')
+        log(f'Reading TWSE daily prices on {file_date} saved...\n')
 
         cols_to_use = [
             '證券代號', '證券名稱', '開盤價', '最高價', '最低價', '收盤價', '成交股數', '成交金額']
@@ -320,7 +320,7 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
     try:
         file_date = get_date_from_path_name(path_name)
 
-        log(f'Reading TPEx daily prices on {file_date} saved ...\n')
+        log(f'Reading TPEx daily prices on {file_date} saved...\n')
 
         cols_to_use = [
             '代號', '名稱', '開盤', '最高', '最低', '收盤', '成交股數','成交金額(元)']
@@ -379,7 +379,7 @@ def get_daily_prices (data_dir = '.'):
         # prices_2.to_csv(f'{output_dir}/~prices_otc_{date_2}.csv', index = False)
 
         if date_1 == date_2:
-            print('Concatenating data ...')
+            print('Concatenating data...')
 
             prices = pd.concat([prices_1, prices_2], ignore_index = True)
 

@@ -70,7 +70,7 @@ from utils.ansiColors import Colors, use_color
 #
 # raise an exception on failure
 def download_financial_statements (market, year, quarter, statement, sectors = None, concat = True):
-    log(f'Downloading {market} {year} Q{quarter} {statement} statements ...\n')
+    log(f'Downloading {market} {year} Q{quarter} {statement} statements...\n')
 
     if market == 'tse':
         market_id = 'sii'
@@ -159,7 +159,7 @@ def download_financial_statements (market, year, quarter, statement, sectors = N
     text = response.text.replace('>--</td>', '>0</td>')
 
     try:
-        print('Parsing html ...')
+        print('Parsing html...')
 
         dfs = pd.read_html(StringIO(text))
 
@@ -821,7 +821,7 @@ def get_quarterly_reports (year, quarter, statement):
         # reports_1.to_csv(f'{output_dir}/~{statement}_reports_tse_{year}Q{quarter}.csv', index = False)
         # reports_2.to_csv(f'{output_dir}/~{statement}_reports_otc_{year}Q{quarter}.csv', index = False)
 
-        print('Concatenating data ...')
+        print('Concatenating data...')
 
         reports = pd.concat([reports_1, reports_2], ignore_index = True)
 
@@ -882,7 +882,7 @@ def fetch_last_quarterly_reports (statement, output_dir = '.'):
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
 def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013-01-01', output_dir = '.'):
-    print('Fetching ...')
+    print('Fetching...')
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)

@@ -36,7 +36,7 @@ def download_stock_list_in_market (market,
         include_etn = False,
         include_reit = False,
         include_abs = False):
-    print(f'Downloading html for listed companies in {market.upper()} ...')
+    print(f'Downloading html for listed companies in {market.upper()}...')
 
     if market == 'tse':
         mode = 2
@@ -54,7 +54,7 @@ def download_stock_list_in_market (market,
     '''
     response.text is a HTML text(*) like
     ------------------------------------
-    ....
+    ...
     <table align=center>
       ...
     </table>
@@ -98,7 +98,7 @@ def download_stock_list_in_market (market,
           see https://requests.readthedocs.io/en/latest/user/quickstart/#response-content
     '''
 
-    print('Parsing html ...')
+    print('Parsing html...')
 
     # accroding to the Content-Type, the original HTML text is MS950 encoding
     # it seems read_html can read it (after Requests decoding) correctly - 11/22/2024
@@ -267,7 +267,7 @@ def download_stock_list ():
         ------------------------
         '''
 
-        print('Concatenating data ...')
+        print('Concatenating data...')
 
         result = pd.concat([list_1, list_2], ignore_index = True)
 
@@ -310,7 +310,7 @@ def get_stock_list (refetch = False, data_dir = '.'):
 
             print(f'  Write to \'{path_name}\' successfully')
         else:
-             stock_list = pd.read_csv(path_name, index_col = False)
+            stock_list = pd.read_csv(path_name, index_col = False)
 
     except Exception as error:
         raise Exception(error)

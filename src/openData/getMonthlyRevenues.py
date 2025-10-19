@@ -36,7 +36,7 @@ from utils.ansiColors import Colors, use_color
 #
 # raise an exception on failure
 def download_monthly_revenues (market, year, month):
-    log(f'Downloading {market} {year}-{month:02} revenues ...\n')
+    log(f'Downloading {market} {year}-{month:02} revenues...\n')
 
     if market == 'tse':
         market_id = 'sii'
@@ -61,7 +61,7 @@ def download_monthly_revenues (market, year, month):
 
     file_name = f't21sc03_{minguo_year}_{month}.csv'
 
-    # print(f'  {market_id}/{file_name} ...')
+    # print(f'  {market_id}/{file_name}...')
 
     # TBD: url = f'https://mops.twse.com.tw/nas/t21/{market_id}/{file_name}' <- obsolete
     url = f'https://mopsov.twse.com.tw/nas/t21/{market_id}/{file_name}'
@@ -129,7 +129,7 @@ def download_monthly_revenues (market, year, month):
 
     try:
         # method 1 (2/2): use Requests to get data (codes above at 1/2)
-        print('Parsing csv ...')
+        print('Parsing csv...')
 
         df = pd.read_csv(StringIO(response.text), index_col = False, usecols = cols_to_use)[cols_to_use].fillna(0)
         # or
@@ -211,7 +211,7 @@ def get_monthly_revenues (year, month):
         # revenues_1.to_csv(f'{output_dir}/~revenues_tse_{year}{month:02}.csv', index = False)
         # revenues_2.to_csv(f'{output_dir}/~revenues_otc_{year}{month:02}.csv', index = False)
 
-        print('Concatenating data ...')
+        print('Concatenating data...')
 
         revenues = pd.concat([revenues_1, revenues_2], ignore_index = True)
 
@@ -262,7 +262,7 @@ def fetch_last_monthly_revenues (output_dir = '.'):
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
 def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', output_dir = '.'):
-    print('Fetching ...')
+    print('Fetching...')
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)

@@ -12,6 +12,7 @@ sys.path.append('..')
 # then
 from database.stock import StockDatabase
 from openData.getStockList import get_stock_list
+from openData.getMonthlyRevenues import fetch_hist_monthly_revenues
 
 def import_csv_to_db(csv_dir = None, db_path = None):
     """Import CSV data to database"""
@@ -27,7 +28,7 @@ def import_csv_to_db(csv_dir = None, db_path = None):
         csv_path = os.path.join(csv_dir, 'stock_list.csv')
         
         if not os.path.exists(csv_path):
-            print(f'stock_list.csv not found: {csv_path}')
+            print(f'File not found: {csv_path}')
         else:
             print('Importing stock list from CSV to database...')
             count = db.import_stock_list_csv_to_database(csv_path)
@@ -37,7 +38,7 @@ def import_csv_to_db(csv_dir = None, db_path = None):
         csv_folder = os.path.join(csv_dir, 'monthly')
 
         if not os.path.isdir(csv_folder):
-            print(f'monthly folder not found: {csv_folder}')
+            print(f'Folder not found: {csv_folder}')
         else:
             print('Importing monthly revenues from CSV to database...')
             count = db.import_monthly_revenue_csv_to_database(csv_folder)
@@ -53,44 +54,54 @@ def import_csv_to_db(csv_dir = None, db_path = None):
         print(f'Import failed: {e}')
         return False
 
-def download_and_import(db_path = None):
+def download(refetch = False, output_dir = None):
     """Download fresh data and import to database"""
+    if refetch == True:
+        action = 'Downloading fresh'
+    else:
+        action = 'Downloading'
+
+    if output_dir is None:
+        output_dir = 'storage'
+    else:
+        output_dir = csv_dir.rstrip('/\\')
+
     try:
-        # download fresh data
-        print('Downloading fresh stock list...')
-        df = get_stock_list(refetch=True, data_dir = 'storage')
-        print(f'Downloaded {len(df)} stocks')
+        print(f'{action} stock list...')
+        get_stock_list(refetch = refetch, data_dir = output_dir)
+        print(f'Done')
         
-        # import to database
-        print('Importing to database...')
-        db = StockDatabase(db_path) if db_path else StockDatabase()
-        count = db.import_stock_list_csv_to_database('storage/stock_list.csv')
-        print(f'Successfully imported {count} records to database')
+        print(f'\n{action} monthly revenues...')
+        monthly_dir = os.path.join(output_dir, 'monthly')
+        fetch_hist_monthly_revenues(refetch = refetch, start_date = '2013-01-01', output_dir = monthly_dir)
+        print(f'Done')
         
         return True
         
     except Exception as e:
-        print(f'Download and import failed: {e}')
+        print(f'Download failed: {e}')
         return False
 
-def show_db_info(db_path=None):
+def show_db_info(db_path = None):
     """Show database information"""
     try:
         db = StockDatabase(db_path) if db_path else StockDatabase()
         
         info = db.get_database_info()
         
-        print('=== Database Information ===')
         print(f'Database path: {info['database_path']}')
-        print(f'Table list: {info['tables']}')
-        print('');
-        print('Stock List Table');
-        print('----------------');
-        print(f'Total stocks: {info['total_stocks']}')
-        print(f'Market distribution:')        
-        for market, count in info['market_distribution'].items():
+        print(f'Tables: {info['tables']}')
+
+        print(f'\nTotal stocks: {info['stock_list']['total_count']}')
+        print(f'Market distribution:')
+        for market, count in info['stock_list']['market_stats'].items():
             print(f'  {market}: {count}')
-        print(f'Last update: {info['stock_list_updated_at']}')
+        print(f'Last updated: {info['stock_list']['last_updated']}')
+
+        print(f'\nTotal monthly revenues: {info['monthly_revenue']['total_count']}')
+        print(f'  min month: {info['monthly_revenue']['min_year_month']}')
+        print(f'  max month: {info['monthly_revenue']['max_year_month']}')
+        print(f'Last updated: {info['monthly_revenue']['last_updated']}')
             
         return True
         
@@ -118,31 +129,33 @@ def search_stocks(keyword, db_path=None):
 
 def main():
     """Main function for command line interface"""
-    parser = argparse.ArgumentParser(description='Stock Database Manager')
-    parser.add_argument('--db-path', help='Database file path')
+    parser = argparse.ArgumentParser(description = 'Stock Database Manager')
+    parser.add_argument('--db-path', help = 'database file path')
     
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest ='command', help = 'available commands')
     
     # import command
-    import_parser = subparsers.add_parser('import', help='Import CSV to database')
-    import_parser.add_argument('--from_folder', help='From folder')
+    import_parser = subparsers.add_parser('import', help = 'import CSV to database')
+    import_parser.add_argument('--from_folder', help = 'read from folder')
     
     # download command
-    subparsers.add_parser('download', help='Download fresh data and import')
-    
+    download_parser = subparsers.add_parser('download', help = 'download data')
+    download_parser.add_argument('--refetch', action = 'store_true', help = 'refetch data')
+    download_parser.add_argument('--to_folder', help = 'write to folder')
+
     # info command
-    subparsers.add_parser('info', help='Show database information')
+    subparsers.add_parser('info', help = 'show database information')
     
     # search command
-    search_parser = subparsers.add_parser('search', help='Search stocks')
-    search_parser.add_argument('keyword', help='Search keyword')
+    search_parser = subparsers.add_parser('search', help = 'search stocks')
+    search_parser.add_argument('keyword', help = 'search keyword')
     
     args = parser.parse_args()
     
     if args.command == 'import':
         import_csv_to_db(args.from_folder, args.db_path)
     elif args.command == 'download':
-        download_and_import(args.db_path)
+        download(args.refetch, args.to_folder)
     elif args.command == 'info':
         show_db_info(args.db_path)
     elif args.command == 'search':
