@@ -13,39 +13,58 @@ sys.path.append('..')
 from database.stock import StockDatabase
 from openData.getStockList import get_stock_list
 
-def import_csv_to_db(csv_path = None, db_path = None):
+def import_csv_to_db(csv_dir = None, db_path = None):
     """Import CSV data to database"""
-    if csv_path is None:
-        csv_path = 'storage/stock_list.csv'
-    
+    if csv_dir is None:
+        csv_dir = 'storage'
+    else:
+        csv_dir = csv_dir.rstrip('/\\')
+
     try:
         db = StockDatabase(db_path) if db_path else StockDatabase()
+
+        # import stock_list.csv
+        csv_path = os.path.join(csv_dir, 'stock_list.csv')
         
         if not os.path.exists(csv_path):
-            print(f'CSV file not found: {csv_path}')
-            return False
-            
-        print('Importing stock list from CSV to database...')
-        count = db.import_stock_list_csv_to_database(csv_path)
-        print(f'Successfully imported {count} records from stock_list.csv')
-        return True
+            print(f'stock_list.csv not found: {csv_path}')
+        else:
+            print('Importing stock list from CSV to database...')
+            count = db.import_stock_list_csv_to_database(csv_path)
+            print(f'Successfully imported {count} records from stock_list.csv')
         
+        # import revenues_{YYYYMM}.csv
+        csv_folder = os.path.join(csv_dir, 'monthly')
+
+        if not os.path.isdir(csv_folder):
+            print(f'monthly folder not found: {csv_folder}')
+        else:
+            print('Importing monthly revenues from CSV to database...')
+            count = db.import_monthly_revenue_csv_to_database(csv_folder)
+            print(f'Successfully imported {count} records from monthly/revenues_YYYYMM.csv')
+
+            print('Calcatuting and updating monthly revenues in database...')
+            db.update_monthly_revenue_calculations()
+            print('Successfully')
+
+        return True
+
     except Exception as e:
         print(f'Import failed: {e}')
         return False
 
-def download_and_import(db_path=None):
+def download_and_import(db_path = None):
     """Download fresh data and import to database"""
     try:
-        # Download fresh data
+        # download fresh data
         print('Downloading fresh stock list...')
-        df = get_stock_list(refetch=True, data_dir='../storage')
+        df = get_stock_list(refetch=True, data_dir = 'storage')
         print(f'Downloaded {len(df)} stocks')
         
-        # Import to database
+        # import to database
         print('Importing to database...')
         db = StockDatabase(db_path) if db_path else StockDatabase()
-        count = db.import_stock_list_csv_to_database('../storage/stock_list.csv')
+        count = db.import_stock_list_csv_to_database('storage/stock_list.csv')
         print(f'Successfully imported {count} records to database')
         
         return True
@@ -104,24 +123,24 @@ def main():
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
-    # Import command
+    # import command
     import_parser = subparsers.add_parser('import', help='Import CSV to database')
-    import_parser.add_argument('--csv-path', help='CSV file path')
+    import_parser.add_argument('--from_folder', help='From folder')
     
-    # Download command
+    # download command
     subparsers.add_parser('download', help='Download fresh data and import')
     
-    # Info command
+    # info command
     subparsers.add_parser('info', help='Show database information')
     
-    # Search command
+    # search command
     search_parser = subparsers.add_parser('search', help='Search stocks')
     search_parser.add_argument('keyword', help='Search keyword')
     
     args = parser.parse_args()
     
     if args.command == 'import':
-        import_csv_to_db(args.csv_path, args.db_path)
+        import_csv_to_db(args.from_folder, args.db_path)
     elif args.command == 'download':
         download_and_import(args.db_path)
     elif args.command == 'info':

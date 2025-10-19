@@ -22,25 +22,22 @@ def initialize_database ():
         print(f'Database initialization failed: {error}')
         raise
 
-def test_database_operations ():
+def test_database (db):
+    print("\n=== Database Information ===")
+    info = db.get_database_info()
+    print(f'Database path: {info['database_path']}')
+    print(f'Table list: {info['tables']}')
+    print('')
+
+    print(f'Total stocks: {info['total_stocks']}')
+    print(f'Market distribution:')        
+    for market, count in info['market_distribution'].items():
+        print(f'  {market}: {count}')
+    print(f'Last update: {info['stock_list_updated_at']}')
+
+def test_stock_list (db):
     """Test various database operations"""
-    try:
-        # Initialize database
-        db = initialize_database()
-        
-        print("\n=== Database Information ===")
-        info = db.get_database_info()
-        print(f'Database path: {info['database_path']}')
-        print(f'Table list: {info['tables']}')
-        print('');
-        print('Stock List Table');
-        print('----------------');
-        print(f'Total stocks: {info['total_stocks']}')
-        print(f'Market distribution:')        
-        for market, count in info['market_distribution'].items():
-            print(f'  {market}: {count}')
-        print(f'Last update: {info['stock_list_updated_at']}')
-        
+    try:     
         print("\n=== Sample Stock List (First 10) ===")
         stock_list = db.get_stock_list()
         print(stock_list.head(10))
@@ -60,34 +57,54 @@ def test_database_operations ():
         else:
             print("No semiconductor stocks found (industry name might be different)")
         
-        return db
-        
     except Exception as error:
         print(f'Database operations failed: {error}')
         raise
+
+def test_monthly_revenue(db):
+    """Test function for monthly revenue data"""
+    # Test retrieving data
+    print("\nRetrieving data for stock 2330...")
+
+    df = db.get_revenue_by_id('2330', '2025-01')
+
+    if not df.empty:
+        print(df)
+        # print(df.head())
+        # print("...")
+        # print(df.tail())
+    else:
+        print("No data found for stock 2330.")
 
 def test ():
     """Main test function"""
     try:
         output_dir = 'storage'
 
-        # Test 1: Traditional CSV approach (commented out)
-        # df = get_stock_list(data_dir = output_dir)
-
-        # Test 2: Download fresh data and import to database
-        print("=== Downloading fresh stock list data ===")
-        df = get_stock_list(refetch=False, data_dir=output_dir)
-        print(f"Downloaded {len(df)} stocks")
-
-        # Test 3: Database operations
-        print("\n=== Testing Database Operations ===")
-        db = test_database_operations()
+        # Test 1: Download fresh data
+        # print("=== Downloading fresh stock list data ===")
+        # df = get_stock_list(refetch = True, data_dir = output_dir)
+        # print(f"Downloaded {len(df)} stocks")
         
-        print('\n=== All tests completed successfully! ===')
-
         # print('--')
         # print(df)
         # print('--')
+
+        # Initialize database
+        db = initialize_database()  
+
+        # Test 2: Database operations
+        test_database(db)
+
+        # Test 3: Stock List
+        print("\n=== Testing Stock List ===")
+        test_stock_list(db)
+   
+        # Test 3: Monthly revenue
+        print("\n=== Testing Monthly Revenue ===")
+        test_monthly_revenue(db)
+
+        print('\n=== All tests completed successfully! ===')
 
     except Exception as error:
         print(f'Program terminated: {error}')
