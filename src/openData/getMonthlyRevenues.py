@@ -4,7 +4,6 @@ from io import StringIO
 #import re
 import os
 from datetime import datetime
-import time
 
 import pandas as pd
 
