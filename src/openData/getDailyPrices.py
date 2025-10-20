@@ -13,6 +13,7 @@ sys.path.append('..')
 # then
 from utils.ass import get_last_market_close_day, get_date_from_path_name
 from utils.logger import log, logger_start, logger_end
+from utils.ansiColors import Colors, use_color
 
 # Download the lastest daily stock prices in TWSE (Taiwan Stock Exchange)
 #
@@ -284,10 +285,14 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
                 os.unlink(path_name)
 
             except:
-                print(f'  Warning: Can\'t remove \'{path_name}\'\n')
+                use_color(Colors.WARNING)
+                log(f'  Warning: Can\'t remove \'{path_name}\'\n')
+                use_color(Colors.RESET)
 
     except Exception as error:
+        use_color(Colors.FAIL)
         log(f'  Error: {error}\n')
+        use_color(Colors.RESET)
 
         raise Exception('Failed to get daily prices')
 
@@ -348,10 +353,14 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
                 os.unlink(path_name)
 
             except:
-                log(f'Warning: Can\'t remove \'{path_name}\'\n')
+                use_color(Colors.WARNING)
+                log(f'  Warning: Can\'t remove \'{path_name}\'\n')
+                use_color(Colors.RESET)
 
     except Exception as error:
-        log(f'Error: {error}\n')
+        use_color(Colors.FAIL)
+        log(f'  Error: {error}\n')
+        use_color(Colors.RESET)
 
         raise Exception('Failed to get daily prices')
 
@@ -390,12 +399,16 @@ def get_daily_prices (data_dir = '.'):
                 exchange = 'TPEx'
             else:
                 exchange = 'TWSE'
+            use_color(Colors.WARNING)
             log(f'Warning: There is data ({exchange}) waiting to be updated\n')
+            use_color(Colors.RESET)
 
             raise Exception(f'Can\'t concatenate data with different dates {date_1}, {date_2}')
 
     except Exception as error:
+        use_color(Colors.FAIL)
         log(f'Error: {error}\n')
+        use_color(Colors.RESET)
 
         raise Exception('Failed to get prices')
 
@@ -428,7 +441,7 @@ def test ():
     try:
         output_dir = '../_storage/openData/daily'
 
-        logger_start(log_name = '_log_da', log_dir = output_dir, add_start_time_to_name = False)
+        logger_start(log_name = '_daily', log_dir = output_dir, add_start_time_to_name = False)
 
         fetch_daily_prices(output_dir = output_dir)
 

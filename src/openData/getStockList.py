@@ -14,6 +14,7 @@ import pandas as pd
 sys.path.append('..')
 # then
 from utils.ass import file_is_old
+from utils.ansiColors import Colors, use_color
 
 # Download the stock list for a specific market
 #
@@ -178,11 +179,16 @@ def download_stock_list_in_market (market,
         if cfi[0] == 'D' and cfi[1] == 'A': # DA*
             return 'abs'    # as Asset Backed Securities
 
+        use_color(Colors.WARNING)
         if re.match(r'[A-Z]{6}', cfi):
-            print(f'Warning: No mapping rule for \'{cfi}\'')
-        # else:
-        #   print(f'Warning: Invalid CFI format for \'{cfi}\'')
+            print(f'Warning: No mapping rule for \'{cfi}\' - value set to \'-\'')
+        else:
+        #   this cfi should be from label rows likes
+        #   [股票,股票,...,股票], [上市認購(售)權證,上市認購(售)權證,...,上市認購(售)權證], ...
+        #   print(f'Warning: Invalid CFI format for \'{cfi}\' - value set to \'-\'')
+        use_color(Colors.RESET)
 
+        # we will remove rows with '-' type later
         return '-'
 
     # add new 'Type' column from 'CFI_code'
@@ -204,7 +210,7 @@ def download_stock_list_in_market (market,
 
     # remove unneeded rows
     def filter (type):
-        if type == '-': # this is a label row like [股票,股票,...], [上市認購(售)權證,上市認購(售)權證,...], ...
+        if type == '-': # remove all label or unknown CFI rows
             return False
 
         # check type
@@ -260,9 +266,9 @@ def download_stock_list ():
         return DataFrame is like
         ------------------------
           Stock_id Name Market Industry Type
-        0 1101   台泥 tse    水泥工業 s
-        1 1102   亞泥 tse    水泥工業 s
-        2 1103   嘉泥 tse    水泥工業 s
+        0 1101     台泥 tse    水泥工業 s
+        1 1102     亞泥 tse    水泥工業 s
+        2 1103     嘉泥 tse    水泥工業 s
         ...
         ------------------------
         '''
@@ -275,7 +281,9 @@ def download_stock_list ():
         # print(result)
 
     except Exception as error:
+        use_color(Colors.FAIL)
         print(f'Error: {error}')
+        use_color(Colors.RESET)
 
         raise Exception('Failed to get stock list')
 

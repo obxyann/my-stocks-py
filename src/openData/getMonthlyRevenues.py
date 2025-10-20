@@ -329,7 +329,7 @@ def test ():
     try:
         output_dir = '../_storage/openData/monthly'
 
-        logger_start(log_name = '_log_mo', log_dir = output_dir, add_start_time_to_name = False)
+        logger_start(log_name = '_monthly', log_dir = output_dir, add_start_time_to_name = False)
 
         # test 1
         fetch_last_monthly_revenues(output_dir = output_dir)

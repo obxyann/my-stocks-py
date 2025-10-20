@@ -157,12 +157,6 @@ def download_financial_statements (market, year, quarter, statement, sectors = N
     reason = None
 
     if not response.text or "查詢無資料" in response.text:
-        # use_color(Colors.WARNING)
-        # log(f'  Warning: No data found for \'{year}Q{quarter}\'\n')
-        # use_color(Colors.RESET)
-        #
-        # return pd.DataFrame() # an empty DataFrame
-        # or
         raise Exception(f'No data found for \'{year}Q{quarter}\'')
 
     # replace all '--' to 0
@@ -303,7 +297,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
                     return 'min'    # 異業
 
             use_color(Colors.WARNING)
-            log(f'  Warning: Industry sector is ambiguous\n')
+            log(f'  Warning: Industry sector is ambiguous - value set to \'bd_ci_min\'\n')
             log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')
             use_color(Colors.RESET)
 
@@ -331,7 +325,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
             return 'ci' # only 一般業
 
     use_color(Colors.WARNING)
-    log(f'  Warning: Unable to decide the industry sector\n')
+    log(f'  Warning: Unable to decide the industry sector - value set to \'--\'\n')
     log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')
     use_color(Colors.RESET)
 
@@ -974,7 +968,7 @@ def test ():
     try:
         output_dir = '../_storage/openData/quarterly'
 
-        logger_start(log_name = '_log_qr', log_dir = output_dir, add_start_time_to_name = False)
+        logger_start(log_name = '_quarterly', log_dir = output_dir, add_start_time_to_name = False)
 
         # test 1
         fetch_last_quarterly_reports('income', output_dir = output_dir)
