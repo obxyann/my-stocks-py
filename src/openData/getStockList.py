@@ -182,9 +182,11 @@ def download_stock_list_in_market (market,
         use_color(Colors.WARNING)
         if re.match(r'[A-Z]{6}', cfi):
             print(f'Warning: No mapping rule for \'{cfi}\' - value set to \'-\'')
-        else:
+        # else:
         #   this cfi should be from label rows likes
         #   [股票,股票,...,股票], [上市認購(售)權證,上市認購(售)權證,...,上市認購(售)權證], ...
+        #   pass
+        #   or
         #   print(f'Warning: Invalid CFI format for \'{cfi}\' - value set to \'-\'')
         use_color(Colors.RESET)
 
