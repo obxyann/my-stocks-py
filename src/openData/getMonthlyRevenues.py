@@ -140,6 +140,7 @@ def download_monthly_revenues (market, year, month):
         reason = str(error)
 
     if reason:
+        # 'No tables found' likes
         raise Exception(reason)
     if df.empty:
         raise Exception(f'Data not available for \'{year}{month}\'')

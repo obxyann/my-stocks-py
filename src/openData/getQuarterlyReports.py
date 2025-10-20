@@ -22,16 +22,16 @@ from utils.ansiColors import Colors, use_color
 #
 # 公開資訊觀測站 (https://mops.twse.com.tw)
 # 首頁 > 彙總報表 > 財務報表 > 財務報表 > 綜合損益表
-# https://mops.twse.com.tw/mops/web/t163sb04
+# https://mops.twse.com.tw/mops/#/web/t163sb04
 #
 # 首頁 > 彙總報表 > 財務報表 > 財務報表 > 資產負債表
-# https://mops.twse.com.tw/mops/web/t163sb05
+# https://mops.twse.com.tw/mops/#/web/t163sb05
 #
 # 首頁 > 彙總報表 > 財務報表 > 財務報表 > 現金流量表
-# https://mops.twse.com.tw/mops/web/t163sb20
+# https://mops.twse.com.tw/mops/#/web/t163sb20
 #
 # 首頁 > 彙總報表 > 財務報表 > 財務比率分析 > 營益分析
-# https://mops.twse.com.tw/mops/web/t163sb06
+# https://mops.twse.com.tw/mops/#/web/t163sb06
 
 # Download the financial statement of listed companies for a specific quarter
 #
@@ -67,6 +67,7 @@ from utils.ansiColors import Colors, use_color
 #               False for return each DataFrame in a dictionary with key is the name of the sector
 #
 # return the result in pandas.DataFrame
+#        or dictionary of pandas.DataFram(s) when concat = False
 #
 # raise an exception on failure
 def download_financial_statements (market, year, quarter, statement, sectors = None, concat = True):
@@ -155,6 +156,15 @@ def download_financial_statements (market, year, quarter, statement, sectors = N
 
     reason = None
 
+    if not response.text or "查詢無資料" in response.text:
+        # use_color(Colors.WARNING)
+        # log(f'  Warning: No data found for \'{year}Q{quarter}\'\n')
+        # use_color(Colors.RESET)
+        #
+        # return pd.DataFrame() # an empty DataFrame
+        # or
+        raise Exception(f'No data found for \'{year}Q{quarter}\'')
+
     # replace all '--' to 0
     text = response.text.replace('>--</td>', '>0</td>')
 
@@ -171,7 +181,7 @@ def download_financial_statements (market, year, quarter, statement, sectors = N
         # 'No tables found' likes
         raise Exception(reason)
     if n == 0:
-        raise Exception(f'Data not available for \'{year}{month}\'')
+        raise Exception(f'Data not available for \'{year}Q{quarter}\'')
     if n < 2:
         raise ValueError(f'Unexpected number of tables inside html, {n} < 2')
 
@@ -292,12 +302,15 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
                 elif tbl_index == 3:
                     return 'min'    # 異業
 
+            use_color(Colors.WARNING)
             log(f'  Warning: Industry sector is ambiguous\n')
             log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')
+            use_color(Colors.RESET)
 
-            log('--\n')
-            log(df.iloc[[0], [0, 1]])
-            log('--\n')
+            # just for debug
+            print('--')
+            print(df.iloc[0, 0], df.iloc[0, 1])
+            print('--')
 
             return 'bd_ci_min' # maybe 證券期貨業, 一般業, 異業
 
@@ -317,12 +330,15 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
         if name == '營業收入 (百萬元)': # ratio only
             return 'ci' # only 一般業
 
+    use_color(Colors.WARNING)
     log(f'  Warning: Unable to decide the industry sector\n')
     log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')
+    use_color(Colors.RESET)
 
-    log('--\n')
-    log(df.iloc[[0], [0, 1]])
-    log('--\n')
+    # just for debug
+    print('--')
+    print(df.iloc[0, 0], df.iloc[0, 1])
+    print('--')
 
     # stop
     # raise Exception('Failed to guess the industry sector')
@@ -659,14 +675,18 @@ def adjustDf (df, statement):
         rename = adjust_table[statement]['rename']
         remove = adjust_table[statement]['remove']
     except:
+        use_color(Colors.WARNING)
         log(f'  Warning: Not found \'{statement}\' in the adjust table\n')
+        use_color(Colors.RESET)
 
         return df
 
     # check if exist column out of mapping table
     for name in df.columns:
         if name not in rename:
+            use_color(Colors.WARNING)
             log(f'  Warning: Not found \'{name}\' in the rename table of \'{statement}\'\n')
+            use_color(Colors.RESET)
 
     df = df.rename(columns = rename) #, inplace = True)
 
@@ -683,7 +703,9 @@ def sortDfColumns (df, statement):
     try:
         sequence = adjust_table[statement]['sequence']
     except:
+        use_color(Colors.WARNING)
         log(f'  Warning: Not found \'{statement}\' in the adjust table\n')
+        use_color(Colors.RESET)
 
         return df
 
@@ -693,7 +715,9 @@ def sortDfColumns (df, statement):
         try:
             return sequence.index(item)
         except:
+            use_color(Colors.WARNING)
             log(f'  Warning: Not found \'{item}\' in sequence list\n')
+            use_color(Colors.RESET)
 
             return len(sequence)
 
