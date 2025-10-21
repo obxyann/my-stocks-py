@@ -109,7 +109,7 @@ class StockDatabase:
             cursor = conn.cursor()
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS stock_list (
-                    stock_id TEXT PRIMARY KEY,
+                    code TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     market TEXT NOT NULL,
                     industry TEXT,
@@ -141,8 +141,8 @@ class StockDatabase:
         # dont detect missing value markers (empty strings and the value of na_values)
         # df = pd.read_csv(csv_path, na_filter = False)
 
-        # convert 'stock_id' to string to match the database schema
-        # df['stock_id'] = df['stock_id'].astype(str)
+        # convert 'code' to string to match the database schema
+        # df['code'] = df['code'].astype(str)
 
         # import data to database
         with self.get_connection() as conn:
@@ -170,33 +170,33 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
-                SELECT stock_id, name, market, industry, type
+                SELECT code, name, market, industry, type
                 FROM stock_list
-                ORDER BY stock_id
+                ORDER BY code
             ''', conn)
 
         return df
 
-    def get_stock_by_id(self, stock_id):
+    def get_stock_by_code(self, stock_code):
         """Get specific stock by stock id
 
         Args:
-            stock_id (str): Stock id
+            stock_code (str): Stock code
 
         Returns:
             pandas.DataFrame: Stock data
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
-                SELECT stock_id, name, market, industry, type
+                SELECT code, name, market, industry, type
                 FROM stock_list
-                WHERE stock_id = ?
-            ''', conn, params = (stock_id,))
+                WHERE code = ?
+            ''', conn, params = (stock_code,))
 
         return df
 
     def search_stocks(self, keyword):
-        """Search stocks by name or stock id
+        """Search stocks by name or stock code
 
         Args:
             keyword (str): Search keyword
@@ -206,10 +206,10 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
-                SELECT stock_id, name, market, industry, type
+                SELECT code, name, market, industry, type
                 FROM stock_list
-                WHERE stock_id LIKE ? OR name LIKE ?
-                ORDER BY stock_id
+                WHERE code LIKE ? OR name LIKE ?
+                ORDER BY code
             ''', conn, params = (f'%{keyword}%', f'%{keyword}%'))
 
         return df
@@ -225,10 +225,10 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
-                SELECT stock_id, name, market, industry, type
+                SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE market = ?
-                ORDER BY stock_id
+                ORDER BY code
             ''', conn, params = (market,))
 
         return df
@@ -244,10 +244,10 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
-                SELECT stock_id, name, market, industry, type
+                SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE industry = ?
-                ORDER BY stock_id
+                ORDER BY code
             ''', conn, params = (industry,))
 
         return df
@@ -265,7 +265,7 @@ class StockDatabase:
             cursor = conn.cursor()
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS monthly_revenue (
-                    stock_id TEXT NOT NULL,
+                    code TEXT NOT NULL,
                     year INTEGER NOT NULL,
                     month INTEGER NOT NULL,
                     revenue INTEGER NOT NULL,
@@ -276,8 +276,8 @@ class StockDatabase:
                     yoy REAL,
                     cumulative_revenue_yoy REAL,
                     note TEXT,
-                    PRIMARY KEY (stock_id, year, month),
-                    FOREIGN KEY (stock_id) REFERENCES stock_list (stock_id)
+                    PRIMARY KEY (code, year, month),
+                    FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
             ''')
             conn.commit()
@@ -323,21 +323,21 @@ class StockDatabase:
                 df['month'] = month
 
                 # rename columns to match the database schema
-                df.rename(columns = {'Stock_id': 'stock_id', 'Revenue': 'revenue', 'Note': 'note'}, inplace = True)
+                df.rename(columns = {'Code': 'code', 'Revenue': 'revenue', 'Note': 'note'}, inplace = True)
 
                 # select and reorder columns for insertion
-                df = df[['stock_id', 'year', 'month', 'revenue', 'note']]
+                df = df[['code', 'year', 'month', 'revenue', 'note']]
 
-                # convert 'stock_id' to string to match the database schema
-                df['stock_id'] = df['stock_id'].astype(str)
+                # convert 'code' to string to match the database schema
+                df['code'] = df['code'].astype(str)
 
                 # insert or update data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT OR REPLACE INTO monthly_revenue (stock_id, year, month, revenue, note)
+                        INSERT OR REPLACE INTO monthly_revenue (code, year, month, revenue, note)
                         VALUES (?, ?, ?, ?, ?)
-                    ''', (row['stock_id'], row['year'], row['month'], row['revenue'], row['note']))
+                    ''', (row['code'], row['year'], row['month'], row['revenue'], row['note']))
 
                 total_imported_records += len(df)
 
@@ -367,14 +367,14 @@ class StockDatabase:
             if df.empty:
                 return
 
-            df.sort_values(by=['stock_id', 'year', 'month'], inplace=True)
+            df.sort_values(by = ['code', 'year', 'month'], inplace = True)
 
             # calculate derived fields
-            df['revenue_last_year'] = df.groupby('stock_id')['revenue'].transform(lambda x: x.shift(12))
-            df['cumulative_revenue'] = df.groupby(['stock_id', 'year'])['revenue'].cumsum()
-            df['cumulative_revenue_last_year'] = df.groupby('stock_id')['cumulative_revenue'].transform(lambda x: x.shift(12))
-            df['mom'] = df.groupby('stock_id')['revenue'].pct_change(periods = 1) * 100
-            df['yoy'] = df.groupby('stock_id')['revenue'].pct_change(periods = 12) * 100
+            df['revenue_last_year'] = df.groupby('code')['revenue'].transform(lambda x: x.shift(12))
+            df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
+            df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].transform(lambda x: x.shift(12))
+            df['mom'] = df.groupby('code')['revenue'].pct_change(periods = 1) * 100
+            df['yoy'] = df.groupby('code')['revenue'].pct_change(periods = 12) * 100
             df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
 
             # replace infinite values with NaN
@@ -389,7 +389,7 @@ class StockDatabase:
                     mom = ?,
                     yoy = ?,
                     cumulative_revenue_yoy = ?
-                WHERE stock_id = ? AND year = ? AND month = ?
+                WHERE code = ? AND year = ? AND month = ?
             '''
 
             update_data = [
@@ -400,7 +400,7 @@ class StockDatabase:
                     row['mom'] if pd.notna(row['mom']) else None,
                     row['yoy'] if pd.notna(row['yoy']) else None,
                     row['cumulative_revenue_yoy'] if pd.notna(row['cumulative_revenue_yoy']) else None,
-                    row['stock_id'],
+                    row['code'],
                     row['year'],
                     row['month']
                 )
@@ -411,7 +411,7 @@ class StockDatabase:
             cursor.executemany(update_query, update_data)
             conn.commit()
 
-    def get_revenue_by_id(self, stock_id, start_date = '2013-01-01', end_date = None):
+    def get_revenue_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
         # convert date string to datetime object
         start = parse_date_string(start_date)
         # and get the year, month parts
@@ -432,10 +432,10 @@ class StockDatabase:
             df = pd.read_sql_query('''
                 SELECT *
                 FROM monthly_revenue
-                WHERE stock_id = ?
+                WHERE code = ?
                   AND (year * 100 + month) BETWEEN ? AND ?
                 ORDER BY year, month
-            ''', conn, params = (stock_id, start_period, end_period))
+            ''', conn, params = (stock_code, start_period, end_period))
 
         return df
 

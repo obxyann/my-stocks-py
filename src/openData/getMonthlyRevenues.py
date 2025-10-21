@@ -146,7 +146,7 @@ def download_monthly_revenues (market, year, month):
         raise Exception(f'Data not available for \'{year}{month}\'')
 
     # set new column names
-    df.columns = ['Stock_id', 'Name', 'Revenue', 'Note'] # ,
+    df.columns = ['Code', 'Name', 'Revenue', 'Note'] # ,
         # NOTE: belows can be missed, they can be calculated after retrieving the historical data
         # 'MoM', 'Last_year', 'YoY',
         # 'Cumulative', 'Cum_last_year', 'CumYoY']

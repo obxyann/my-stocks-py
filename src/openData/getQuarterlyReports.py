@@ -391,8 +391,8 @@ def adjustRatioDfs (dfs):
 #       takes only one of key1:valueA or key2:valueA, and there is no conflict (aka key1, key2
 #       will not appear in the same renaming call)
 income_columns_rename = {
-'公司代號': 'Stock_id',
-'公司 代號': 'Stock_id',
+'公司代號': 'Code',
+'公司 代號': 'Code',
 '公司名稱': 'Name',
 # 收入
 '營業收入': '營業收入',     # no change
@@ -481,8 +481,8 @@ income_adjust = {
 }
 
 balance_columns_rename = {
-'公司代號': 'Stock_id',
-'公司 代號': 'Stock_id',
+'公司代號': 'Code',
+'公司 代號': 'Code',
 '公司名稱': 'Name',
 # 資產
 '流動資產': '流動資產',     # no change
@@ -611,8 +611,8 @@ balance_adjust = {
 }
 
 cash_columns_rename = {
-'公司代號': 'Stock_id',
-'公司 代號': 'Stock_id',
+'公司代號': 'Code',
+'公司 代號': 'Code',
 '公司名稱': 'Name',
 #
 '營業活動之淨現金流入（流出）': '營業活動之淨現金流入',
@@ -635,7 +635,7 @@ cash_adjust = {
 }
 
 ratio_columns_rename = {
-'公司代號': 'Stock_id' ,
+'公司代號': 'Code' ,
 '公司名稱': 'Name' ,
 '營業收入 (百萬元)': '營業收入', # -> to be removed (not used)
 '毛利率(%) (營業毛利)/ (營業收入)': '毛利率' ,

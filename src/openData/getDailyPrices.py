@@ -265,7 +265,7 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
 
         # set new column names
         prices.columns = [
-            'Stock_id', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Code', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
 
         # add 'Market' column
         prices['Market'] = 'tse'
@@ -333,7 +333,7 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
 
         # set new column names
         prices.columns = [
-            'Stock_id', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Code', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
 
         # add 'Market' column
         prices['Market'] = 'otc'

@@ -127,7 +127,7 @@ def download_stock_list_in_market (market,
     df = df.drop([1, 2, 6], axis = 1)
 
     # set new column names (integer label to string label)
-    df.columns = ['Stock_id_Name', 'Market', 'Industry', 'CFI_code']
+    df.columns = ['Code_Name', 'Market', 'Industry', 'CFI_code']
 
     # remove the 1st row [有價證券代號及名稱,市場別,產業別,CFICode]
     # remove row 0 (NOTE: integer 0 interpreted as label not position)
@@ -231,15 +231,15 @@ def download_stock_list_in_market (market,
 
     df = df[[filter(a) for a in df['Type']]]
 
-    # split Stock_id_Name column into two columns ('1234A\u3000XYZ' -> '1234A', 'XYZ')
-    # df[['Stock_id', 'Name']] = df['Stock_id_Name'].str.split('\u3000', n = 1, expand = True) <- see NOTE
+    # split Code_Name column into two columns ('1234A\u3000XYZ' -> '1234A', 'XYZ')
+    # df[['Code', 'Name']] = df['Code_Name'].str.split('\u3000', n = 1, expand = True) <- see NOTE
     #
     # NOTE: got an strange td cell '4148&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&emsp;全宇生技-KY' in html
     #       which has multiple (half) spaces before the (full) 'EM Space' and
     #       those spaces will be removed to one \u0020 space (aka '4148 全宇生技-KY') after pd.read_html
     #       we need to use regex to split on \u3000 (normal cases) and also space (this case)
     #       - 20241130
-    df[['Stock_id', 'Name']] = df['Stock_id_Name'].str.split(r'\u3000| ', n = 1, expand = True)
+    df[['Code', 'Name']] = df['Code_Name'].str.split(r'\u3000| ', n = 1, expand = True)
 
     # reset index
     df.index = pd.RangeIndex(len(df.index))
@@ -250,10 +250,10 @@ def download_stock_list_in_market (market,
     print(f'  Total {len(df)} records')
 
     # return only the columns needed and correct the order
-    return df[['Stock_id', 'Name', 'Market', 'Industry', 'Type']]
+    return df[['Code', 'Name', 'Market', 'Industry', 'Type']]
     # or
     # TODO: add an option to return as a compact list
-    # return df[['Stock_id', 'Name', 'Market']]
+    # return df[['Code', 'Name', 'Market']]
 
 # Download the stock list (across all markets)
 #
@@ -267,10 +267,10 @@ def download_stock_list ():
         '''
         return DataFrame is like
         ------------------------
-          Stock_id Name Market Industry Type
-        0 1101     台泥 tse    水泥工業 s
-        1 1102     亞泥 tse    水泥工業 s
-        2 1103     嘉泥 tse    水泥工業 s
+          Code Name Market Industry Type
+        0 1101 台泥 tse    水泥工業 s
+        1 1102 亞泥 tse    水泥工業 s
+        2 1103 嘉泥 tse    水泥工業 s
         ...
         ------------------------
         '''

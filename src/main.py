@@ -74,7 +74,7 @@ def test_monthly_revenue(db):
         # Test retrieving data
         print('• Retrieving monthly revenue for stock 2330 ...')
 
-        df = db.get_revenue_by_id('2330', '2025-01')
+        df = db.get_revenue_by_code('2330', '2025-01')
 
         if not df.empty:
             print(df.head(3))
