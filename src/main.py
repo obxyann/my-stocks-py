@@ -72,7 +72,7 @@ def test_monthly_revenue(db):
     """Test function for monthly revenue data"""
     try:
         # Test retrieving data
-        print('• Retrieving monthly revenue for stock 2330 ...')
+        print('• Retrieving monthly revenues in 2025 for stock 2330 ...')
 
         df = db.get_revenue_by_code('2330', '2025-01')
 
