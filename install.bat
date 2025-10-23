@@ -51,15 +51,15 @@ if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\requests\" (
 ) else (
 	echo [v] Package 'requests' already installed
 )
-if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\pip-system-certs\" (
-        pip install pip-system-certs && echo [+] Package 'pip-system-certs' is now installed
+if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\pip_system_certs\" (
+        pip install pip_system_certs && echo [+] Package 'pip-system-certs' is now installed
 ) else (
 	echo [v] Package 'pip-system-certs' already installed
 )
 if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\lxml\" (
         pip install lxml && echo [+] Package 'lxml' is now installed
 ) else (
-	echo [v] Package 'pip-system-certs' already installed
+	echo [v] Package 'lxml' already installed
 )
 if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\pandas\" (
         pip install pandas && echo [+] Package 'pandas' is now installed
