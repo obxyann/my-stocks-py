@@ -2,7 +2,7 @@ import sys
 import requests
 import re
 import os
-# from datetime import datetime
+from datetime import datetime
 
 import pandas as pd
 
@@ -12,7 +12,7 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
-from utils.ass import get_last_market_close_day, get_date_from_path_name # , parse_date_string
+from utils.ass import get_last_market_close_day, get_date_from_path_name, parse_date_string
 from utils.logger import log, logger_start, logger_end
 from utils.ansiColors import Colors, use_color
 
@@ -445,9 +445,9 @@ def fetch_last_daily_prices (output_dir = '.'):
 def check_last_daily_prices_exist (data_dir = '.'):
     print('Checking local...')
 
-    # get date of today
-    today = datetime.now()
-    # and last market close date
+    # get today
+    today = datetime.now().replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    # and last market close day
     last_close = parse_date_string(get_last_market_close_day(close_hour = 14, close_minute = 55))
 
     year, month, day = last_close.year, last_close.month, last_close.day
