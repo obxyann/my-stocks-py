@@ -2,6 +2,7 @@ import sys
 import requests
 import re
 import os
+# from datetime import datetime
 
 import pandas as pd
 
@@ -11,11 +12,11 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
-from utils.ass import get_last_market_close_day, get_date_from_path_name
+from utils.ass import get_last_market_close_day, get_date_from_path_name # , parse_date_string
 from utils.logger import log, logger_start, logger_end
 from utils.ansiColors import Colors, use_color
 
-# Download the lastest daily stock prices in TWSE (Taiwan Stock Exchange)
+# Download the (latest) daily prices in TWSE (Taiwan Stock Exchange)
 #
 # param
 #   output_dir - directory where the CSV file will be saved
@@ -91,7 +92,7 @@ def download_twse_daily_prices (output_dir = '.'):
 
     return f'{output_dir}/{file_name}'
 
-# Download the lastest daily stock prices in TPEx (Taipei Exchange)
+# Download the (latest) daily prices in TPEx (Taipei Exchange)
 #
 # A temporary file `RSTA3104_{YYYMMDD}.csv.tmp` will be created during download
 # and removed after saving.
@@ -232,7 +233,7 @@ def download_tpex_daily_prices (output_dir = '.', include_warrant = False):
 
     return f'{output_dir}/{file_name}'
 
-# Get the TWSE daily prices from the latest daily prices file
+# Get the TWSE (latest) daily prices from the prices file
 #
 # If the file does not exist, download it automatically.
 #
@@ -300,7 +301,7 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
 
     return prices, file_date
 
-# Get the TPEx daily prices from the latest daily prices file
+# Get the TPEx (latest) daily prices from the prices file
 #
 # If the file does not exist, download it automatically.
 #
@@ -368,7 +369,7 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
 
     return prices, file_date
 
-# Get the lastest daily stock prices
+# Get the (latest) daily prices
 #
 # After the function returns, the files downloaded during the period will be removed.
 #
@@ -416,26 +417,61 @@ def get_daily_prices (data_dir = '.'):
 
     return prices, date_1
 
-# Fetch (get data and save to file) the lastest daily stock prices
+# Get the last daily prices and save to file
 #
 # This will try to get data from remote and save to local file 'prices_{YYYYMMDD}.csv'
 # without return the data.
 #
 # param
 #   output_dir - directory where the CSV file will be saved
-def fetch_daily_prices (output_dir = '.'):
-    # get prices
-    prices, this_date = get_daily_prices() # data_dir = output_dir)
+def fetch_last_daily_prices (output_dir = '.'):
+    print('Fetching...')
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)
 
-    # save data to file
+    # get prices
+    prices, this_date = get_daily_prices() # data_dir = output_dir)
+
+    # destination file
     path_name = f'{output_dir}/prices_{this_date}.csv'
 
+    # save data to file
     prices.to_csv(path_name, index = False)
 
     print(f'Write to \'{path_name}\' successfully')
+
+'''
+# Check if the local daily prices exists first
+def fetch_last_daily_prices_with_check (refetch = False, output_dir = '.'):
+    print('Checking local...')
+
+    # get date of today
+    today = datetime.now()
+    # and last market close date
+    close_date = parse_date_string(get_last_market_close_day(close_hour = 14, close_minute = 55))
+
+    year, month, day = close_date.year, close_date.month, close_date.day
+
+    if today != close_date:
+       use_color(Colors.WARNING)
+       print(f'Warning: This is not a trading day or market not closed')
+       print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')
+       use_color(Colors.RESET)
+
+    # local file
+    path_name = f'{output_dir}/prices_{year}{month:02}{day:02}.csv'
+
+    # check local
+    if not refetch and os.path.isfile(path_name) and os.path.getsize(path_name):
+         log(f'[{year}-{month:02}-{day:02}] prices already exists\n')
+
+         return True
+    # else:
+    fetch_last_daily_prices(output_dir = output_dir)
+
+    return False
+'''
 
 def test ():
     try:
@@ -443,7 +479,7 @@ def test ():
 
         logger_start(log_name = '_daily', log_dir = output_dir, add_start_time_to_name = False)
 
-        fetch_daily_prices(output_dir = output_dir)
+        fetch_last_daily_prices(output_dir = output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')

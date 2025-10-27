@@ -857,7 +857,7 @@ def get_quarterly_reports (year, quarter, statement):
 
     return reports
 
-# Fetch (get data and save to file) the last quarterly reports
+# Get data the last quarterly reports and save to file
 #
 # This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
@@ -870,22 +870,26 @@ def get_quarterly_reports (year, quarter, statement):
 #                'ratio':   Financial ratio 財務比率
 #   output_dir - directory where the CSV file will be saved
 def fetch_last_quarterly_reports (statement, output_dir = '.'):
-    year, quarter = get_last_report_year_quarter()
+    print('Fetching...')
 
-    # get reports
-    reports = get_quarterly_reports(year, quarter, statement)
+    # last year, quarter
+    year, quarter = get_last_report_year_quarter()
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)
 
-    # save data to file
+    # destination file
     path_name = f'{output_dir}/{statement}_reports_{year}Q{quarter}.csv'
 
+    # get reports
+    reports = get_quarterly_reports(year, quarter, statement)
+
+    # save data to file
     reports.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
     print(f'Write to \'{path_name}\' successfully')
 
-# Fetch (get data and save to file) the quarterly reports from a specific date
+# Get the quarterly reports starting from a specific date and save to file
 #
 # This will try to get data from remote and save to local file '{statement}_reports_{YYYY}Q{Q}.csv'
 # without return the data.
@@ -902,26 +906,27 @@ def fetch_last_quarterly_reports (statement, output_dir = '.'):
 def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013-01-01', output_dir = '.'):
     print('Fetching...')
 
-    # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
-
-    # start year, month
+    # start year, quarter
     start = parse_date_string(start_date)
     year = start.year
     quarter = int((start.month - 1) / 3) + 1
 
-    # end year, month
+    # end year, quarter
     end_year, end_quarter = get_last_report_year_quarter()
     # or
     # end = parse_date_string(end_date)
     # end_year = end.year
     # end_quarter = int((end.month - 1) / 3) + 1
 
+    # make an output directory
+    os.makedirs(output_dir, exist_ok = True)
+
     downloaded = 0
     failed = 0
     count = 0
 
     while True:
+        # destination file
         path_name = f'{output_dir}/{statement}_reports_{year}Q{quarter}.csv'
 
         # check local
@@ -949,7 +954,7 @@ def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013
 
         count += 1
 
-        # to next month
+        # to next quarter
         if year == end_year and quarter == end_quarter:
             break
         elif quarter == 4:

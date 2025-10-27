@@ -230,7 +230,7 @@ def get_monthly_revenues (year, month):
 
     return revenues
 
-# Fetch (get data and save to file) the last monthly revenues
+# Get the last monthly revenues and save to file
 #
 # This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
@@ -238,22 +238,26 @@ def get_monthly_revenues (year, month):
 # param
 #   output_dir - directory where the CSV file will be saved
 def fetch_last_monthly_revenues (output_dir = '.'):
-    year, month = get_last_revenue_year_month()
+    print('Fetching...')
 
-    # get revenues
-    revenues = get_monthly_revenues(year, month)
+    # last year, month
+    year, month = get_last_revenue_year_month()
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)
 
-    # save data to file
+    # destination file
     path_name = f'{output_dir}/revenues_{year}{month:02}.csv'
 
+    # get revenues
+    revenues = get_monthly_revenues(year, month)
+
+    # save data to file
     revenues.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
     print(f'Write to \'{path_name}\' successfully')
 
-# Fetch (get data and save to file) the monthly revenues from a specific date
+# Get the monthly revenues starting from a specific date and save to file
 #
 # This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
 # without return the data.
@@ -265,9 +269,6 @@ def fetch_last_monthly_revenues (output_dir = '.'):
 def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', output_dir = '.'):
     print('Fetching...')
 
-    # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
-
     # start year, month
     start = parse_date_string(start_date)
     year, month = start.year, start.month
@@ -278,11 +279,15 @@ def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', out
     # end = parse_date_string(end_date)
     # end_year, end_month = end.year, end.month
 
+    # make an output directory
+    os.makedirs(output_dir, exist_ok = True)
+
     downloaded = 0
     failed = 0
     count = 0
 
     while True:
+        # destination file
         path_name = f'{output_dir}/revenues_{year}{month:02}.csv'
 
         # check local
