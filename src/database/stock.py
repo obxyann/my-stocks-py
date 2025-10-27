@@ -22,6 +22,7 @@ class StockDatabase:
         """
         self.metadata_table_initialized = False
         self.stock_list_table_initialized = False
+        self.daily_prices_table_initialized = False
         self.monthly_revenue_table_initialized = False
 
         ensure_directory_exists(db_path)
@@ -30,7 +31,12 @@ class StockDatabase:
 
     def get_connection (self):
         """Get database connection"""
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+
+        # enable foreign key constraint
+        # conn.execute('PRAGMA foreign_keys = ON;')
+
+        return conn
 
     ##################
     # Metadata table #
@@ -140,6 +146,9 @@ class StockDatabase:
         # or
         # dont detect missing value markers (empty strings and the value of na_values)
         # df = pd.read_csv(csv_path, na_filter = False)
+
+        # rename columns to match the database schema
+        # df.rename(columns = {'Code': 'stock_code', 'Name': 'company_name'}, inplace = True)
 
         # convert 'code' to string to match the database schema
         # df['code'] = df['code'].astype(str)
@@ -251,6 +260,155 @@ class StockDatabase:
             ''', conn, params = (industry,))
 
         return df
+
+    ######################
+    # Daily Prices table #
+    ######################
+
+    def ensure_daily_prices_table(self):
+        """Create daily_prices table if it doesn't exist"""
+        if self.daily_prices_table_initialized:
+            return
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS daily_prices (
+                    code TEXT NOT NULL,
+                    trade_date TEXT NOT NULL,
+                    open_price REAL NOT NULL,
+                    high_price REAL NOT NULL,
+                    low_price REAL NOT NULL,
+                    close_price REAL NOT NULL,
+                    volume INTEGER NOT NULL,
+                    PRIMARY KEY (code, trade_date),
+                    FOREIGN KEY (code) REFERENCES stock_list (code)
+                )
+            ''')
+            conn.commit()
+
+        self.daily_price_table_initialized = True
+
+    def get_prices_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
+        """Get daily prices for a specific stock code within a date range
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date in 'YYYY-MM-DD' format
+            end_date (str): End date in 'YYYY-MM-DD' format, defaults to today
+
+        Returns:
+            pandas.DataFrame: Daily prices data
+        """
+        # If end_date is not provided, use today's date
+        if not end_date:
+            end_date = datetime.today().strftime('%Y-%m-%d')
+
+        with self.get_connection() as conn:
+            df = pd.read_sql_query('''
+                SELECT *
+                FROM daily_prices
+                WHERE code = ?
+                  AND trade_date BETWEEN ? AND ?
+                ORDER BY trade_date
+            ''', conn, params = (stock_code, start_date, end_date))
+
+        return df
+
+    def import_daily_prices_csv_to_database(self, csv_folder = 'storage/daily'):
+        """Import daily prices from CSV files to database
+
+        Args:
+            csv_folder (str): Path to the folder containing CSV files
+
+        Returns:
+            int: Number of records imported
+        """
+        # create table if not exists
+        self.ensure_daily_prices_table()
+
+        if not os.path.isdir(csv_folder):
+            raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
+
+        total_imported_records = 0
+        last_mod_time = 0  # for tracking the latest modification time of all files
+
+        files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+        with self.get_connection() as conn:
+            for file in files:
+                match = re.search(r'prices_(\d{4})(\d{2})(\d{2})\.csv', file)
+                if not match:
+                    continue
+
+                year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                trade_date = f"{year}-{month:02d}-{day:02d}"
+
+                csv_path = os.path.join(csv_folder, file)
+
+                print(f'Importing {csv_path}')
+
+                # read CSV file
+                df = pd.read_csv(csv_path)
+
+                # Drop unnecessary columns
+                if 'Name' in df.columns:
+                    df = df.drop('Name', axis=1)
+                if 'Value' in df.columns:
+                    df = df.drop('Value', axis=1)
+                if 'Market' in df.columns:
+                    df = df.drop('Market', axis=1)
+
+                # Add trade_date column
+                df['trade_date'] = trade_date
+
+                # rename columns to match the database schema
+                df.rename(columns = {
+                    'Code': 'code',
+                    'Open': 'open_price',
+                    'High': 'high_price',
+                    'Low': 'low_price',
+                    'Close': 'close_price',
+                    'Volume': 'volume'
+                }, inplace = True)
+
+                # convert 'code' to string to match the database schema
+                df['code'] = df['code'].astype(str)
+
+                # select and reorder columns for insertion
+                df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
+
+                # insert or update data
+                for _, row in df.iterrows():
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        row['code'], 
+                        row['trade_date'], 
+                        row['open_price'], 
+                        row['high_price'], 
+                        row['low_price'], 
+                        row['close_price'], 
+                        row['volume']
+                    ))
+
+                total_imported_records += len(df)
+
+                mod_time = modification_time(csv_path)
+                # update last_mod_time if this file is newer
+                if (mod_time > last_mod_time):
+                    last_mod_time = mod_time
+
+            conn.commit()
+
+        # update timestamp in metadata
+        if last_mod_time:
+            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+            self.update_table_timestamp('daily_prices', timestamp)
+
+        return total_imported_records
 
     #########################
     # Monthly Revenue table #

@@ -12,6 +12,7 @@ sys.path.append('..')
 # then
 from database.stock import StockDatabase
 from openData.getStockList import get_stock_list
+from openData.getDailyPrices import fetch_last_daily_prices, check_last_daily_prices_exist
 from openData.getMonthlyRevenues import fetch_hist_monthly_revenues
 
 def import_csv_to_db(csv_dir = None, db_path = None):
@@ -33,7 +34,17 @@ def import_csv_to_db(csv_dir = None, db_path = None):
             print('Importing stock list from CSV to database...')
             count = db.import_stock_list_csv_to_database(csv_path)
             print(f'Successfully imported {count} records from stock_list.csv')
-        
+
+        # import prices_{YYYYMMDD}.csv
+        csv_folder = os.path.join(csv_dir, 'daily')
+
+        if not os.path.isdir(csv_folder):
+            print(f'Folder not found: {csv_folder}')
+        else:
+            print('Importing daily prices from CSV to database...')
+            count = db.import_daily_prices_csv_to_database(csv_folder)
+            print(f'Successfully imported {count} records from daily/prices_YYYYMM.csv')
+
         # import revenues_{YYYYMM}.csv
         csv_folder = os.path.join(csv_dir, 'monthly')
 
@@ -70,10 +81,16 @@ def download(refetch = False, output_dir = None):
         print(f'{action} stock list...')
         get_stock_list(refetch = refetch, data_dir = output_dir)
         print(f'Done')
-        
+
+        print(f'\n{action} daily prices revenues...')
+        dest_dir = os.path.join(output_dir, 'daily')
+        if not refetch and not check_last_daily_prices_exist(dest_dir):
+            fetch_last_daily_prices(output_dir = dest_dir)
+        print(f'Done')
+
         print(f'\n{action} monthly revenues...')
-        monthly_dir = os.path.join(output_dir, 'monthly')
-        fetch_hist_monthly_revenues(refetch = refetch, start_date = '2013-01-01', output_dir = monthly_dir)
+        dest_dir = os.path.join(output_dir, 'monthly')
+        fetch_hist_monthly_revenues(refetch = refetch, start_date = '2013-01-01', output_dir = dest_dir)
         print(f'Done')
         
         return True

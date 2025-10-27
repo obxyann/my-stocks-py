@@ -1,6 +1,6 @@
 {
   // 預設使用這個專案的虛擬環境
-  "python.defaultInterpreterPath": "C:\\Python\\Virtual_Env\\yFinance\\Scripts\\python.exe",
+  "python.defaultInterpreterPath": "C:\\Python\\Virtual_Env\\OpenData\\Scripts\\python.exe",
 
   // 開啟終端機自動啟用 venv
   "terminal.integrated.profiles.windows": {
