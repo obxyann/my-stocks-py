@@ -246,10 +246,10 @@ def download_tpex_daily_prices (output_dir = '.', include_warrant = False):
 # raise an exception on failure
 def get_twse_daily_prices (data_dir = '.', remove_download = True):
     # get date
-    this_date = get_last_market_close_day(close_hour = 13, close_minute = 50)   # or after 13:37
+    last_date = get_last_market_close_day(close_hour = 13, close_minute = 50)   # or after 13:37
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
-    path_name = f'{data_dir}/STOCK_DAY_ALL_{this_date}.csv'
+    path_name = f'{data_dir}/STOCK_DAY_ALL_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
@@ -314,10 +314,10 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
 # raise an exception on failure
 def get_tpex_daily_prices (data_dir = '.', remove_download = True):
     # get date
-    this_date = get_last_market_close_day(close_hour = 14, close_minute = 55, min_guo_year = True)  # or after 14:51
+    last_date = get_last_market_close_day(close_hour = 14, close_minute = 55, min_guo_year = True)  # or after 14:51
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
-    path_name = f'{data_dir}/RSTA3104_{this_date}.csv'
+    path_name = f'{data_dir}/RSTA3104_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
@@ -441,37 +441,33 @@ def fetch_last_daily_prices (output_dir = '.'):
 
     print(f'Write to \'{path_name}\' successfully')
 
-'''
-# Check if the local daily prices exists first
-def fetch_last_daily_prices_with_check (refetch = False, output_dir = '.'):
+# Check if the local file of last daily prices exists or not
+def check_last_daily_prices_exist (data_dir = '.'):
     print('Checking local...')
 
     # get date of today
     today = datetime.now()
     # and last market close date
-    close_date = parse_date_string(get_last_market_close_day(close_hour = 14, close_minute = 55))
+    last_close = parse_date_string(get_last_market_close_day(close_hour = 14, close_minute = 55))
 
-    year, month, day = close_date.year, close_date.month, close_date.day
+    year, month, day = last_close.year, last_close.month, last_close.day
 
-    if today != close_date:
+    if today != last_close:
        use_color(Colors.WARNING)
        print(f'Warning: This is not a trading day or market not closed')
        print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')
        use_color(Colors.RESET)
 
     # local file
-    path_name = f'{output_dir}/prices_{year}{month:02}{day:02}.csv'
+    path_name = f'{data_dir}/prices_{year}{month:02}{day:02}.csv'
 
     # check local
-    if not refetch and os.path.isfile(path_name) and os.path.getsize(path_name):
+    if os.path.isfile(path_name) and os.path.getsize(path_name):
          log(f'[{year}-{month:02}-{day:02}] prices already exists\n')
 
          return True
     # else:
-    fetch_last_daily_prices(output_dir = output_dir)
-
     return False
-'''
 
 def test ():
     try:
