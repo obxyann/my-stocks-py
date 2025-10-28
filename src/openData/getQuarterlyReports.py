@@ -33,7 +33,7 @@ from utils.ansiColors import Colors, use_color
 # 首頁 > 彙總報表 > 財務報表 > 財務比率分析 > 營益分析
 # https://mops.twse.com.tw/mops/#/web/t163sb06
 
-# Download the financial statement of listed companies for a specific quarter
+# Fetch the financial statement of listed companies for a specific market and quarter
 #
 # NOTE: There are multiple formats of a financial statement for the different industry sectors.
 #       E.g. The 'Balance Sheet' report for all the listed companies will contain up to 6 formats
@@ -70,7 +70,7 @@ from utils.ansiColors import Colors, use_color
 #        or dictionary of pandas.DataFram(s) when concat = False
 #
 # raise an exception on failure
-def download_financial_statements (market, year, quarter, statement, sectors = None, concat = True):
+def fetch_financial_statements_in_market (market, year, quarter, statement, sectors = None, concat = True):
     log(f'Downloading {market} {year} Q{quarter} {statement} statements...\n')
 
     if market == 'tse':
@@ -168,6 +168,7 @@ def download_financial_statements (market, year, quarter, statement, sectors = N
         dfs = pd.read_html(StringIO(text))
 
         n = len(dfs)
+
     except Exception as error:
         reason = str(error)
 
@@ -668,6 +669,7 @@ def adjustDf (df, statement):
     try:
         rename = adjust_table[statement]['rename']
         remove = adjust_table[statement]['remove']
+
     except:
         use_color(Colors.WARNING)
         log(f'  Warning: Not found \'{statement}\' in the adjust table\n')
@@ -687,6 +689,7 @@ def adjustDf (df, statement):
     # remove redundant columns
     try:
         df = df.drop(remove, axis = 1)
+
     except:
         pass
 
@@ -696,6 +699,7 @@ def adjustDf (df, statement):
 def sortDfColumns (df, statement):
     try:
         sequence = adjust_table[statement]['sequence']
+
     except:
         use_color(Colors.WARNING)
         log(f'  Warning: Not found \'{statement}\' in the adjust table\n')
@@ -708,6 +712,7 @@ def sortDfColumns (df, statement):
     def getIndex (item):
         try:
             return sequence.index(item)
+
         except:
             use_color(Colors.WARNING)
             log(f'  Warning: Not found \'{item}\' in sequence list\n')
@@ -801,21 +806,7 @@ def get_last_report_year_quarter ():
 
     return year, quarter
     '''
-
-'''
-# Get the last quarterly reports for a specific market
-#
-# param
-#   ...
-#
-# return the result in pandas.DataFrame, YYYYMM pair
-def get_last_financial_statements (market, statement):
-    year, quarter = get_last_report_year_quarter()
-
-    return download_financial_statements(market, year, quarter, statement), f'{year}Q{quarter}'
-'''
-
-# Get the quarterly reports for a specific quarter
+# Fetch the quarterly reports for a specific quarter
 #
 # param
 #   year      - A.D. year
@@ -829,11 +820,11 @@ def get_last_financial_statements (market, statement):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_quarterly_reports (year, quarter, statement):
+def fetch_quarterly_reports (year, quarter, statement):
     try:
-        reports_1 = download_financial_statements('tse', year, quarter, statement)
+        reports_1 = fetch_financial_statements_in_market('tse', year, quarter, statement)
         wait(2, 5)
-        reports_2 = download_financial_statements('otc', year, quarter, statement)
+        reports_2 = fetch_financial_statements_in_market('otc', year, quarter, statement)
 
         # just for debug
         # reports_1.to_csv(f'{output_dir}/~{statement}_reports_tse_{year}Q{quarter}.csv', index = False)
@@ -857,10 +848,10 @@ def get_quarterly_reports (year, quarter, statement):
 
     return reports
 
-# Get data the last quarterly reports and save to file
+# Download the last quarterly reports
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
-# without return the data.
+# This will download data and save to
+# 'revenues_{YYYYMM}.csv' without return the data.
 #
 # param
 #   statement  - financial statement
@@ -869,7 +860,7 @@ def get_quarterly_reports (year, quarter, statement):
 #                'cash':    Cash Flow Statement 現金流量表
 #                'ratio':   Financial ratio 財務比率
 #   output_dir - directory where the CSV file will be saved
-def fetch_last_quarterly_reports (statement, output_dir = '.'):
+def download_last_quarterly_reports (statement, output_dir = '.'):
     print('Fetching...')
 
     # last year, quarter
@@ -881,18 +872,18 @@ def fetch_last_quarterly_reports (statement, output_dir = '.'):
     # destination file
     path_name = f'{output_dir}/{statement}_reports_{year}Q{quarter}.csv'
 
-    # get reports
-    reports = get_quarterly_reports(year, quarter, statement)
+    # fetch reports from remote
+    reports = fetch_quarterly_reports(year, quarter, statement)
 
     # save data to file
     reports.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
     print(f'Write to \'{path_name}\' successfully')
 
-# Get the quarterly reports starting from a specific date and save to file
+# Download the quarterly reports starting from a specific date
 #
-# This will try to get data from remote and save to local file '{statement}_reports_{YYYY}Q{Q}.csv'
-# without return the data.
+# This will check local file first or download data and save to
+# '{statement}_reports_{YYYY}Q{Q}.csv' without return the data.
 #
 # param
 #   statement  - financial statement
@@ -903,7 +894,7 @@ def fetch_last_quarterly_reports (statement, output_dir = '.'):
 #   refetch    - whether to force refetch even if a local file exists
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
-def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013-01-01', output_dir = '.'):
+def download_hist_quarterly_reports (statement, refetch = False, start_date = '2013-01-01', output_dir = '.'):
     print('Fetching...')
 
     # start year, quarter
@@ -938,13 +929,14 @@ def fetch_hist_quarterly_reports (statement, refetch = False, start_date = '2013
             log(f'[{year}Q{quarter}]\n')
 
             try:
-                # get reports
-                reports = get_quarterly_reports(year, quarter, statement)
+                # fetch reports from remote
+                reports = fetch_quarterly_reports(year, quarter, statement)
 
                 # save data to file
                 reports.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
                 downloaded += 1
+
             except:
                 pass
 
@@ -976,22 +968,22 @@ def test ():
         logger_start(log_name = '_quarterly', log_dir = output_dir, add_start_time_to_name = False)
 
         # test 1
-        fetch_last_quarterly_reports('income', output_dir = output_dir)
+        download_last_quarterly_reports('income', output_dir = output_dir)
         wait(2, 10)
-        fetch_last_quarterly_reports('balance', output_dir = output_dir)
+        download_last_quarterly_reports('balance', output_dir = output_dir)
         wait(2, 10)
-        fetch_last_quarterly_reports('cash', output_dir = output_dir)
+        download_last_quarterly_reports('cash', output_dir = output_dir)
         wait(2, 10)
-        fetch_last_quarterly_reports('ratio', output_dir = output_dir)
+        download_last_quarterly_reports('ratio', output_dir = output_dir)
 
         # test 2
-        # fetch_hist_quarterly_reports('income', start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_quarterly_reports('income', start_date = '2013-01-01', output_dir = output_dir)
         # log('\n')
-        # fetch_hist_quarterly_reports('balance', start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_quarterly_reports('balance', start_date = '2013-01-01', output_dir = output_dir)
         # log('\n')
-        # fetch_hist_quarterly_reports('cash', start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_quarterly_reports('cash', start_date = '2013-01-01', output_dir = output_dir)
         # log('\n')
-        # fetch_hist_quarterly_reports('ratio', start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_quarterly_reports('ratio', start_date = '2013-01-01', output_dir = output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')

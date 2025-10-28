@@ -23,7 +23,7 @@ from utils.ansiColors import Colors, use_color
 # 首頁 > 彙總報表 > 營運概況 > 每月營收 > 每月營收
 # https://mops.twse.com.tw/mops/#/web/t21sc04_ifrs
 
-# Download the monthly revenue of listed companies for a specific month
+# Fetch the monthly revenue of listed companies for a specific market and month
 #
 # param
 #   market - 'tse': Taiwan Stock Exchange
@@ -35,7 +35,7 @@ from utils.ansiColors import Colors, use_color
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def download_monthly_revenues (market, year, month):
+def fetch_monthly_revenues_in_market (market, year, month):
     log(f'Downloading {market} {year}-{month:02} revenues...\n')
 
     if market == 'tse':
@@ -180,20 +180,7 @@ def get_last_revenue_year_month ():
 
     return year, month
 
-'''
-# Get the last monthly revenues for a specific market
-#
-# param
-#   ...
-#
-# return the result in pandas.DataFrame, YYYYMM pair
-def get_last_monthly_revenues (market):
-    year, month = get_last_revenue_year_month()
-
-    return download_monthly_revenues(market, year, month), f'{year}{month:02}'
-'''
-
-# Get the monthly revenues for a specific month
+# Fetch the monthly revenues for a specific month
 #
 # param
 #   year  - A.D. year
@@ -202,11 +189,11 @@ def get_last_monthly_revenues (market):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_monthly_revenues (year, month):
+def fetch_monthly_revenues (year, month):
     try:
-        revenues_1 = download_monthly_revenues('tse', year, month)
+        revenues_1 = fetch_monthly_revenues_in_market('tse', year, month)
         wait(2, 5)
-        revenues_2 = download_monthly_revenues('otc', year, month)
+        revenues_2 = fetch_monthly_revenues_in_market('otc', year, month)
 
         # just for debug
         # revenues_1.to_csv(f'{output_dir}/~revenues_tse_{year}{month:02}.csv', index = False)
@@ -230,14 +217,14 @@ def get_monthly_revenues (year, month):
 
     return revenues
 
-# Get the last monthly revenues and save to file
+# Download the last monthly revenues
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
-# without return the data.
+# This will download data and save to
+# 'revenues_{YYYYMM}.csv' without return the data.
 #
 # param
 #   output_dir - directory where the CSV file will be saved
-def fetch_last_monthly_revenues (output_dir = '.'):
+def download_last_monthly_revenues (output_dir = '.'):
     print('Fetching...')
 
     # last year, month
@@ -249,24 +236,24 @@ def fetch_last_monthly_revenues (output_dir = '.'):
     # destination file
     path_name = f'{output_dir}/revenues_{year}{month:02}.csv'
 
-    # get revenues
-    revenues = get_monthly_revenues(year, month)
+    # fetch revenues from remote
+    revenues = fetch_monthly_revenues(year, month)
 
     # save data to file
     revenues.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
     print(f'Write to \'{path_name}\' successfully')
 
-# Get the monthly revenues starting from a specific date and save to file
+# Download the monthly revenues starting from a specific date
 #
-# This will try to get data from remote and save to local file 'revenues_{YYYYMM}.csv'
-# without return the data.
+# This will check local file first or download data and save to
+# 'revenues_{YYYYMM}.csv' without return the data.
 #
 # param
 #   refetch    - whether to force refetch even if a local file exists
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
-def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', output_dir = '.'):
+def download_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', output_dir = '.'):
     print('Fetching...')
 
     # start year, month
@@ -299,13 +286,14 @@ def fetch_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', out
             log(f'[{year}-{month:02}]\n')
 
             try:
-                # get revenues
-                revenues = get_monthly_revenues(year, month)
+                # fetch revenues from remote
+                revenues = fetch_monthly_revenues(year, month)
 
                 # save data to file
                 revenues.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
 
                 downloaded += 1
+
             except:
                 pass
 
@@ -337,10 +325,10 @@ def test ():
         logger_start(log_name = '_monthly', log_dir = output_dir, add_start_time_to_name = False)
 
         # test 1
-        fetch_last_monthly_revenues(output_dir = output_dir)
+        download_last_monthly_revenues(output_dir = output_dir)
 
         # test 2
-        # fetch_hist_monthly_revenues(start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_monthly_revenues(start_date = '2013-01-01', output_dir = output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')

@@ -526,7 +526,6 @@ class StockDatabase:
                 return
 
             df.sort_values(by = ['code', 'year', 'month'], inplace = True)
-
             # calculate derived fields
             df['revenue_last_year'] = df.groupby('code')['revenue'].transform(lambda x: x.shift(12))
             df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()

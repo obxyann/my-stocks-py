@@ -16,7 +16,7 @@ sys.path.append('..')
 from utils.ass import file_is_old
 from utils.ansiColors import Colors, use_color
 
-# Download the stock list for a specific market
+# Fetch the stock list for a specific market
 #
 # param
 #   market            - 'tse': Taiwan Stock Exchange,
@@ -31,7 +31,7 @@ from utils.ansiColors import Colors, use_color
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def download_stock_list_in_market (market,
+def fetch_stock_list_in_market (market,
         include_warrant = False,
         include_preferred = False,
         include_etn = False,
@@ -181,7 +181,7 @@ def download_stock_list_in_market (market,
 
         use_color(Colors.WARNING)
         if re.match(r'[A-Z]{6}', cfi):
-            print(f'Warning: No mapping rule for \'{cfi}\' - value set to \'-\'')
+            print(f'  Warning: No mapping rule for \'{cfi}\' - value set to \'-\'')
         # else:
         #   this cfi should be from label rows likes
         #   [股票,股票,...,股票], [上市認購(售)權證,上市認購(售)權證,...,上市認購(售)權證], ...
@@ -247,7 +247,7 @@ def download_stock_list_in_market (market,
     # just for debug
     # print(df)
 
-    print(f'  Total {len(df)} records')
+    print(f'  {len(df)} records')
 
     # return only the columns needed and correct the order
     return df[['Code', 'Name', 'Market', 'Industry', 'Type']]
@@ -255,15 +255,15 @@ def download_stock_list_in_market (market,
     # TODO: add an option to return as a compact list
     # return df[['Code', 'Name', 'Market']]
 
-# Download the stock list (across all markets)
+# Fetch the stock list
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def download_stock_list ():
+def fetch_stock_list ():
     try:
-        list_1 = download_stock_list_in_market('tse')
-        list_2 = download_stock_list_in_market('otc')
+        list_1 = fetch_stock_list_in_market('tse')
+        list_2 = fetch_stock_list_in_market('otc')
         '''
         return DataFrame is like
         ------------------------
@@ -289,38 +289,73 @@ def download_stock_list ():
 
         raise Exception('Failed to get stock list')
 
-    print(f'  Total {len(result)} records')
+    print(f'Total {len(result)} records')
 
     return result
 
+# Download the stock list
+#
+# This will check local file first or download data and save to
+# 'stock_list.csv' without return the data.
+#
+# param
+#   refetch    - whether to force refetch even if a local file exists
+#   output_dir - directory where the CSV file will be saved
+def download_stock_list (refetch = False, output_dir = '.'):
+    print('Fetching...')
+
+    # make an output directory
+    os.makedirs(output_dir, exist_ok = True)
+
+    # destination file
+    path_name = f'{output_dir}/stock_list.csv'
+
+    ''' TODO: check_old
+    if check_old and (file_is_old(path_name, hour = 14, minute = 35) or
+       file_is_old(path_name, hour = 16, minute = 35) or
+       file_is_old(path_name, hour = 18, minute = 35)):
+        print(f'Stock list not exists or old\n')
+        old = True
+    else:
+        old = False
+    '''
+
+    # check local
+    if not refetch and os.path.isfile(path_name) and os.path.getsize(path_name):
+        print(f'Stock list already exists')
+    else:
+      try:
+        # fetch list from remote
+        stock_list = fetch_stock_list()
+
+        # save data to file
+        stock_list.to_csv(path_name, index = False)
+
+        print(f'Write to \'{path_name}\' successfully')
+      except:
+        pass
+
+    # print('Done')
+
 # Get the stock list
 #
-# This will try to read from local file 'stock_list.csv' first. If the file is missing or old
-# then calls download_stock_list.
+# This will read data from local file 'stock_list.csv'.
+#
+# param
+#   data_dir - directory containing the downloaded file
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_stock_list (refetch = False, data_dir = '.'):
+def get_stock_list (data_dir = '.'):
     path_name = f'{data_dir}/stock_list.csv'
 
+    # check local
+    if not os.path.isfile(path_name) or not os.path.getsize(path_name):
+        raise Exception(f'Data file \'{path_name}\' not exists')
+
     try:
-        if (refetch or
-            file_is_old(path_name, hour = 14, minute = 35) or
-            file_is_old(path_name, hour = 16, minute = 35) or
-            file_is_old(path_name, hour = 18, minute = 35)):
-
-            stock_list = download_stock_list()
-
-            # make an output directory
-            os.makedirs(data_dir, exist_ok = True)
-
-            # save data to file
-            stock_list.to_csv(path_name, index = False)
-
-            print(f'  Write to \'{path_name}\' successfully')
-        else:
-            stock_list = pd.read_csv(path_name, index_col = False)
+        stock_list = pd.read_csv(path_name, index_col = False)
 
     except Exception as error:
         raise Exception(error)
@@ -334,11 +369,12 @@ def test ():
         start_time = datetime.now()
 
         # test 1
-        df = get_stock_list(data_dir = output_dir)
+        # download_stock_list(output_dir = output_dir)
 
         # test 2
-        # df = get_stock_list(refetch = True, data_dir = output_dir)
+        download_stock_list(refetch = True, output_dir = output_dir)
 
+        df = get_stock_list(data_dir = output_dir)
         print('--')
         print(df)
         print('--')

@@ -16,7 +16,7 @@ from utils.ass import get_last_market_close_day, get_date_from_path_name, parse_
 from utils.logger import log, logger_start, logger_end
 from utils.ansiColors import Colors, use_color
 
-# Download the (latest) daily prices in TWSE (Taiwan Stock Exchange)
+# Download the (latest) daily prices file in TWSE (Taiwan Stock Exchange)
 #
 # param
 #   output_dir - directory where the CSV file will be saved
@@ -24,7 +24,7 @@ from utils.ansiColors import Colors, use_color
 # return the full path of the saved file 'STOCK_DAY_ALL_{YYYYMMDD}.csv'
 #
 # raise an exception on failure
-def download_twse_daily_prices (output_dir = '.'):
+def download_daily_prices_in_twse (output_dir = '.'):
     log('Downloading TWSE daily prices...\n')
 
     # get the last daily trading prices
@@ -92,20 +92,20 @@ def download_twse_daily_prices (output_dir = '.'):
 
     return f'{output_dir}/{file_name}'
 
-# Download the (latest) daily prices in TPEx (Taipei Exchange)
+# Download the (latest) daily prices file in TPEx (Taipei Exchange)
 #
-# A temporary file `RSTA3104_{YYYMMDD}.csv.tmp` will be created during download
-# and removed after saving.
+# A temporary file 'RSTA3104_{YYYMMDD}.csv.tmp' is created during the process and is removed
+# upon successful completion.
 #
 # param
 #   output_dir      - directory where the CSV file will be saved
 #   include_warrant - whether to include Warrants (認購(售)權證)
 #
-# return the full path of the saved file 'RSTA3104_{YYYMMDD}.csv', where YYY is
-# Minguo year not A.D. year
+# return the full path of the saved file 'RSTA3104_{YYYMMDD}.csv', where YYY is Minguo year
+# not A.D. year
 #
 # raise an exception on failure
-def download_tpex_daily_prices (output_dir = '.', include_warrant = False):
+def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
     log('Downloading TPEx daily prices...\n')
 
     # get the last daily trading prices
@@ -233,27 +233,27 @@ def download_tpex_daily_prices (output_dir = '.', include_warrant = False):
 
     return f'{output_dir}/{file_name}'
 
-# Get the TWSE (latest) daily prices from the prices file
+# Read the TWSE (latest) daily prices from the prices file
 #
 # If the file does not exist, download it automatically.
 #
 # param
-#   data_dir        - directory containing the downloaded file
+#   data_dir        - directory containing or for the downloaded file
 #   remove_download - whether to delete the downloaded file after use
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_twse_daily_prices (data_dir = '.', remove_download = True):
+def read_twse_daily_prices (data_dir = '.', remove_download = True):
     # get date
-    last_date = get_last_market_close_day(close_hour = 13, close_minute = 50)   # or after 13:37
+    last_date = get_last_market_close_day(close_hour = 13, close_minute = 50) # or after 13:37
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
     path_name = f'{data_dir}/STOCK_DAY_ALL_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_twse_daily_prices(output_dir = data_dir)
+        path_name = download_daily_prices_in_twse(output_dir = data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -301,18 +301,18 @@ def get_twse_daily_prices (data_dir = '.', remove_download = True):
 
     return prices, file_date
 
-# Get the TPEx (latest) daily prices from the prices file
+# Read the TPEx (latest) daily prices from the prices file
 #
 # If the file does not exist, download it automatically.
 #
 # param
-#   data_dir        - directory containing the downloaded file
+#   data_dir        - directory containing or for the downloaded file
 #   remove_download - whether to delete the downloaded file after use
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_tpex_daily_prices (data_dir = '.', remove_download = True):
+def read_tpex_daily_prices (data_dir = '.', remove_download = True):
     # get date
     last_date = get_last_market_close_day(close_hour = 14, close_minute = 55, min_guo_year = True)  # or after 14:51
 
@@ -321,7 +321,7 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_tpex_daily_prices(output_dir = data_dir)
+        path_name = download_daily_prices_in_tpex(output_dir = data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -369,24 +369,24 @@ def get_tpex_daily_prices (data_dir = '.', remove_download = True):
 
     return prices, file_date
 
-# Get the (latest) daily prices
+# Fetch the (latest) daily prices
 #
-# After the function returns, the files downloaded during the period will be removed.
+# After the function returns, the files downloaded during period will be removed.
 #
 # param
-#   data_dir - directory containing the downloaded files
+#   temp_dir - directory for the temp files
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_daily_prices (data_dir = '.'):
+def fetch_daily_prices (temp_dir = '.'):
     try:
-        prices_1, date_1 = get_twse_daily_prices(data_dir = data_dir, remove_download = True)
-        prices_2, date_2 = get_tpex_daily_prices(data_dir = data_dir, remove_download = True)
+        prices_1, date_1 = read_twse_daily_prices(data_dir = temp_dir)
+        prices_2, date_2 = read_tpex_daily_prices(data_dir = temp_dir)
 
         # just for debug
-        # prices_1.to_csv(f'{output_dir}/~prices_tse_{date_1}.csv', index = False)
-        # prices_2.to_csv(f'{output_dir}/~prices_otc_{date_2}.csv', index = False)
+        # prices_1.to_csv(f'{temp_dir}/~prices_tse_{date_1}.csv', index = False)
+        # prices_2.to_csv(f'{temp_dir}/~prices_otc_{date_2}.csv', index = False)
 
         if date_1 == date_2:
             print('Concatenating data...')
@@ -417,21 +417,21 @@ def get_daily_prices (data_dir = '.'):
 
     return prices, date_1
 
-# Get the last daily prices and save to file
+# Download the last daily prices
 #
-# This will try to get data from remote and save to local file 'prices_{YYYYMMDD}.csv'
-# without return the data.
+# This will try to get data from remote and save to 
+# 'prices_{YYYYMMDD}.csv' without return the data.
 #
 # param
 #   output_dir - directory where the CSV file will be saved
-def fetch_last_daily_prices (output_dir = '.'):
+def download_last_daily_prices (output_dir = '.'):
     print('Fetching...')
 
     # make an output directory
     os.makedirs(output_dir, exist_ok = True)
 
-    # get prices
-    prices, this_date = get_daily_prices() # data_dir = output_dir)
+    # fetch prices from remote
+    prices, this_date = fetch_daily_prices() # data_dir = output_dir)
 
     # destination file
     path_name = f'{output_dir}/prices_{this_date}.csv'
@@ -475,7 +475,7 @@ def test ():
 
         logger_start(log_name = '_daily', log_dir = output_dir, add_start_time_to_name = False)
 
-        fetch_last_daily_prices(output_dir = output_dir)
+        download_last_daily_prices(output_dir = output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')
