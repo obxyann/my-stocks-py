@@ -6,7 +6,7 @@
   "terminal.integrated.profiles.windows": {
     "PowerShell": {
       "source": "PowerShell",
-      "args": ["-NoExit", "-Command", "C:\\Python\\Virtual_Env\\yFinance\\Scripts\\activate.ps1"]
+      "args": ["-NoExit", "-Command", "C:\\Python\\Virtual_Env\\OpenData\\Scripts\\activate.ps1"]
     }
   },
   "terminal.integrated.defaultProfile.windows": "PowerShell",
