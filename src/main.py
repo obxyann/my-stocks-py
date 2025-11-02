@@ -39,6 +39,11 @@ def test_database (db):
     print(f'  max month: {info['monthly_revenue']['max_year_month']}')
     print(f'Last updated: {info['monthly_revenue']['last_updated']}')
 
+    print(f'\nTotal daily prices: {info['daily_prices']['total_count']}')
+    print(f'  min date: {info['daily_prices']['min_trade_date']}')
+    print(f'  max date: {info['daily_prices']['max_trade_date']}')
+    print(f'Last updated: {info['daily_prices']['last_updated']}')
+
 def test_stock_list (db):
     """Test various database operations"""
     try:
@@ -87,6 +92,25 @@ def test_monthly_revenue(db):
         print(f'Database operations failed: {error}')
         raise
 
+def test_daily_prices(db):
+    """Test function for daily prices data"""
+    try:
+        # Test retrieving data
+        print('• Retrieving daily prices for stock 2330 in 2025 ...')
+
+        df = db.get_prices_by_code('2330', '2025-01-01', '2025-12-31')
+
+        if not df.empty:
+            print(df.head(3))
+            print('...')
+            print(df.tail(3))
+        else:
+            print('No data found for stock 2330')
+
+    except Exception as error:
+        print(f'Database operations failed: {error}')
+        raise
+
 def test ():
     """Main test function"""
     try:
@@ -115,6 +139,10 @@ def test ():
         # Test 3: Monthly revenue
         print('\n=== Testing monthly revenue table ===')
         test_monthly_revenue(db)
+
+        # Test 4: Daily prices
+        print('\n=== Testing daily prices table ===')
+        test_daily_prices(db)
 
         print('\n=== All tests completed successfully! ===')
 

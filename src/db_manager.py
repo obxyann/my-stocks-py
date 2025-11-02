@@ -78,7 +78,7 @@ def download(refetch = False, output_dir = None):
     if output_dir is None:
         output_dir = 'storage'
     else:
-        output_dir = csv_dir.rstrip('/\\')
+        output_dir = output_dir.rstrip('/\\')
 
     try:
         print(f'{action} stock list...')

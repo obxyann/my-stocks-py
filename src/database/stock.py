@@ -646,10 +646,26 @@ class StockDatabase:
             # 3. Get last update time from metadata
             monthly_revenue['last_updated'] = self.get_last_update_timestamp('monthly_revenue')
 
+            # for daily prices table
+            daily_prices = {}
+            # 1. Get total count
+            cursor.execute('SELECT COUNT(*) FROM daily_prices')
+            daily_prices['total_count'] = cursor.fetchone()[0]
+
+            # 2. Get min and max trade date
+            cursor.execute('SELECT MIN(trade_date), MAX(trade_date) FROM daily_prices')
+            min_max_result = cursor.fetchone()
+            daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None
+            daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
+            
+            # 3. Get last update time from metadata
+            daily_prices['last_updated'] = self.get_last_update_timestamp('daily_prices')
+
         return {
             'database_path': self.db_path,
             'tables': tables,
 
             'stock_list': stock_list,
-            'monthly_revenue': monthly_revenue
+            'monthly_revenue': monthly_revenue,
+            'daily_prices': daily_prices
         }
