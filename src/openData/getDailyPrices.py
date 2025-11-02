@@ -15,6 +15,7 @@ sys.path.append('..')
 from utils.ass import get_last_market_close_day, get_date_from_path_name, parse_date_string
 from utils.logger import log, logger_start, logger_end
 from utils.ansiColors import Colors, use_color
+from utils.getTradingHoliday import isTradingHoliday
 
 # Download the (latest) daily prices file in TWSE (Taiwan Stock Exchange)
 #
@@ -453,10 +454,13 @@ def check_last_daily_prices_exist (data_dir = '.'):
     year, month, day = last_close.year, last_close.month, last_close.day
 
     if today != last_close:
-       use_color(Colors.WARNING)
-       print(f'Warning: This is not a trading day or market not closed')
-       print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')
-       use_color(Colors.RESET)
+        use_color(Colors.WARNING)
+        if isTradingHoliday(today):
+            print(f'Warning: This is not a trading day')
+        else:
+            print(f'Warning: The market is not closed today')
+        print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')
+        use_color(Colors.RESET)
 
     # local file
     path_name = f'{data_dir}/prices_{year}{month:02}{day:02}.csv'
