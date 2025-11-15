@@ -107,6 +107,17 @@ def test_daily_prices(db):
         else:
             print('No data found for stock 2330')
 
+        print('• Retrieving daily prices for stock 0050 in 2020 Jan...')
+
+        df = db.get_prices_by_code('0050', '2020-01-01', '2020-01-31')
+
+        if not df.empty:
+            print(df.head(3))
+            print('...')
+            print(df.tail(3))
+        else:
+            print('No data found for stock 0050')
+
     except Exception as error:
         print(f'Database operations failed: {error}')
         raise

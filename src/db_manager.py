@@ -36,6 +36,17 @@ def import_csv_to_db(csv_dir = None, db_path = None):
             count = db.import_stock_list_csv_to_database(csv_path)
             print(f'Successfully imported {count} records from stock_list.csv')
 
+        # import {XXXX}_prices.csv
+        print('\nImporting OHLC prices from CSV to database...')
+
+        csv_folder = os.path.join(csv_dir, 'ohlc')
+
+        if not os.path.isdir(csv_folder):
+            print(f'Folder not found: {csv_folder}')
+        else:
+            count = db.import_ohlc_prices_csv_to_database(csv_folder)
+            print(f'Successfully imported {count} records from ohlc/XXXX_prices.csv')
+
         # import prices_{YYYYMMDD}.csv
         print('\nImporting daily prices from CSV to database...')
 

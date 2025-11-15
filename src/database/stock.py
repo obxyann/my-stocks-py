@@ -300,7 +300,7 @@ class StockDatabase:
         Returns:
             pandas.DataFrame: Daily prices data
         """
-        # If end_date is not provided, use today's date
+        # if end_date is not provided, use today's date
         if not end_date:
             end_date = datetime.today().strftime('%Y-%m-%d')
 
@@ -331,7 +331,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = 0  # for tracking the latest modification time of all files
+        last_mod_time = 0 # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -351,7 +351,7 @@ class StockDatabase:
                 # read CSV file
                 df = pd.read_csv(csv_path)
 
-                # Drop unnecessary columns
+                # drop unnecessary columns
                 if 'Name' in df.columns:
                     df = df.drop('Name', axis=1)
                 if 'Value' in df.columns:
@@ -359,7 +359,7 @@ class StockDatabase:
                 if 'Market' in df.columns:
                     df = df.drop('Market', axis=1)
 
-                # Add trade_date column
+                # add trade_date column
                 df['trade_date'] = trade_date
 
                 # rename columns to match the database schema
@@ -385,12 +385,98 @@ class StockDatabase:
                         INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        row['code'], 
-                        row['trade_date'], 
-                        row['open_price'], 
-                        row['high_price'], 
-                        row['low_price'], 
-                        row['close_price'], 
+                        row['code'],
+                        row['trade_date'],
+                        row['open_price'],
+                        row['high_price'],
+                        row['low_price'],
+                        row['close_price'],
+                        row['volume']
+                    ))
+
+                total_imported_records += len(df)
+
+                mod_time = modification_time(csv_path)
+                # update last_mod_time if this file is newer
+                if (mod_time > last_mod_time):
+                    last_mod_time = mod_time
+
+            conn.commit()
+
+        # update timestamp in metadata
+        if last_mod_time:
+            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+            self.update_table_timestamp('daily_prices', timestamp)
+
+        return total_imported_records
+
+    def import_ohlc_prices_csv_to_database(self, csv_folder = 'storage/ohlc'):
+        """Import OHLC prices from CSV files to database
+
+        Args:
+            csv_folder (str): Path to the folder containing CSV files
+
+        Returns:
+            int: Number of records imported
+        """
+        # create table if not exists
+        self.ensure_daily_prices_table()
+
+        if not os.path.isdir(csv_folder):
+            raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
+
+        total_imported_records = 0
+        last_mod_time = 0 # for tracking the latest modification time of all files
+
+        files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+        with self.get_connection() as conn:
+            for file in files:
+                match = re.match(r'^([A-Za-z0-9]+)_prices\.csv$', file)
+                if not match:
+                    continue
+
+                code = match.group(1)
+
+                csv_path = os.path.join(csv_folder, file)
+
+                print(f'Importing {csv_path}')
+
+                # read CSV file
+                df = pd.read_csv(csv_path)
+
+                # add code column
+                df['code'] = code
+
+                # rename columns to match the database schema
+                df.rename(columns = {
+                    'Date': 'trade_date',
+                    'Open': 'open_price',
+                    'High': 'high_price',
+                    'Low': 'low_price',
+                    'Close': 'close_price',
+                    'Volume': 'volume'
+                }, inplace = True)
+
+                # ensure 'trade_date' is in the correct string format
+                df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
+
+                # select and reorder columns for insertion
+                df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
+
+                # insert or update data
+                for _, row in df.iterrows():
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        row['code'],
+                        row['trade_date'],
+                        row['open_price'],
+                        row['high_price'],
+                        row['low_price'],
+                        row['close_price'],
                         row['volume']
                     ))
 
@@ -642,7 +728,7 @@ class StockDatabase:
             min_max_result = cursor.fetchone()
             monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None
             monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
-            
+
             # 3. Get last update time from metadata
             monthly_revenue['last_updated'] = self.get_last_update_timestamp('monthly_revenue')
 
@@ -657,7 +743,7 @@ class StockDatabase:
             min_max_result = cursor.fetchone()
             daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None
             daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
-            
+
             # 3. Get last update time from metadata
             daily_prices['last_updated'] = self.get_last_update_timestamp('daily_prices')
 
