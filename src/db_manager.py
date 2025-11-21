@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Database management utility for stock data
-"""
-
 import sys
 import os
 import argparse
