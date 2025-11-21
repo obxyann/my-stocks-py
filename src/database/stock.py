@@ -139,7 +139,23 @@ class StockDatabase:
         self.ensure_stock_list_table()
 
         if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found: {csv_path}")
+            raise FileNotFoundError(f'CSV file not found: {csv_path}')
+
+        # compare file modification time with database update time
+        csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+        csv_mod_time = csv_mod_time.replace(microsecond = 0)
+
+        last_updated = self.get_last_update_timestamp('stock_list')
+
+        if last_updated:
+            last_updated_time = datetime.fromisoformat(last_updated)
+
+            if csv_mod_time <= last_updated_time:
+                print(f'{csv_path} is old')
+
+                return 0
+
+        print(f'Importing {csv_path}')
 
         # read CSV file
         df = pd.read_csv(csv_path)
@@ -346,6 +362,20 @@ class StockDatabase:
 
                 csv_path = os.path.join(csv_folder, file)
 
+                # compare file modification time with database update time
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                csv_mod_time = csv_mod_time.replace(microsecond = 0)
+
+                last_updated = self.get_last_update_timestamp('daily_prices')
+
+                if last_updated:
+                    last_updated_time = datetime.fromisoformat(last_updated)
+
+                    if csv_mod_time <= last_updated_time:
+                        print(f'{csv_path} is old')
+
+                        continue
+
                 print(f'Importing {csv_path}')
 
                 # read CSV file
@@ -439,6 +469,20 @@ class StockDatabase:
                 code = match.group(1)
 
                 csv_path = os.path.join(csv_folder, file)
+
+                # compare file modification time with database update time
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                csv_mod_time = csv_mod_time.replace(microsecond = 0)
+
+                last_updated = self.get_last_update_timestamp('daily_prices')
+
+                if last_updated:
+                    last_updated_time = datetime.fromisoformat(last_updated)
+
+                    if csv_mod_time <= last_updated_time:
+                        print(f'{csv_path} is old')
+
+                        continue
 
                 print(f'Importing {csv_path}')
 
@@ -557,6 +601,20 @@ class StockDatabase:
                 year, month = int(match.group(1)), int(match.group(2))
 
                 csv_path = os.path.join(csv_folder, file)
+
+                # compare file modification time with database update time
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                csv_mod_time = csv_mod_time.replace(microsecond = 0)
+
+                last_updated = self.get_last_update_timestamp('monthly_revenue')
+
+                if last_updated:
+                    last_updated_time = datetime.fromisoformat(last_updated)
+
+                    if csv_mod_time <= last_updated_time:
+                        print(f'{csv_path} is old')
+
+                        continue
 
                 print(f'Importing {csv_path}')
 

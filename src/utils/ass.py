@@ -107,6 +107,11 @@ def parse_date_string (date_str):
 # file time #
 #############
 
+# Get the creation time of path
+#
+# return a (floating-point) number of seconds since the epoch
+#
+# raise os.error if the file does not exist or is inaccessible
 def creation_time (path_name):
     '''
     Try to get the date that a file was created, falling back to when it was
@@ -130,6 +135,11 @@ def creation_time (path_name):
             # so we'll settle for when its content was last modified
             return stat.st_mtime
 
+# Get the modification time of path
+#
+# return a (floating-point) number of seconds since the epoch
+#
+# raise os.error if the file does not exist or is inaccessible
 def modification_time (path_name):
     return os.path.getmtime(path_name)
 
