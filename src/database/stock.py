@@ -143,7 +143,6 @@ class StockDatabase:
 
         # compare file modification time with database update time
         csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
-        csv_mod_time = csv_mod_time.replace(microsecond = 0)
 
         last_updated = self.get_last_update_timestamp('stock_list')
 
@@ -364,7 +363,6 @@ class StockDatabase:
 
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
-                csv_mod_time = csv_mod_time.replace(microsecond = 0)
 
                 last_updated = self.get_last_update_timestamp('daily_prices')
 
@@ -472,7 +470,6 @@ class StockDatabase:
 
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
-                csv_mod_time = csv_mod_time.replace(microsecond = 0)
 
                 last_updated = self.get_last_update_timestamp('daily_prices')
 
@@ -604,7 +601,6 @@ class StockDatabase:
 
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
-                csv_mod_time = csv_mod_time.replace(microsecond = 0)
 
                 last_updated = self.get_last_update_timestamp('monthly_revenue')
 
