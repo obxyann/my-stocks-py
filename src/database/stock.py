@@ -180,7 +180,7 @@ class StockDatabase:
             conn.commit()
 
             # update timestamp in metadata
-            timestamp = datetime.fromtimestamp(modification_time(csv_path)).strftime('%Y-%m-%d %H:%M:%S')
+            timestamp = csv_mod_time.strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('stock_list', timestamp)
 
@@ -346,7 +346,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = 0 # for tracking the latest modification time of all files
+        last_mod_ts = 0 # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -362,7 +362,8 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                mod_ts = modification_time(csv_path)
+                csv_mod_time = datetime.fromtimestamp(mod_ts)
 
                 last_updated = self.get_last_update_timestamp('daily_prices')
 
@@ -424,16 +425,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                mod_time = modification_time(csv_path)
-                # update last_mod_time if this file is newer
-                if (mod_time > last_mod_time):
-                    last_mod_time = mod_time
+                # update last_mod_ts if this file is newer
+                if (mod_ts > last_mod_ts):
+                    last_mod_ts = mod_ts
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_time:
-            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_ts:
+            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
             self.update_table_timestamp('daily_prices', timestamp)
 
         return total_imported_records
@@ -454,7 +454,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = 0 # for tracking the latest modification time of all files
+        last_mod_ts = 0 # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -469,7 +469,8 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                mod_ts = modification_time(csv_path)
+                csv_mod_time = datetime.fromtimestamp(mod_ts)
 
                 last_updated = self.get_last_update_timestamp('daily_prices')
 
@@ -523,16 +524,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                mod_time = modification_time(csv_path)
-                # update last_mod_time if this file is newer
-                if (mod_time > last_mod_time):
-                    last_mod_time = mod_time
+                # update last_mod_ts if this file is newer
+                if (mod_ts > last_mod_ts):
+                    last_mod_ts = mod_ts
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_time:
-            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_ts:
+            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
             self.update_table_timestamp('daily_prices', timestamp)
 
         return total_imported_records
@@ -585,7 +585,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = 0  # for tracking the latest modification time of all files
+        last_mod_ts = 0  # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -600,7 +600,8 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+                mod_ts = modification_time(csv_path)
+                csv_mod_time = datetime.fromtimestamp(mod_ts)
 
                 last_updated = self.get_last_update_timestamp('monthly_revenue')
 
@@ -639,16 +640,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                mod_time = modification_time(csv_path)
-                # update last_mod_time if this file is newer
-                if (mod_time > last_mod_time):
-                    last_mod_time = mod_time
+                # update last_mod_ts if this file is newer
+                if (mod_ts > last_mod_ts):
+                    last_mod_ts = mod_ts
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_time:
-            timestamp = datetime.fromtimestamp(last_mod_time).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_ts:
+            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('monthly_revenue', timestamp)
 
