@@ -5,7 +5,16 @@ import re
 import platform
 import os
 
-# return date string in 'YYYMMDD' or 'YYYY[separator]MM[separator]DD'
+# Get the date srting of the last market close day
+#
+# param
+#   close_hour   - the closing hour of HH:MM of the market
+#                  as the dividing time for whether the market closed today
+#   close_minute - the closing minute of HH:MM of the market
+#   min_guo_year - whether to use the MinGuo calendar
+#   separator    - whether to use '-' separator
+#
+# return date string in 'YYYYMMDD' or 'YYYY[separator]MM[separator]DD'
 def get_last_market_close_day (close_hour = 15, close_minute = 0, min_guo_year = False, separator = None):
     # current time
     curr_time = datetime.now()
@@ -44,10 +53,10 @@ def get_last_market_close_day (close_hour = 15, close_minute = 0, min_guo_year =
 
     return f'{year}{separator}{market_close.month:02}{separator}{market_close.day:02}'
 
-# Get date part '20241108' from path\any_text_20241108.ext
-#                            or path\any_text_1131108.ext
+# Get the date part '20241108' from path name like 'path\any_text_20241108.ext'
+# or using MinGuo calendar like 'path\any_text_1131108.ext'
 #
-# return date string in 'YYYYMMDD'
+# return date string in 'YYYYMMDD' (always in CE year)
 #        or empty string if failed
 def get_date_from_path_name (path_name):
     # case 1: path\STOCK_DAY_ALL_20241108.csv
@@ -109,17 +118,19 @@ def parse_date_string (date_str):
 
 # Get the creation time of path
 #
-# return a (floating-point) number of seconds since the epoch
+# return the seconds since the epoch (Unix epoch time)
 #
 # raise os.error if the file does not exist or is inaccessible
-def creation_time (path_name):
+def creation_time (path_name, as_integer = True):
     '''
     Try to get the date that a file was created, falling back to when it was
     last modified if that isn't possible.
     See http://stackoverflow.com/a/39501288/1709587 for explanation
     '''
+    result = None
+
     if platform.system() == 'Windows':
-        return os.path.getctime(path_name)
+        result = os.path.getctime(path_name)
         '''
         Note: A file's ctime on Windows is slightly different than on Linux
               Windows users know theirs as 'creation time'
@@ -128,20 +139,23 @@ def creation_time (path_name):
     else:
         stat = os.stat(path_name)
         try:
-            return stat.st_birthtime
-
+            result = stat.st_birthtime
         except AttributeError:
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified
-            return stat.st_mtime
+            result = stat.st_mtime
+    
+    return int(result) # NOTE: truncate the decimal part (microseconds)
 
 # Get the modification time of path
 #
-# return a (floating-point) number of seconds since the epoch
+# return the seconds since the epoch (Unix epoch time)
 #
 # raise os.error if the file does not exist or is inaccessible
-def modification_time (path_name):
-    return os.path.getmtime(path_name)
+def modification_time (path_name, as_integer = True):
+    result = os.path.getmtime(path_name)
+
+    return int(result) # NOTE: truncate the decimal part (microseconds)
 
 def file_is_old (path_name, hour = 0, minute = 0, second = 0, quiet = True):
     if not os.path.isfile(path_name):
