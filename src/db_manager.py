@@ -69,6 +69,22 @@ def import_csv_to_db(csv_dir = None, db_path = None):
                 db.update_monthly_revenue_calculations()
                 print('Successfully')
 
+        # import income_reports_{YYYY}Q{Q}.csv
+        print('\nImporting quarterly income reports from CSV to database...')
+
+        csv_folder = os.path.join(csv_dir, 'quarterly')
+
+        if not os.path.isdir(csv_folder):
+            print(f'Folder not found: {csv_folder}')
+        else:
+            count = db.import_income_reports_csv_to_database(csv_folder)
+            print(f'Successfully imported {count} records from quarterly/income_reports_YYYYQN.csv')
+
+            if count:
+                print('\nCalcatuting and updating quarterly income reports in database...\n(long time)')
+                db.update_monthly_revenue_calculations()
+                print('Successfully')
+
         return True
 
     except Exception as e:
