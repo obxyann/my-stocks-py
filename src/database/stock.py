@@ -24,6 +24,7 @@ class StockDatabase:
         self.stock_list_table_initialized = False
         self.daily_prices_table_initialized = False
         self.monthly_revenue_table_initialized = False
+        self.financial_core_table_initialized = False
 
         ensure_directory_exists(db_path)
 
@@ -84,14 +85,6 @@ class StockDatabase:
             conn.commit()
 
     def get_last_update_timestamp(self, table_name):
-        """Get last update timestamp for specific table
-
-        Args:
-            table_name (str): Name of the table to query
-
-        Returns:
-            str: Last updated timestamp in 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
-                 or None if not found
         """
         with self.get_connection() as conn:
             df = pd.read_sql_query('''
@@ -101,6 +94,15 @@ class StockDatabase:
             ''', conn, params = (table_name,))
 
         return df['last_updated'][0] if not df.empty else None
+        """
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT last_updated
+                FROM metadata
+                WHERE table_name = ?
+            ''', (table_name,)).fetchone()
+
+        return row[0] if row else None
 
     ####################
     # Stock List table #
@@ -350,6 +352,8 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
+        last_updated = self.get_last_update_timestamp('daily_prices')
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.search(r'prices_(\d{4})(\d{2})(\d{2})\.csv', file)
@@ -364,8 +368,6 @@ class StockDatabase:
                 # compare file modification time with database update time
                 mod_ts = modification_time(csv_path)
                 csv_mod_time = datetime.fromtimestamp(mod_ts)
-
-                last_updated = self.get_last_update_timestamp('daily_prices')
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -434,6 +436,7 @@ class StockDatabase:
         # update timestamp in metadata
         if last_mod_ts:
             timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+
             self.update_table_timestamp('daily_prices', timestamp)
 
         return total_imported_records
@@ -458,6 +461,8 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
+        last_updated = self.get_last_update_timestamp('daily_prices')
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.match(r'^([A-Za-z0-9]+)_prices\.csv$', file)
@@ -471,8 +476,6 @@ class StockDatabase:
                 # compare file modification time with database update time
                 mod_ts = modification_time(csv_path)
                 csv_mod_time = datetime.fromtimestamp(mod_ts)
-
-                last_updated = self.get_last_update_timestamp('daily_prices')
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -533,6 +536,7 @@ class StockDatabase:
         # update timestamp in metadata
         if last_mod_ts:
             timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+
             self.update_table_timestamp('daily_prices', timestamp)
 
         return total_imported_records
@@ -589,6 +593,8 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
+        last_updated = self.get_last_update_timestamp('monthly_revenue')
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.search(r'revenues_(\d{4})(\d{2})\.csv', file)
@@ -602,8 +608,6 @@ class StockDatabase:
                 # compare file modification time with database update time
                 mod_ts = modification_time(csv_path)
                 csv_mod_time = datetime.fromtimestamp(mod_ts)
-
-                last_updated = self.get_last_update_timestamp('monthly_revenue')
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -735,6 +739,216 @@ class StockDatabase:
             ''', conn, params = (stock_code, start_period, end_period))
 
         return df
+
+    ########################
+    # Financial Core table #
+    ########################
+
+    def ensure_financial_core_table(self):
+        """Create financial_core table if it doesn't exist"""
+        if self.financial_core_table_initialized:
+            return
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS financial_core (
+                    code TEXT NOT NULL,
+                    year INTEGER NOT NULL,
+                    quarter INTEGER NOT NULL,
+                    curr_assets INTEGER,
+                    non_curr_assets INTEGER,
+                    total_assets INTEGER,
+                    curr_liabs INTEGER,
+                    non_curr_liabs INTEGER,
+                    total_liabs INTEGER,
+                    total_equity INTEGER,
+                    book_value REAL,
+                    accts_receiv INTEGER,
+                    accts_notes_receiv INTEGER,
+                    inventory INTEGER,
+                    prepaid INTEGER,
+                    accts_pay INTEGER,
+                    accts_notes_pay INTEGER,
+                    st_loans INTEGER,
+                    lt_loans INTEGER,
+                    bonds_pay INTEGER,
+                    ret_earnings INTEGER,
+                    opr_revenue INTEGER,
+                    opr_costs INTEGER,
+                    gross_profit INTEGER,
+                    opr_expenses INTEGER,
+                    opr_profit INTEGER,
+                    non_opr_income INTEGER,
+                    pre_tax_income INTEGER,
+                    income_tax INTEGER,
+                    net_income INTEGER,
+                    eps REAL,
+                    opr_cash_flow INTEGER,
+                    inv_cash_flow INTEGER,
+                    fin_cash_flow INTEGER,
+                    cash_equiv INTEGER,
+                    divs_paid INTEGER,
+                    PRIMARY KEY (code, year, quarter),
+                    FOREIGN KEY (code) REFERENCES stock_list (code)
+                )
+            ''')
+            conn.commit()
+
+        self.financial_core_table_initialized = True
+
+    def import_income_reports_csv_to_database(self, csv_folder = 'storage/quarterly'):
+        """Import income reports from CSV files to database
+
+        Args:
+            csv_folder (str): Path to the folder containing CSV files
+
+        Returns:
+            int: Number of records imported
+        """
+        # create table if not exists
+        self.ensure_financial_core_table()
+
+        if not os.path.isdir(csv_folder):
+            raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
+
+        total_imported_records = 0
+        last_mod_ts = 0  # for tracking the latest modification time of all files
+
+        files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+ 
+        last_updated = self.get_last_update_timestamp('financial_core')
+
+        # define column mapping
+        col_mapping = {
+            '營業收入': 'opr_revenue',
+            '營業成本': 'opr_costs',
+            '營業毛利': 'gross_profit',
+            '營業費用': 'opr_expenses',
+            '營業利益': 'opr_profit',
+            '營業外收入及支出': 'non_opr_income',
+            '稅前淨利': 'pre_tax_income',
+            '所得稅費用': 'income_tax',
+            '本期淨利': 'net_income',
+            '每股盈餘': 'eps'
+        }
+
+        with self.get_connection() as conn:
+            for file in files:
+                match = re.search(r'income_reports_(\d{4})Q(\d)\.csv', file)
+                if not match:
+                    continue
+
+                year, quarter = int(match.group(1)), int(match.group(2))
+
+                csv_path = os.path.join(csv_folder, file)
+
+                # compare file modification time with database update time
+                mod_ts = modification_time(csv_path)
+                csv_mod_time = datetime.fromtimestamp(mod_ts)
+
+                if last_updated:
+                    last_updated_time = datetime.fromisoformat(last_updated)
+
+                    if csv_mod_time <= last_updated_time:
+                        print(f'{csv_path} is old')
+
+                        continue
+
+                print(f'Importing {csv_path}')
+
+                # read CSV file
+                try:
+                    df = pd.read_csv(csv_path)
+
+                except Exception as e:
+                    print(f"Error reading {csv_path}: {e}")
+
+                    continue
+
+                if 'Code' not in df.columns:
+                     print(f"Skipping {csv_path}: No 'Code' column found")
+
+                     continue
+
+                df.rename(columns = {'Code': 'code'}, inplace = True)
+
+                # remove rows with empty code
+                df.dropna(subset = 'code', inplace = True)
+
+                # convert 'code' to string to match the database schema
+                df['code'] = df['code'].astype(str)
+
+                # add new columns
+                df['year'] = year
+                df['quarter'] = quarter
+
+                # rename columns based on mapping
+                rename_dict = {}
+                keep_cols = ['code', 'year', 'quarter']
+
+                for csv_col, db_col in col_mapping.items():
+                    if csv_col in df.columns:
+                        rename_dict[csv_col] = db_col
+
+                        keep_cols.append(db_col)
+
+                df.rename(columns = rename_dict, inplace = True)
+
+                # keep only relevant columns
+                available_db_cols = [c for c in df.columns if c in keep_cols]
+
+                df = df[available_db_cols]
+
+                if df.empty:
+                    continue
+
+                # replace NaNs with None for SQLite compatibility
+                df = df.where(pd.notnull(df), None)
+
+                # insert or update data
+                # construct dynamic SQL
+                columns = ', '.join(available_db_cols)                
+                placeholders = ', '.join(['?'] * len(available_db_cols))
+
+                # update part: exclude code, year, quarter from SET clause
+                update_cols = [c for c in available_db_cols if c not in ('code', 'year', 'quarter')]
+
+                if not update_cols:
+                    sql = f'''
+                        INSERT OR IGNORE INTO financial_core ({columns})
+                        VALUES ({placeholders})
+                    '''
+                else:
+                    update_assignments = ', '.join([f"{col}=excluded.{col}" for col in update_cols])
+
+                    sql = f'''
+                        INSERT INTO financial_core ({columns})
+                        VALUES ({placeholders})
+                        ON CONFLICT(code, year, quarter) DO UPDATE SET
+                        {update_assignments}
+                    '''
+
+                data = df.values.tolist()
+
+                cursor = conn.cursor()
+                cursor.executemany(sql, data)
+
+                total_imported_records += len(df)
+
+                # update last_mod_ts if this file is newer
+                if (mod_ts > last_mod_ts):
+                    last_mod_ts = mod_ts
+
+            conn.commit()
+
+        # update timestamp in metadata
+        if last_mod_ts:
+            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+
+            self.update_table_timestamp('financial_core', timestamp)
+
+        return total_imported_records
 
     #################
     # Database info #
