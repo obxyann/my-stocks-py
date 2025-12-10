@@ -80,10 +80,10 @@ def import_csv_to_db(csv_dir = None, db_path = None):
             count = db.import_income_reports_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records from quarterly/income_reports_YYYYQN.csv')
 
-            if count:
-                print('\nCalcatuting and updating quarterly income reports in database...\n(long time)')
-                db.update_monthly_revenue_calculations()
-                print('Successfully')
+            # if count:
+            #     print('\nCalcatuting and updating quarterly income reports in database...\n(long time)')
+            #     db.update_monthly_revenue_calculations()
+            #     print('Successfully')
 
         return True
 

@@ -62,20 +62,23 @@ class StockDatabase:
 
         self.metadata_table_initialized = True
 
-    def update_table_timestamp(self, table_name, timestamp = None):
-        """Update last updated timestamp for specific table
+    def update_table_updated_time(self, table_name, updated_time = None):
+        """Update last updated time for specific table
 
         Creates metadata table if missing. Uses current time if no timestamp provided.
 
         Args:
             table_name (str): Name of the table to update
-            timestamp (str): Optional timestamp in 'YYYY-MM-DD HH:MM:SS' ISO-8601 format
+            updated_time (datetime): Optional time
         """
         # create table if not exists
         self.ensure_metadata_table()
 
-        if not timestamp:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # convert to ISO-8601 time string 'YYYY-MM-DD HH:MM:SS'
+        if not updated_time:
+            time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            time_str = updated_time.strftime("%Y-%m-%d %H:%M:%S")
 
         # update data to database
         with self.get_connection() as conn:
@@ -84,11 +87,11 @@ class StockDatabase:
             cursor.execute('''
                 INSERT OR REPLACE INTO metadata (table_name, last_updated)
                 VALUES (?, ?)
-            ''', (table_name, timestamp))
+            ''', (table_name, time_str))
 
             conn.commit()
 
-    def get_last_update_timestamp(self, table_name):
+    def get_table_updated_time(self, table_name):
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
@@ -100,7 +103,7 @@ class StockDatabase:
 
             result = cursor.fetchone()
 
-        return result[0] if result else None
+        return datetime.fromisoformat(result[0]) if result else None
 
     ####################
     # Stock List table #
@@ -146,15 +149,12 @@ class StockDatabase:
         # compare file modification time with database update time
         csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-        last_updated = self.get_last_update_timestamp('stock_list')
+        updated_time = self.get_table_updated_time('stock_list')
 
-        if last_updated:
-            last_updated_time = datetime.fromisoformat(last_updated)
+        if updated_time and csv_mod_time <= updated_time:
+            print(f'{csv_path} is old')
 
-            if csv_mod_time <= last_updated_time:
-                print(f'{csv_path} is old')
-
-                return 0
+            return 0
 
         print(f'Importing {csv_path}')
 
@@ -182,10 +182,8 @@ class StockDatabase:
 
             conn.commit()
 
-            # update timestamp in metadata
-            timestamp = csv_mod_time.strftime('%Y-%m-%d %H:%M:%S')
-
-            self.update_table_timestamp('stock_list', timestamp)
+            # update the table time in metadata
+            self.update_table_updated_time('stock_list', csv_mod_time)
 
         return len(df)
 
@@ -355,7 +353,7 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        last_updated = self.get_last_update_timestamp('daily_prices')
+        updated_time = self.get_table_updated_time('daily_prices')
 
         with self.get_connection() as conn:
             for file in files:
@@ -371,13 +369,10 @@ class StockDatabase:
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-                if last_updated:
-                    last_updated_time = datetime.fromisoformat(last_updated)
+                if updated_time and csv_mod_time <= updated_time:
+                    print(f'{csv_path} is old')
 
-                    if csv_mod_time <= last_updated_time:
-                        print(f'{csv_path} is old')
-
-                        continue
+                    continue
 
                 print(f'Importing {csv_path}')
 
@@ -436,11 +431,9 @@ class StockDatabase:
 
             conn.commit()
 
-        # update timestamp in metadata
+        # update the table time in metadata
         if last_mod_time:
-            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
-
-            self.update_table_timestamp('daily_prices', timestamp)
+            self.update_table_updated_time('daily_prices', last_mod_time)
 
         return total_imported_records
 
@@ -464,7 +457,7 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        last_updated = self.get_last_update_timestamp('daily_prices')
+        updated_time = self.get_table_updated_time('daily_prices')
 
         with self.get_connection() as conn:
             for file in files:
@@ -479,13 +472,10 @@ class StockDatabase:
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-                if last_updated:
-                    last_updated_time = datetime.fromisoformat(last_updated)
+                if updated_time and csv_mod_time <= updated_time:
+                    print(f'{csv_path} is old')
 
-                    if csv_mod_time <= last_updated_time:
-                        print(f'{csv_path} is old')
-
-                        continue
+                    continue
 
                 print(f'Importing {csv_path}')
 
@@ -536,11 +526,9 @@ class StockDatabase:
 
             conn.commit()
 
-        # update timestamp in metadata
+        # update the table time in metadata
         if last_mod_time:
-            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
-
-            self.update_table_timestamp('daily_prices', timestamp)
+            self.update_table_updated_time('daily_prices', last_mod_time)
 
         return total_imported_records
 
@@ -598,7 +586,7 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        last_updated = self.get_last_update_timestamp('monthly_revenue')
+        updated_time = self.get_table_updated_time('monthly_revenue')
 
         with self.get_connection() as conn:
             for file in files:
@@ -613,13 +601,10 @@ class StockDatabase:
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-                if last_updated:
-                    last_updated_time = datetime.fromisoformat(last_updated)
+                if updated_time and csv_mod_time <= updated_time:
+                    print(f'{csv_path} is old')
 
-                    if csv_mod_time <= last_updated_time:
-                        print(f'{csv_path} is old')
-
-                        continue
+                    continue
 
                 print(f'Importing {csv_path}')
 
@@ -649,16 +634,14 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if this file is newer
-                if not last_mod_time or cvs_mod_time > last_mod_time:
-                    last_mod_time = cvs_mod_time
+                if not last_mod_time or csv_mod_time > last_mod_time:
+                    last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update timestamp in metadata
+        # update the table time in metadata
         if last_mod_time:
-            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
-
-            self.update_table_timestamp('monthly_revenue', timestamp)
+            self.update_table_updated_time('monthly_revenue', last_mod_time)
 
         # update calculated fields after all data is imported
         # self.update_monthly_revenue_calculations()
@@ -824,7 +807,7 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
  
-        last_updated = self.get_last_update_timestamp('financial_core')
+        updated_time = self.get_table_updated_time('financial_core')
 
         # define column mapping
         col_mapping = {
@@ -853,13 +836,10 @@ class StockDatabase:
                 # compare file modification time with database update time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-                if last_updated:
-                    last_updated_time = datetime.fromisoformat(last_updated)
+                if updated_time and csv_mod_time <= updated_time:
+                    print(f'{csv_path} is old')
 
-                    if csv_mod_time <= last_updated_time:
-                        print(f'{csv_path} is old')
-
-                        continue
+                    continue
 
                 print(f'Importing {csv_path}')
 
@@ -944,16 +924,14 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if this file is newer
-                if not last_mod_time or cvs_mod_time > last_mod_time:
-                    last_mod_time = cvs_mod_time
+                if not last_mod_time or csv_mod_time > last_mod_time:
+                    last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update timestamp in metadata
+        # update the table time in metadata
         if last_mod_time:
-            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
-
-            self.update_table_timestamp('financial_core', timestamp)
+            self.update_table_updated_time('financial_core', last_mod_time)
 
         return total_imported_records
 
@@ -990,7 +968,7 @@ class StockDatabase:
             stock_list['market_stats'] = dict(cursor.fetchall())
 
             # 3. Get last update time from metadata
-            stock_list['last_updated'] = self.get_last_update_timestamp('stock_list')
+            stock_list['last_updated'] = self.get_table_updated_time('stock_list') # <- datetime 
 
             # for monthly revenue table
             monthly_revenue = {}
@@ -1005,7 +983,7 @@ class StockDatabase:
             monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
 
             # 3. Get last update time from metadata
-            monthly_revenue['last_updated'] = self.get_last_update_timestamp('monthly_revenue')
+            monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue') # <- datetime
 
             # for daily prices table
             daily_prices = {}
@@ -1020,7 +998,7 @@ class StockDatabase:
             daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
 
             # 3. Get last update time from metadata
-            daily_prices['last_updated'] = self.get_last_update_timestamp('daily_prices')
+            daily_prices['last_updated'] = self.get_table_updated_time('daily_prices') # <- datetime
 
         return {
             'database_path': self.db_path,
