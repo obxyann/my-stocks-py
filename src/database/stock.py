@@ -50,12 +50,14 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS metadata (
                     table_name TEXT PRIMARY KEY,
                     last_updated TIMESTAMP NOT NULL
                 )
             ''')
+
             conn.commit()
 
         self.metadata_table_initialized = True
@@ -78,10 +80,12 @@ class StockDatabase:
         # update data to database
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 INSERT OR REPLACE INTO metadata (table_name, last_updated)
                 VALUES (?, ?)
             ''', (table_name, timestamp))
+
             conn.commit()
 
     def get_last_update_timestamp(self, table_name):
@@ -115,6 +119,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS stock_list (
                     code TEXT PRIMARY KEY,
@@ -124,6 +129,7 @@ class StockDatabase:
                     type TEXT NOT NULL
                 )
             ''')
+
             conn.commit()
 
         self.stock_list_table_initialized = True
@@ -174,6 +180,7 @@ class StockDatabase:
         with self.get_connection() as conn:
             # clear existing data
             cursor = conn.cursor()
+
             cursor.execute('DELETE FROM stock_list')
 
             # insert new data
@@ -289,6 +296,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS daily_prices (
                     code TEXT NOT NULL,
@@ -302,6 +310,7 @@ class StockDatabase:
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
             ''')
+
             conn.commit()
 
         self.daily_price_table_initialized = True
@@ -348,7 +357,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_ts = 0 # for tracking the latest modification time of all files
+        last_mod_time = None # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -366,8 +375,7 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                mod_ts = modification_time(csv_path)
-                csv_mod_time = datetime.fromtimestamp(mod_ts)
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -412,6 +420,7 @@ class StockDatabase:
                 # insert or update data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
+
                     cursor.execute('''
                         INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -427,15 +436,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_ts if this file is newer
-                if (mod_ts > last_mod_ts):
-                    last_mod_ts = mod_ts
+                # update last_mod_time if this file is newer
+                if not last_mod_time or csv_mod_time > last_mod_time:
+                    last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_ts:
-            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_time:
+            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('daily_prices', timestamp)
 
@@ -457,7 +466,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_ts = 0 # for tracking the latest modification time of all files
+        last_mod_time = None # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -474,8 +483,7 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                mod_ts = modification_time(csv_path)
-                csv_mod_time = datetime.fromtimestamp(mod_ts)
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -512,6 +520,7 @@ class StockDatabase:
                 # insert or update data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
+
                     cursor.execute('''
                         INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -527,15 +536,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_ts if this file is newer
-                if (mod_ts > last_mod_ts):
-                    last_mod_ts = mod_ts
+                # update last_mod_time if this file is newer
+                if not last_mod_time or csv_mod_time > last_mod_time:
+                    last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_ts:
-            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_time:
+            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('daily_prices', timestamp)
 
@@ -552,6 +561,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS monthly_revenue (
                     code TEXT NOT NULL,
@@ -569,6 +579,7 @@ class StockDatabase:
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
             ''')
+
             conn.commit()
 
         self.monthly_revenue_table_initialized = True
@@ -589,7 +600,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_ts = 0  # for tracking the latest modification time of all files
+        last_mod_time = None # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -606,8 +617,7 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                mod_ts = modification_time(csv_path)
-                csv_mod_time = datetime.fromtimestamp(mod_ts)
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -644,15 +654,15 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_ts if this file is newer
-                if (mod_ts > last_mod_ts):
-                    last_mod_ts = mod_ts
+                # update last_mod_time if this file is newer
+                if not last_mod_time or cvs_mod_time > last_mod_time:
+                    last_mod_time = cvs_mod_time
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_ts:
-            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_time:
+            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('monthly_revenue', timestamp)
 
@@ -670,6 +680,7 @@ class StockDatabase:
                 return
 
             df.sort_values(by = ['code', 'year', 'month'], inplace = True)
+
             # calculate derived fields
             df['revenue_last_year'] = df.groupby('code')['revenue'].transform(lambda x: x.shift(12))
             df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
@@ -751,6 +762,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS financial_core (
                     code TEXT NOT NULL,
@@ -793,6 +805,7 @@ class StockDatabase:
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
             ''')
+
             conn.commit()
 
         self.financial_core_table_initialized = True
@@ -813,7 +826,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_ts = 0  # for tracking the latest modification time of all files
+        last_mod_time = None # for tracking the latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
  
@@ -844,8 +857,7 @@ class StockDatabase:
                 csv_path = os.path.join(csv_folder, file)
 
                 # compare file modification time with database update time
-                mod_ts = modification_time(csv_path)
-                csv_mod_time = datetime.fromtimestamp(mod_ts)
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if last_updated:
                     last_updated_time = datetime.fromisoformat(last_updated)
@@ -932,19 +944,20 @@ class StockDatabase:
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
+
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
 
-                # update last_mod_ts if this file is newer
-                if (mod_ts > last_mod_ts):
-                    last_mod_ts = mod_ts
+                # update last_mod_time if this file is newer
+                if not last_mod_time or cvs_mod_time > last_mod_time:
+                    last_mod_time = cvs_mod_time
 
             conn.commit()
 
         # update timestamp in metadata
-        if last_mod_ts:
-            timestamp = datetime.fromtimestamp(last_mod_ts).strftime('%Y-%m-%d %H:%M:%S')
+        if last_mod_time:
+            timestamp = last_mod_time.strftime('%Y-%m-%d %H:%M:%S')
 
             self.update_table_timestamp('financial_core', timestamp)
 
