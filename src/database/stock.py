@@ -6,7 +6,7 @@ import pandas as pd
 import re
 import numpy as np
 
-# add the parent directory for importing foo from sibling directory
+# add parent directory for importing from sibling directory
 # sys.path.append('..')
 # then
 from utils.ass import ensure_directory_exists, modification_time, parse_date_string
@@ -44,13 +44,14 @@ class StockDatabase:
     ##################
 
     def ensure_metadata_table(self):
-        """Create metadata table to track table update times if it doesn't exist"""
+        """Create metadata table to track table update times if not exists"""
         if self.metadata_table_initialized:
             return
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # create table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS metadata (
                     table_name TEXT PRIMARY KEY,
@@ -74,16 +75,16 @@ class StockDatabase:
         # create table if not exists
         self.ensure_metadata_table()
 
-        # convert to ISO-8601 time string 'YYYY-MM-DD HH:MM:SS'
+        # convert to ISO-8601 string 'YYYY-MM-DD HH:MM:SS'
         if not updated_time:
             time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         else:
             time_str = updated_time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # update data to database
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # insert or replace data
             cursor.execute('''
                 INSERT OR REPLACE INTO metadata (table_name, last_updated)
                 VALUES (?, ?)
@@ -92,9 +93,18 @@ class StockDatabase:
             conn.commit()
 
     def get_table_updated_time(self, table_name):
+        """Get last updated time for specific table
+
+        Args:
+            table_name (str): Name of the table
+
+        Returns:
+            datetime: Last updated time or None
+        """
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # retrieve data
             cursor.execute('''
                 SELECT last_updated
                 FROM metadata
@@ -110,13 +120,14 @@ class StockDatabase:
     ####################
 
     def ensure_stock_list_table(self):
-        """Create stock_list table if it doesn't exist"""
+        """Create stock_list table if not exists"""
         if self.stock_list_table_initialized:
             return
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # create table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS stock_list (
                     code TEXT PRIMARY KEY,
@@ -132,7 +143,7 @@ class StockDatabase:
         self.stock_list_table_initialized = True
 
     def import_stock_list_csv_to_database(self, csv_path = 'storage/stock_list.csv'):
-        """Import stock list from CSV file to database
+        """Import stock list from CSV to database
 
         Args:
             csv_path (str): Path to CSV file
@@ -146,7 +157,7 @@ class StockDatabase:
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f'CSV file not found: {csv_path}')
 
-        # compare file modification time with database update time
+        # compare file modification time with table updated time
         csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
         updated_time = self.get_table_updated_time('stock_list')
@@ -158,23 +169,22 @@ class StockDatabase:
 
         print(f'Importing {csv_path}')
 
-        # read CSV file
+        # read CSV
         df = pd.read_csv(csv_path)
         # or
-        # dont detect missing value markers (empty strings and the value of na_values)
+        # do not detect missing value markers
         # df = pd.read_csv(csv_path, na_filter = False)
 
-        # rename columns to match the database schema
+        # rename columns to match database schema
         # df.rename(columns = {'Code': 'stock_code', 'Name': 'company_name'}, inplace = True)
 
-        # convert 'code' to string to match the database schema
+        # convert 'code' to string to match schema
         # df['code'] = df['code'].astype(str)
 
-        # import data to database
         with self.get_connection() as conn:
-            # clear existing data
             cursor = conn.cursor()
 
+            # clear existing data
             cursor.execute('DELETE FROM stock_list')
 
             # insert new data
@@ -182,7 +192,7 @@ class StockDatabase:
 
             conn.commit()
 
-            # update the table time in metadata
+            # update table time
             self.update_table_updated_time('stock_list', csv_mod_time)
 
         return len(df)
@@ -194,6 +204,7 @@ class StockDatabase:
             pandas.DataFrame: Stock list data
         """
         with self.get_connection() as conn:
+            # read data
             df = pd.read_sql_query('''
                 SELECT code, name, market, industry, type
                 FROM stock_list
@@ -203,7 +214,7 @@ class StockDatabase:
         return df
 
     def get_stock_by_code(self, stock_code):
-        """Get specific stock by stock id
+        """Get specific stock by stock code
 
         Args:
             stock_code (str): Stock code
@@ -212,6 +223,7 @@ class StockDatabase:
             pandas.DataFrame: Stock data
         """
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT code, name, market, industry, type
                 FROM stock_list
@@ -221,7 +233,7 @@ class StockDatabase:
         return df
 
     def search_stocks(self, keyword):
-        """Search stocks by name or stock code
+        """Search stocks by name or code
 
         Args:
             keyword (str): Search keyword
@@ -230,6 +242,7 @@ class StockDatabase:
             pandas.DataFrame: Matching stocks
         """
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT code, name, market, industry, type
                 FROM stock_list
@@ -249,6 +262,7 @@ class StockDatabase:
             pandas.DataFrame: Stocks in specified market
         """
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT code, name, market, industry, type
                 FROM stock_list
@@ -268,6 +282,7 @@ class StockDatabase:
             pandas.DataFrame: Stocks in specified industry
         """
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT code, name, market, industry, type
                 FROM stock_list
@@ -282,13 +297,14 @@ class StockDatabase:
     ######################
 
     def ensure_daily_prices_table(self):
-        """Create daily_prices table if it doesn't exist"""
+        """Create daily_prices table if not exists"""
         if self.daily_prices_table_initialized:
             return
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # create table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS daily_prices (
                     code TEXT NOT NULL,
@@ -308,7 +324,7 @@ class StockDatabase:
         self.daily_price_table_initialized = True
 
     def get_prices_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
-        """Get daily prices for a specific stock code within a date range
+        """Get daily prices for stock code within date range
 
         Args:
             stock_code (str): Stock code
@@ -318,11 +334,12 @@ class StockDatabase:
         Returns:
             pandas.DataFrame: Daily prices data
         """
-        # if end_date is not provided, use today's date
+        # use today if end_date not provided
         if not end_date:
             end_date = datetime.today().strftime('%Y-%m-%d')
 
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT *
                 FROM daily_prices
@@ -334,7 +351,7 @@ class StockDatabase:
         return df
 
     def import_daily_prices_csv_to_database(self, csv_folder = 'storage/daily'):
-        """Import daily prices from CSV files to database
+        """Import daily prices from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -349,7 +366,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # for tracking the latest modification time of all files
+        last_mod_time = None # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -362,11 +379,12 @@ class StockDatabase:
                     continue
 
                 year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+
                 trade_date = f"{year}-{month:02d}-{day:02d}"
 
                 csv_path = os.path.join(csv_folder, file)
 
-                # compare file modification time with database update time
+                # compare file modification time with table updated time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if updated_time and csv_mod_time <= updated_time:
@@ -376,7 +394,7 @@ class StockDatabase:
 
                 print(f'Importing {csv_path}')
 
-                # read CSV file
+                # read CSV
                 df = pd.read_csv(csv_path)
 
                 # drop unnecessary columns
@@ -390,7 +408,7 @@ class StockDatabase:
                 # add trade_date column
                 df['trade_date'] = trade_date
 
-                # rename columns to match the database schema
+                # rename columns to match schema
                 df.rename(columns = {
                     'Code': 'code',
                     'Open': 'open_price',
@@ -400,13 +418,13 @@ class StockDatabase:
                     'Volume': 'volume'
                 }, inplace = True)
 
-                # convert 'code' to string to match the database schema
+                # convert 'code' to string to match schema
                 df['code'] = df['code'].astype(str)
 
                 # select and reorder columns for insertion
                 df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
 
-                # insert or update data
+                # insert or replace data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
 
@@ -425,20 +443,20 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_time if this file is newer
+                # update last_mod_time if file is newer
                 if not last_mod_time or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update the table time in metadata
+        # update table time
         if last_mod_time:
             self.update_table_updated_time('daily_prices', last_mod_time)
 
         return total_imported_records
 
     def import_ohlc_prices_csv_to_database(self, csv_folder = 'storage/ohlc'):
-        """Import OHLC prices from CSV files to database
+        """Import OHLC prices from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -453,7 +471,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # for tracking the latest modification time of all files
+        last_mod_time = None # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -469,7 +487,7 @@ class StockDatabase:
 
                 csv_path = os.path.join(csv_folder, file)
 
-                # compare file modification time with database update time
+                # compare file modification time with table updated time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if updated_time and csv_mod_time <= updated_time:
@@ -479,13 +497,13 @@ class StockDatabase:
 
                 print(f'Importing {csv_path}')
 
-                # read CSV file
+                # read CSV
                 df = pd.read_csv(csv_path)
 
                 # add code column
                 df['code'] = code
 
-                # rename columns to match the database schema
+                # rename columns to match schema
                 df.rename(columns = {
                     'Date': 'trade_date',
                     'Open': 'open_price',
@@ -495,13 +513,13 @@ class StockDatabase:
                     'Volume': 'volume'
                 }, inplace = True)
 
-                # ensure 'trade_date' is in the correct string format
+                # ensure 'trade_date' in correct string format
                 df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
 
-                # select and reorder columns for insertion
+                # select and reorder columns
                 df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
 
-                # insert or update data
+                # insert or replace data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
 
@@ -520,13 +538,13 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_time if this file is newer
+                # update last_mod_time if file is newer
                 if not last_mod_time or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update the table time in metadata
+        # update table time
         if last_mod_time:
             self.update_table_updated_time('daily_prices', last_mod_time)
 
@@ -537,13 +555,14 @@ class StockDatabase:
     #########################
 
     def ensure_monthly_revenue_table(self):
-        """Create monthly_revenue table if it doesn't exist"""
+        """Create monthly_revenue table if not exists"""
         if self.monthly_revenue_table_initialized:
             return
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # create table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS monthly_revenue (
                     code TEXT NOT NULL,
@@ -567,7 +586,7 @@ class StockDatabase:
         self.monthly_revenue_table_initialized = True
 
     def import_monthly_revenue_csv_to_database(self, csv_folder = 'storage/monthly'):
-        """Import monthly revenue from CSV files to database
+        """Import monthly revenue from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -582,7 +601,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # for tracking the latest modification time of all files
+        last_mod_time = None # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -598,7 +617,7 @@ class StockDatabase:
 
                 csv_path = os.path.join(csv_folder, file)
 
-                # compare file modification time with database update time
+                # compare file modification time with table updated time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if updated_time and csv_mod_time <= updated_time:
@@ -608,48 +627,55 @@ class StockDatabase:
 
                 print(f'Importing {csv_path}')
 
-                # read CSV file
+                # read CSV
                 df = pd.read_csv(csv_path)
 
                 df['year'] = year
                 df['month'] = month
 
-                # rename columns to match the database schema
+                # rename columns to match schema
                 df.rename(columns = {'Code': 'code', 'Revenue': 'revenue', 'Note': 'note'}, inplace = True)
 
-                # select and reorder columns for insertion
+                # select and reorder columns
                 df = df[['code', 'year', 'month', 'revenue', 'note']]
 
-                # convert 'code' to string to match the database schema
+                # convert 'code' to string to match schema
                 df['code'] = df['code'].astype(str)
 
-                # insert or update data
+                # insert or replace data
                 for _, row in df.iterrows():
                     cursor = conn.cursor()
+
                     cursor.execute('''
                         INSERT OR REPLACE INTO monthly_revenue (code, year, month, revenue, note)
                         VALUES (?, ?, ?, ?, ?)
-                    ''', (row['code'], row['year'], row['month'], row['revenue'], row['note']))
+                    ''', (
+                        row['code'],
+                        row['year'],
+                        row['month'],
+                        row['revenue'],
+                        row['note']
+                    ))
 
                 total_imported_records += len(df)
 
-                # update last_mod_time if this file is newer
+                # update last_mod_time if file is newer
                 if not last_mod_time or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update the table time in metadata
+        # update table time
         if last_mod_time:
             self.update_table_updated_time('monthly_revenue', last_mod_time)
 
-        # update calculated fields after all data is imported
+        # update calculated fields after import
         # self.update_monthly_revenue_calculations()
 
         return total_imported_records
 
     def update_monthly_revenue_calculations(self):
-        """Update calculated fields in the monthly_revenue table"""
+        """Update calculated fields in monthly_revenue table"""
         with self.get_connection() as conn:
             df = pd.read_sql_query('SELECT * FROM monthly_revenue', conn)
 
@@ -669,7 +695,7 @@ class StockDatabase:
             # replace infinite values with NaN
             df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
-            # update the database
+            # update data
             update_query = '''
                 UPDATE monthly_revenue
                 SET revenue_last_year = ?,
@@ -697,13 +723,25 @@ class StockDatabase:
             ]
 
             cursor = conn.cursor()
+
             cursor.executemany(update_query, update_data)
+
             conn.commit()
 
     def get_revenue_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
-        # convert date string to datetime object
+        """Get monthly revenue data for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date (YYYY-MM-DD)
+            end_date (str): End date (YYYY-MM-DD)
+
+        Returns:
+            pandas.DataFrame: Revenue data
+        """
+        # convert date string to datetime
         start = parse_date_string(start_date)
-        # and get the year, month parts
+        # get year, month parts
         start_year, start_month = start.year, start.month
 
         # end year, month
@@ -713,11 +751,12 @@ class StockDatabase:
             end = datetime.today()
         end_year, end_month = end.year, end.month
 
-        # convert to comparable period format (YYYYMM)
+        # convert to comparable period (YYYYMM)
         start_period = start_year * 100 + start_month
         end_period = end_year * 100 + end_month
 
         with self.get_connection() as conn:
+            # retrieve data
             df = pd.read_sql_query('''
                 SELECT *
                 FROM monthly_revenue
@@ -733,13 +772,14 @@ class StockDatabase:
     ########################
 
     def ensure_financial_core_table(self):
-        """Create financial_core table if it doesn't exist"""
+        """Create financial_core table if not exists"""
         if self.financial_core_table_initialized:
             return
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
+            # create table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS financial_core (
                     code TEXT NOT NULL,
@@ -788,7 +828,7 @@ class StockDatabase:
         self.financial_core_table_initialized = True
 
     def import_income_reports_csv_to_database(self, csv_folder = 'storage/quarterly'):
-        """Import income reports from CSV files to database
+        """Import income reports from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -803,10 +843,10 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # for tracking the latest modification time of all files
+        last_mod_time = None # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
- 
+
         updated_time = self.get_table_updated_time('financial_core')
 
         # define column mapping
@@ -833,7 +873,7 @@ class StockDatabase:
 
                 csv_path = os.path.join(csv_folder, file)
 
-                # compare file modification time with database update time
+                # compare file modification time with table updated time
                 csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
                 if updated_time and csv_mod_time <= updated_time:
@@ -843,7 +883,7 @@ class StockDatabase:
 
                 print(f'Importing {csv_path}')
 
-                # read CSV file
+                # read CSV
                 try:
                     df = pd.read_csv(csv_path)
 
@@ -862,7 +902,7 @@ class StockDatabase:
                 # remove rows with empty code
                 df.dropna(subset = 'code', inplace = True)
 
-                # convert 'code' to string to match the database schema
+                # convert 'code' to string to match schema
                 df['code'] = df['code'].astype(str)
 
                 # add new columns
@@ -894,13 +934,14 @@ class StockDatabase:
 
                 # insert or update data
                 # construct dynamic SQL
-                columns = ', '.join(available_db_cols)                
+                columns = ', '.join(available_db_cols)
                 placeholders = ', '.join(['?'] * len(available_db_cols))
 
-                # update part: exclude code, year, quarter from SET clause
+                # update part: exclude code, year, quarter from SET
                 update_cols = [c for c in available_db_cols if c not in ('code', 'year', 'quarter')]
 
                 if not update_cols:
+                    # insert data
                     sql = f'''
                         INSERT OR IGNORE INTO financial_core ({columns})
                         VALUES ({placeholders})
@@ -908,6 +949,7 @@ class StockDatabase:
                 else:
                     update_assignments = ', '.join([f"{col}=excluded.{col}" for col in update_cols])
 
+                    # upsert data
                     sql = f'''
                         INSERT INTO financial_core ({columns})
                         VALUES ({placeholders})
@@ -923,13 +965,13 @@ class StockDatabase:
 
                 total_imported_records += len(df)
 
-                # update last_mod_time if this file is newer
+                # update last_mod_time if file is newer
                 if not last_mod_time or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
-        # update the table time in metadata
+        # update table time
         if last_mod_time:
             self.update_table_updated_time('financial_core', last_mod_time)
 
@@ -948,17 +990,17 @@ class StockDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # get all tables in the database
+            # get all tables in database
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
             tables = [table[0] for table in cursor.fetchall()]
 
             # for stock list table
             stock_list = {}
-            # 1. Get total count
+            # 1. get total count
             cursor.execute('SELECT COUNT(*) FROM stock_list')
             stock_list['total_count'] = cursor.fetchone()[0]
 
-            # 2. Get market distribution
+            # 2. get market distribution
             cursor.execute('''
                 SELECT market, COUNT(*)
                 FROM stock_list
@@ -967,37 +1009,37 @@ class StockDatabase:
             ''')
             stock_list['market_stats'] = dict(cursor.fetchall())
 
-            # 3. Get last update time from metadata
-            stock_list['last_updated'] = self.get_table_updated_time('stock_list') # <- datetime 
+            # 3. get last update time from metadata
+            stock_list['last_updated'] = self.get_table_updated_time('stock_list') # <- datetime
 
             # for monthly revenue table
             monthly_revenue = {}
-            # 1. Get total count
+            # 1. get total count
             cursor.execute('SELECT COUNT(*) FROM monthly_revenue')
             monthly_revenue['total_count'] = cursor.fetchone()[0]
 
-            # 2. Get min and max year-month
+            # 2. get min and max year-month
             cursor.execute('SELECT MIN(year * 100 + month), MAX(year * 100 + month) FROM monthly_revenue')
             min_max_result = cursor.fetchone()
             monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None
             monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
 
-            # 3. Get last update time from metadata
+            # 3. get last update time from metadata
             monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue') # <- datetime
 
             # for daily prices table
             daily_prices = {}
-            # 1. Get total count
+            # 1. get total count
             cursor.execute('SELECT COUNT(*) FROM daily_prices')
             daily_prices['total_count'] = cursor.fetchone()[0]
 
-            # 2. Get min and max trade date
+            # 2. get min and max trade date
             cursor.execute('SELECT MIN(trade_date), MAX(trade_date) FROM daily_prices')
             min_max_result = cursor.fetchone()
             daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None
             daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
 
-            # 3. Get last update time from metadata
+            # 3. get last update time from metadata
             daily_prices['last_updated'] = self.get_table_updated_time('daily_prices') # <- datetime
 
         return {
