@@ -89,24 +89,18 @@ class StockDatabase:
             conn.commit()
 
     def get_last_update_timestamp(self, table_name):
-        """
         with self.get_connection() as conn:
-            df = pd.read_sql_query('''
+            cursor = conn.cursor()
+
+            cursor.execute('''
                 SELECT last_updated
                 FROM metadata
                 WHERE table_name = ?
-            ''', conn, params = (table_name,))
+            ''', (table_name,))
 
-        return df['last_updated'][0] if not df.empty else None
-        """
-        with self.get_connection() as conn:
-            row = conn.execute('''
-                SELECT last_updated
-                FROM metadata
-                WHERE table_name = ?
-            ''', (table_name,)).fetchone()
+            result = cursor.fetchone()
 
-        return row[0] if row else None
+        return result[0] if result else None
 
     ####################
     # Stock List table #
