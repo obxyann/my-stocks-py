@@ -182,22 +182,26 @@ class StockDatabase:
             # read CSV
             df = pd.read_csv(csv_path)
 
-            # build rename and keep columns (based on mapping)
+            # build rename and need columns (based on mapping)
             rename_dict = {}
-            keep_cols = []
+            need_cols = []
 
             for csv_col, db_col in col_mapping.items():
                 if csv_col in df.columns:
                     rename_dict[csv_col] = db_col
-                    keep_cols.append(db_col)
+
+                need_cols.append(db_col)
 
             # rename columns
             df.rename(columns = rename_dict, inplace = True)
 
+            # available columns
+            avail_cols = [c for c in df.columns if c in need_cols]
+
             # check for mandatory columns
             # (based on table schema NOT NULL constraints)
             mandatory_cols = ['code', 'name', 'market', 'type']
-            missing_cols = [c for c in mandatory_cols if c not in keep_cols]
+            missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
             if missing_cols:
                 print(f"Error: Missing mandatory columns {missing_cols}")
@@ -205,7 +209,7 @@ class StockDatabase:
                 return 0
 
             # keep only relevant columns
-            df = df[keep_cols]
+            df = df[avail_cols]
 
             # remove rows with empty code
             df.dropna(subset = ['code'], inplace = True)
@@ -217,8 +221,8 @@ class StockDatabase:
             df = df.where(pd.notnull(df), None)
 
             # prepare SQL
-            columns = ', '.join(keep_cols)
-            placeholders = ', '.join(['?'] * len(keep_cols))
+            columns = ', '.join(avail_cols)
+            placeholders = ', '.join(['?'] * len(avail_cols))
 
             sql = f'INSERT INTO stock_list ({columns}) VALUES ({placeholders})'
 
@@ -945,22 +949,26 @@ class StockDatabase:
                 df['year'] = year
                 df['quarter'] = quarter
 
-                # build rename and keep columns (based on mapping)
+                # build rename and need columns (based on mapping)
                 rename_dict = {}
-                keep_cols = ['year', 'quarter']
+                need_cols = ['year', 'quarter']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
-                        keep_cols.append(db_col)
+
+                    need_cols.append(db_col)
 
                 # rename columns
                 df.rename(columns = rename_dict, inplace = True)
 
+                # available columns
+                avail_cols = [c for c in df.columns if c in need_cols]
+
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
                 mandatory_cols = ['code']                
-                missing_cols = [c for c in mandatory_cols if c not in keep_cols]
+                missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
                     print(f"Error: Missing mandatory columns {missing_cols}")
@@ -968,7 +976,7 @@ class StockDatabase:
                     return 0
 
                 # keep only relevant columns
-                df = df[keep_cols]
+                df = df[avail_cols]
 
                 # remove rows with empty code
                 df.dropna(subset = 'code', inplace = True)
@@ -980,11 +988,11 @@ class StockDatabase:
                 df = df.where(pd.notnull(df), None)
 
                 # prepare SQL
-                columns = ', '.join(keep_cols)
-                placeholders = ', '.join(['?'] * len(keep_cols))
+                columns = ', '.join(avail_cols)
+                placeholders = ', '.join(['?'] * len(avail_cols))
 
                 # update part: exclude code, year, quarter from SET
-                update_cols = [c for c in keep_cols if c not in ('code', 'year', 'quarter')]
+                update_cols = [c for c in avail_cols if c not in ('code', 'year', 'quarter')]
 
                 if not update_cols:
                     # insert data
