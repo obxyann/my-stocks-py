@@ -169,33 +169,81 @@ class StockDatabase:
 
         print(f'Importing {csv_path}')
 
-        # read CSV
-        df = pd.read_csv(csv_path)
-        # or
-        # do not detect missing value markers
-        # df = pd.read_csv(csv_path, na_filter = False)
+        # define column mapping
+        col_mapping = {
+            'Code': 'code',
+            'Name': 'name',
+            'Market': 'market',
+            'Industry': 'industry',
+            'Type': 'type'
+        }
 
-        # rename columns to match database schema
-        # df.rename(columns = {'Code': 'stock_code', 'Name': 'company_name'}, inplace = True)
+        try:
+            # read CSV
+            df = pd.read_csv(csv_path)
 
-        # convert 'code' to string to match schema
-        # df['code'] = df['code'].astype(str)
+            # build rename and keep columns (based on mapping)
+            rename_dict = {}
+            keep_cols = []
 
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+            for csv_col, db_col in col_mapping.items():
+                if csv_col in df.columns:
+                    rename_dict[csv_col] = db_col
+                    keep_cols.append(db_col)
 
-            # clear existing data
-            cursor.execute('DELETE FROM stock_list')
+            # rename columns
+            df.rename(columns = rename_dict, inplace = True)
 
-            # insert new data
-            df.to_sql('stock_list', conn, if_exists = 'append', index = False)
+            # check for mandatory columns
+            # (based on table schema NOT NULL constraints)
+            mandatory_cols = ['code', 'name', 'market', 'type']
+            missing_cols = [c for c in mandatory_cols if c not in keep_cols]
 
-            conn.commit()
+            if missing_cols:
+                print(f"Error: Missing mandatory columns {missing_cols}")
 
-            # update table time
-            self.update_table_updated_time('stock_list', csv_mod_time)
+                return 0
 
-        return len(df)
+            # keep only relevant columns
+            df = df[keep_cols]
+
+            # remove rows with empty code
+            df.dropna(subset = ['code'], inplace = True)
+
+            # convert 'code' to string
+            df['code'] = df['code'].astype(str)
+
+            # replace NaNs with None for SQLite compatibility
+            df = df.where(pd.notnull(df), None)
+
+            # prepare SQL
+            columns = ', '.join(keep_cols)
+            placeholders = ', '.join(['?'] * len(keep_cols))
+
+            sql = f'INSERT INTO stock_list ({columns}) VALUES ({placeholders})'
+
+            data = df.values.tolist()
+
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+
+                # clear existing data
+                cursor.execute('DELETE FROM stock_list')
+
+                # insert new data
+                cursor.executemany(sql, data)
+
+                conn.commit()
+
+                # update table time
+                self.update_table_updated_time('stock_list', csv_mod_time)
+
+            return len(df)
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+            return 0
 
     def get_stock_list(self):
         """Get all stocks from database
@@ -909,14 +957,13 @@ class StockDatabase:
                 df['year'] = year
                 df['quarter'] = quarter
 
-                # rename columns based on mapping
+                # build rename and keep columns (based on mapping)
                 rename_dict = {}
                 keep_cols = ['code', 'year', 'quarter']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
-
                         keep_cols.append(db_col)
 
                 df.rename(columns = rename_dict, inplace = True)

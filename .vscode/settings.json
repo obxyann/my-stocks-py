@@ -12,5 +12,5 @@
   "terminal.integrated.defaultProfile.windows": "PowerShell",
 
   // (可選) 開啟檔案時自動切換到此 interpreter
-  "python.terminal.activateEnvironment": true
+  "python.terminal.activateEnvironment": true,
 }
