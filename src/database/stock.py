@@ -191,19 +191,19 @@ class StockDatabase:
 
             # build rename and need columns (based on mapping)
             rename_dict = {}
-            need_cols = []
+            use_cols = []
 
             for csv_col, db_col in col_mapping.items():
                 if csv_col in df.columns:
                     rename_dict[csv_col] = db_col
 
-                need_cols.append(db_col)
+                use_cols.append(db_col)
 
             # rename columns
             df.rename(columns=rename_dict, inplace=True)
 
             # available columns
-            avail_cols = [c for c in df.columns if c in need_cols]
+            avail_cols = [c for c in df.columns if c in use_cols]
 
             # check for mandatory columns
             # (based on table schema NOT NULL constraints)
@@ -477,30 +477,31 @@ class StockDatabase:
 
                 # build rename and need columns (based on mapping)
                 rename_dict = {}
-                need_cols = ['trade_date']
+                use_cols = ['trade_date']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
 
-                    need_cols.append(db_col)
+                    use_cols.append(db_col)
 
                 # rename columns
                 df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
-                avail_cols = [c for c in df.columns if c in need_cols]
+                avail_cols = [c for c in df.columns if c in use_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
                 mandatory_cols = [
                     'code',
+                    # 'trade_date', <- no need to check
                     'open_price',
                     'high_price',
                     'low_price',
                     'close_price',
                     'volume',
-                ]  # and 'trade_date'
+                ]
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
@@ -612,30 +613,31 @@ class StockDatabase:
 
                 # build rename and need columns (based on mapping)
                 rename_dict = {}
-                need_cols = ['code']
+                use_cols = ['code']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
 
-                    need_cols.append(db_col)
+                    use_cols.append(db_col)
 
                 # rename columns
                 df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
-                avail_cols = [c for c in df.columns if c in need_cols]
+                avail_cols = [c for c in df.columns if c in use_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
                 mandatory_cols = [
+                    # 'code', <- no need to check
                     'trade_date',
                     'open_price',
                     'high_price',
                     'low_price',
                     'close_price',
                     'volume',
-                ]  # and 'code'
+                ]
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
@@ -810,26 +812,28 @@ class StockDatabase:
 
                 # build rename and need columns (based on mapping)
                 rename_dict = {}
-                need_cols = ['year', 'month']
+                use_cols = ['year', 'month']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
 
-                    need_cols.append(db_col)
+                    use_cols.append(db_col)
 
                 # rename columns
                 df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
-                avail_cols = [c for c in df.columns if c in need_cols]
+                avail_cols = [c for c in df.columns if c in use_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
                 mandatory_cols = [
                     'code',
+                    # 'year', <- no need to check
+                    # 'month', <- no need to check
                     'revenue',
-                ]  # and 'year', 'month'
+                ]
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
@@ -1112,25 +1116,27 @@ class StockDatabase:
 
                 # build rename and need columns (based on mapping)
                 rename_dict = {}
-                need_cols = ['year', 'quarter']
+                use_cols = ['year', 'quarter']
 
                 for csv_col, db_col in col_mapping.items():
                     if csv_col in df.columns:
                         rename_dict[csv_col] = db_col
 
-                    need_cols.append(db_col)
+                    use_cols.append(db_col)
 
                 # rename columns
                 df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
-                avail_cols = [c for c in df.columns if c in need_cols]
+                avail_cols = [c for c in df.columns if c in use_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
                 mandatory_cols = [
                     'code',
-                ]  # and 'year', 'quarter'
+                    # 'year', <- no need to check
+                    # 'quarter', <- no need to check
+                ]
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
