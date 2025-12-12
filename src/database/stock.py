@@ -406,37 +406,6 @@ class StockDatabase:
 
         self.daily_price_table_initialized = True
 
-    def get_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
-        """Get daily prices for stock code within date range
-
-        Args:
-            stock_code (str): Stock code
-            start_date (str): Start date in 'YYYY-MM-DD' format
-            end_date (str): End date in 'YYYY-MM-DD' format, defaults to today
-
-        Returns:
-            pandas.DataFrame: Daily prices data
-        """
-        # use today if end_date not provided
-        if not end_date:
-            end_date = datetime.today().strftime('%Y-%m-%d')
-
-        with self.get_connection() as conn:
-            # retrieve data
-            df = pd.read_sql_query(
-                """
-                SELECT *
-                FROM daily_prices
-                WHERE code = ?
-                  AND trade_date BETWEEN ? AND ?
-                ORDER BY trade_date
-                """,
-                conn,
-                params=(stock_code, start_date, end_date),
-            )
-
-        return df
-
     def import_daily_prices_csv_to_database(self, csv_folder='storage/daily'):
         """Import daily prices from CSV to database
 
@@ -711,6 +680,37 @@ class StockDatabase:
             self.update_table_updated_time('daily_prices', last_mod_time)
 
         return total_imported_records
+
+    def get_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
+        """Get daily prices for stock code within date range
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date in 'YYYY-MM-DD' format
+            end_date (str): End date in 'YYYY-MM-DD' format, defaults to today
+
+        Returns:
+            pandas.DataFrame: Daily prices data
+        """
+        # use today if end_date not provided
+        if not end_date:
+            end_date = datetime.today().strftime('%Y-%m-%d')
+
+        with self.get_connection() as conn:
+            # retrieve data
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM daily_prices
+                WHERE code = ?
+                  AND trade_date BETWEEN ? AND ?
+                ORDER BY trade_date
+                """,
+                conn,
+                params=(stock_code, start_date, end_date),
+            )
+
+        return df
 
     #########################
     # Monthly Revenue table #
