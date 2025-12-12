@@ -1,6 +1,6 @@
-import sys
-import platform
 import ctypes
+import platform
+import sys
 
 # https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
 # https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797

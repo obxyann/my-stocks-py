@@ -1,9 +1,10 @@
+import os
+import re
 import sqlite3
 from datetime import datetime
-import os
-import pandas as pd
-import re
+
 import numpy as np
+import pandas as pd
 
 # add parent directory for importing from sibling directory
 # sys.path.append('..')

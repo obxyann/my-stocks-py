@@ -1,9 +1,9 @@
 # little assistant not ass
 
-from datetime import datetime, timedelta
-import re
-import platform
 import os
+import platform
+import re
+from datetime import datetime, timedelta
 
 
 # Get the date srting of the last market close day
@@ -235,6 +235,7 @@ def ensure_directory_exists(path_name):
 
 import time
 import zipfile
+
 # import os
 
 D_ARROW = '\u2193'  # '↓' U+2193
@@ -385,9 +386,10 @@ def to_continue(question='Do you want to continue?'):
 # ref:
 # https://stackoverflow.com/questions/48854567/how-do-i-make-an-asynchronous-progress-spinner-in-python
 
+import random
 import sys
 import threading
-import random
+
 # import time
 
 spin_done = None

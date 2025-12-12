@@ -1,14 +1,17 @@
-import sys
-import os
 import argparse
+import os
+import sys
 
 # add the parent directory for importing from sibling directory
 sys.path.append('..')
 # then
 from database.stock import StockDatabase
-from openData.getStockList import download_stock_list
-from openData.getDailyPrices import download_last_daily_prices, check_last_daily_prices_exist  # fmt: skip
+from openData.getDailyPrices import (
+    check_last_daily_prices_exist,
+    download_last_daily_prices,
+)
 from openData.getMonthlyRevenues import download_hist_monthly_revenues
+from openData.getStockList import download_stock_list
 
 
 def import_csv_to_db(csv_dir=None, db_path=None):
