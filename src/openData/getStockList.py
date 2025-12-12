@@ -16,6 +16,7 @@ sys.path.append('..')
 from utils.ass import file_is_old
 from utils.ansiColors import Colors, use_color
 
+
 # Fetch the stock list for a specific market
 #
 # param
@@ -31,12 +32,14 @@ from utils.ansiColors import Colors, use_color
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def fetch_stock_list_in_market (market,
-        include_warrant = False,
-        include_preferred = False,
-        include_etn = False,
-        include_reit = False,
-        include_abs = False):
+def fetch_stock_list_in_market(
+    market,
+    include_warrant=False,
+    include_preferred=False,
+    include_etn=False,
+    include_reit=False,
+    include_abs=False,
+):
     print(f'Downloading html for listed companies in {market.upper()}...')
 
     if market == 'tse':
@@ -46,13 +49,13 @@ def fetch_stock_list_in_market (market,
     elif market == 'esb':
         mode = 5
     else:
-        raise ValueError(f'Not support market \'{market}\'')
+        raise ValueError(f"Not support market '{market}'")
 
-    response = requests.get(f'https://isin.twse.com.tw/isin/C_public.jsp?strMode={mode}')
+    response = requests.get(f'https://isin.twse.com.tw/isin/C_public.jsp?strMode={mode}')  # fmt: skip
 
     if response.status_code != 200:
-        raise Exception(f'Failed to download data, status_code = {response.status_code}')
-    '''
+        raise Exception(f'Failed to download data, status_code = {response.status_code}')  # fmt: skip
+    """
     response.text is a HTML text(*) like
     ------------------------------------
     ...
@@ -87,17 +90,17 @@ def fetch_stock_list_in_market (market,
     ------------------------------------
     NOTE: (*) from the response headers, the Content-Type is 'text/html;charset=MS950'
               that the HTML text is MS950 (or CP950 or BIG5) encoding - 11/22/2024
-    '''
+    """
     # just for debug
     # print(response.text[:1000])
 
-    '''
+    """
     NOTE: Requests will automatically decode content from the server
           It makes educated guesses about the encoding of the response based on the HTTP headers
           The text encoding guessed by Requests is used when you access response.text
 
           see https://requests.readthedocs.io/en/latest/user/quickstart/#response-content
-    '''
+    """
 
     print('Parsing html...')
 
@@ -108,7 +111,7 @@ def fetch_stock_list_in_market (market,
     # or
     # add parameter encoding = 'cp950' or 'big5' or 'big5-hkscs' into read_html
     # df = pd.read_html(StringIO(response.text), encoding = 'cp950')[0]
-    '''
+    """
     return DataFrame is like
     ------------------------
       0                  1                           2          3      4        5       6
@@ -119,12 +122,12 @@ def fetch_stock_list_in_market (market,
     4 1103　嘉泥         TW0001103000                1969/11/14 上市   水泥工業 ESVUFR  NaN
     ...
     ------------------------
-    '''
+    """
     # just for debug
     # print(df)
 
     # remove column 1, 2, 6 (NOTE: integer N interpreted as label not position)
-    df = df.drop([1, 2, 6], axis = 1)
+    df = df.drop([1, 2, 6], axis=1)
 
     # set new column names (integer label to string label)
     df.columns = ['Code_Name', 'Market', 'Industry', 'CFI_code']
@@ -136,7 +139,7 @@ def fetch_stock_list_in_market (market,
     # just for debug
     # print(df)
 
-    '''
+    """
     Type               CFI Code
     =================  =============== ======================================
     股票               ESVUFR/ES*      Equities -> Shares
@@ -150,38 +153,39 @@ def fetch_stock_list_in_market (market,
     受益證券-資產基礎證券   DAFUFR/DA* Debt Instruments -> Asset-backed securities
 
     NOTE: https://en.wikipedia.org/wiki/ISO_10962
-    '''
-    def CFI_to_type (cfi):
-        if cfi[0] == 'E' and cfi[1] == 'S': # ESVUFR
-            return 's'      # as Share (or Stock)
+    """
 
-        if cfi[0] == 'R' and cfi[1] == 'W': # RW*
-            return 'w'      # as Warrant
+    def CFI_to_type(cfi):
+        if cfi[0] == 'E' and cfi[1] == 'S':  # ESVUFR
+            return 's'  # as Share (or Stock)
 
-        if cfi[0] == 'E' and cfi[1] == 'P': # EP*
-            return 'ps'     # as Preferred Share (or Preferred Stock)
+        if cfi[0] == 'R' and cfi[1] == 'W':  # RW*
+            return 'w'  # as Warrant
 
-        if cfi[0] == 'E' and cfi[1] == 'F': # EF*
-            return 'ps'     # as Preferred Share (or Preferred Stock)
+        if cfi[0] == 'E' and cfi[1] == 'P':  # EP*
+            return 'ps'  # as Preferred Share (or Preferred Stock)
 
-        if cfi[0] == 'C' and cfi[1] == 'E': # CEO*
-            return 'etf'    # as Exchange Traded Fund
+        if cfi[0] == 'E' and cfi[1] == 'F':  # EF*
+            return 'ps'  # as Preferred Share (or Preferred Stock)
 
-        if cfi[0] == 'C' and cfi[1] == 'M': # CMXXXU
-            return 'etn'    # as Exchange Traded Note
+        if cfi[0] == 'C' and cfi[1] == 'E':  # CEO*
+            return 'etf'  # as Exchange Traded Fund
 
-        if cfi[0] == 'E' and cfi[1] == 'D': # EDSDDR
-            return 'tdr'    # as Taiwan Depositary Receipt
+        if cfi[0] == 'C' and cfi[1] == 'M':  # CMXXXU
+            return 'etn'  # as Exchange Traded Note
 
-        if cfi[0] == 'C' and cfi[1] == 'B': # CBCIXU
-            return 'reit'   # as Real Estate Investment Trust
+        if cfi[0] == 'E' and cfi[1] == 'D':  # EDSDDR
+            return 'tdr'  # as Taiwan Depositary Receipt
 
-        if cfi[0] == 'D' and cfi[1] == 'A': # DA*
-            return 'abs'    # as Asset Backed Securities
+        if cfi[0] == 'C' and cfi[1] == 'B':  # CBCIXU
+            return 'reit'  # as Real Estate Investment Trust
+
+        if cfi[0] == 'D' and cfi[1] == 'A':  # DA*
+            return 'abs'  # as Asset Backed Securities
 
         use_color(Colors.WARNING)
         if re.match(r'[A-Z]{6}', cfi):
-            print(f'  Warning: No mapping rule for \'{cfi}\' - value set to \'-\'')
+            print(f"  Warning: No mapping rule for '{cfi}' - value set to '-'")
         # else:
         #   this cfi should be from label rows likes
         #   [股票,股票,...,股票], [上市認購(售)權證,上市認購(售)權證,...,上市認購(售)權證], ...
@@ -211,8 +215,8 @@ def fetch_stock_list_in_market (market,
     df['Market'] = market
 
     # remove unneeded rows
-    def filter (type):
-        if type == '-': # remove all label or unknown CFI rows
+    def filter(type):
+        if type == '-':  # remove all label or unknown CFI rows
             return False
 
         # check type
@@ -239,7 +243,7 @@ def fetch_stock_list_in_market (market,
     #       those spaces will be removed to one \u0020 space (aka '4148 全宇生技-KY') after pd.read_html
     #       we need to use regex to split on \u3000 (normal cases) and also space (this case)
     #       - 20241130
-    df[['Code', 'Name']] = df['Code_Name'].str.split(r'\u3000| ', n = 1, expand = True)
+    df[['Code', 'Name']] = df['Code_Name'].str.split(r'\u3000| ', n=1, expand=True)
 
     # reset index
     df.index = pd.RangeIndex(len(df.index))
@@ -255,16 +259,17 @@ def fetch_stock_list_in_market (market,
     # TODO: add an option to return as a compact list
     # return df[['Code', 'Name', 'Market']]
 
+
 # Fetch the stock list
 #
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def fetch_stock_list ():
+def fetch_stock_list():
     try:
         list_1 = fetch_stock_list_in_market('tse')
         list_2 = fetch_stock_list_in_market('otc')
-        '''
+        """
         return DataFrame is like
         ------------------------
           Code Name Market Industry Type
@@ -273,11 +278,11 @@ def fetch_stock_list ():
         2 1103 嘉泥 tse    水泥工業 s
         ...
         ------------------------
-        '''
+        """
 
         print('Concatenating data...')
 
-        result = pd.concat([list_1, list_2], ignore_index = True)
+        result = pd.concat([list_1, list_2], ignore_index=True)
 
         # just for debug
         # print(result)
@@ -293,6 +298,7 @@ def fetch_stock_list ():
 
     return result
 
+
 # Download the stock list
 #
 # This will check local file first or download data and save to
@@ -301,16 +307,16 @@ def fetch_stock_list ():
 # param
 #   refetch    - whether to force refetch even if a local file exists
 #   output_dir - directory where the CSV file will be saved
-def download_stock_list (refetch = False, output_dir = '.'):
+def download_stock_list(refetch=False, output_dir='.'):
     print('Fetching...')
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # destination file
     path_name = f'{output_dir}/stock_list.csv'
 
-    ''' TODO: check_old
+    """ TODO: check_old
     if check_old and (file_is_old(path_name, hour = 14, minute = 35) or
        file_is_old(path_name, hour = 16, minute = 35) or
        file_is_old(path_name, hour = 18, minute = 35)):
@@ -318,24 +324,25 @@ def download_stock_list (refetch = False, output_dir = '.'):
         old = True
     else:
         old = False
-    '''
+    """
 
     # check local
     if not refetch and os.path.isfile(path_name) and os.path.getsize(path_name):
         print(f'Stock list already exists')
     else:
-      try:
-        # fetch list from remote
-        stock_list = fetch_stock_list()
+        try:
+            # fetch list from remote
+            stock_list = fetch_stock_list()
 
-        # save data to file
-        stock_list.to_csv(path_name, index = False)
+            # save data to file
+            stock_list.to_csv(path_name, index=False)
 
-        print(f'Write to \'{path_name}\' successfully')
-      except:
-        pass
+            print(f"Write to '{path_name}' successfully")
+        except:
+            pass
 
     # print('Done')
+
 
 # Get the stock list
 #
@@ -347,22 +354,23 @@ def download_stock_list (refetch = False, output_dir = '.'):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def get_stock_list (data_dir = '.'):
+def get_stock_list(data_dir='.'):
     path_name = f'{data_dir}/stock_list.csv'
 
     # check local
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
-        raise Exception(f'Data file \'{path_name}\' not exists')
+        raise Exception(f"Data file '{path_name}' not exists")
 
     try:
-        stock_list = pd.read_csv(path_name, index_col = False)
+        stock_list = pd.read_csv(path_name, index_col=False)
 
     except Exception as error:
         raise Exception(error)
 
     return stock_list
 
-def test ():
+
+def test():
     try:
         output_dir = '../_storage/openData'
 
@@ -372,9 +380,9 @@ def test ():
         # download_stock_list(output_dir = output_dir)
 
         # test 2
-        download_stock_list(refetch = True, output_dir = output_dir)
+        download_stock_list(refetch=True, output_dir=output_dir)
 
-        df = get_stock_list(data_dir = output_dir)
+        df = get_stock_list(data_dir=output_dir)
         print('--')
         print(df)
         print('--')
@@ -393,6 +401,7 @@ def test ():
     print(f'({time_elapsed} elapsed)')
 
     print('Goodbye!')
+
 
 if __name__ == '__main__':
     test()

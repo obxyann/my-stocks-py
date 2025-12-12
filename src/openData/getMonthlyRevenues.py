@@ -1,7 +1,6 @@
 import sys
 import requests
 from io import StringIO
-#import re
 import os
 from datetime import datetime
 
@@ -23,6 +22,7 @@ from utils.ansiColors import Colors, use_color
 # 首頁 > 彙總報表 > 營運概況 > 每月營收 > 每月營收
 # https://mops.twse.com.tw/mops/#/web/t21sc04_ifrs
 
+
 # Fetch the monthly revenue of listed companies for a specific market and month
 #
 # param
@@ -35,7 +35,7 @@ from utils.ansiColors import Colors, use_color
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def fetch_monthly_revenues_in_market (market, year, month):
+def fetch_monthly_revenues_in_market(market, year, month):
     log(f'Downloading {market} {year}-{month:02} revenues...\n')
 
     if market == 'tse':
@@ -45,17 +45,19 @@ def fetch_monthly_revenues_in_market (market, year, month):
     elif market == 'esb':
         market_id = 'rotc'
     else:
-        raise ValueError(f'Not support market \'{market}\'')
+        raise ValueError(f"Not support market '{market}'")
 
-    if year < 1962: # the start year of TWSE
-        raise ValueError(f'Invalid year \'{year}\'')
+    if year < 1962:
+        # below the start year of TWSE
+        raise ValueError(f"Invalid year '{year}'")
 
-    if year < 2013: # the start year which TWSE provides the CSV data of monthly revenues
+    if year < 2013:
+        # below the start year which TWSE provides the CSV data of monthly revenues
         # HTML data is not supported in this moment
-        raise ValueError(f'Only HTML data is available in \'{year}\' which not supported')
+        raise ValueError(f"Only HTML data is available in '{year}' which not supported")
 
     if month < 1 or month > 12:
-        raise ValueError(f'Invalid month \'{month}\'')
+        raise ValueError(f"Invalid month '{month}'")
 
     minguo_year = year - 1911
 
@@ -77,7 +79,7 @@ def fetch_monthly_revenues_in_market (market, year, month):
     response = requests.get(url)
 
     if response.status_code != 200:
-        raise Exception(f'Failed to download data, status_code = {response.status_code}')
+        raise Exception(f'Failed to download data, status_code = {response.status_code}')  # fmt: skip
 
     # NOTE: Requests will automatically decode content from the server
     #       It makes educated guesses about the encoding of the response based on the HTTP headers
@@ -101,7 +103,7 @@ def fetch_monthly_revenues_in_market (market, year, month):
     # or force to its real encoding
     # response.encoding = 'UTF-8'
 
-    '''
+    """
     response.text is a CSV text like
     ---------------------------------
     出表日期,資料年月,公司代號,公司名稱,產業別,營業收入-當月營收,營業收入-上月營收,營業收入-去年當月營收,營業收入-上月比較增減(%),營業收入-去年同月增減(%),累計營業收入-當月累計營收,累計營業收入-去年累計營收,累計營業收入-前期比較增減(%),備註
@@ -115,15 +117,19 @@ def fetch_monthly_revenues_in_market (market, year, month):
     --------
     出表日期,資料年月,公司代號,公司名稱,產業別,營業收入-當月營收,營業收入-上月營收,營業收入-去年當月營收,營業收入-上月比較增減(%),營業收入-去年同月增減(%),累計營業收入-當月累計營收,累計營業收入-去年累計營收,累計營業收入-前期比較增減(%),備註
     --------
-    '''
+    """
     # just for debug
     # print(response.text[:1000])
 
-    cols_to_use = [
-       '公司代號', '公司名稱', '營業收入-當月營收', '備註'] # ,
-       # NOTE: belows can be missed, they can be calculated after retrieving the historical data
-       # '營業收入-上月比較增減(%)', '營業收入-去年當月營收', '營業收入-去年同月增減(%)',
-       # '累計營業收入-當月累計營收' , '累計營業收入-去年累計營收', '累計營業收入-前期比較增減(%)']
+    cols_to_use = ['公司代號', '公司名稱', '營業收入-當月營收', '備註']
+    # NOTE: belows can be skipped, they can be calculated after retrieving the historical data
+    #   '營業收入-上月比較增減(%)',
+    #   '營業收入-去年當月營收',
+    #   '營業收入-去年同月增減(%)',
+    #   '累計營業收入-當月累計營收',
+    #   '累計營業收入-去年累計營收',
+    #   '累計營業收入-前期比較增減(%)'
+    # ]
 
     reason = None
 
@@ -131,10 +137,12 @@ def fetch_monthly_revenues_in_market (market, year, month):
         # method 1 (2/2): use Requests to get data (codes above at 1/2)
         print('Parsing csv...')
 
-        df = pd.read_csv(StringIO(response.text), index_col = False, usecols = cols_to_use)[cols_to_use].fillna(0)
+        df = pd.read_csv(StringIO(response.text), index_col=False, usecols=cols_to_use)
         # or
         # method 2: pass url to read_csv directly
-        # df = pd.read_csv(url, index_col = False, usecols = cols_to_use)[cols_to_use].fillna(0)
+        # df = pd.read_csv(url, index_col = False, usecols = cols_to_use)
+
+        df = df[cols_to_use].fillna(0)
 
     except Exception as error:
         reason = str(error)
@@ -143,13 +151,18 @@ def fetch_monthly_revenues_in_market (market, year, month):
         # 'No tables found' likes
         raise Exception(reason)
     if df.empty:
-        raise Exception(f'Data not available for \'{year}{month}\'')
+        raise Exception(f"Data not available for '{year}{month}'")
 
     # set new column names
-    df.columns = ['Code', 'Name', 'Revenue', 'Note'] # ,
-        # NOTE: belows can be missed, they can be calculated after retrieving the historical data
-        # 'MoM', 'Last_year', 'YoY',
-        # 'Cumulative', 'Cum_last_year', 'CumYoY']
+    df.columns = ['Code', 'Name', 'Revenue', 'Note']
+    # NOTE: belows can be missed, they can be calculated after retrieving the historical data
+    #   'MoM',
+    #   'Last_year',
+    #   'YoY',
+    #   'Cumulative',
+    #   'Cum_last_year',
+    #   'CumYoY'
+    # ]
 
     # convert to proper type
     df['Note'] = df['Note'].astype('string')
@@ -161,10 +174,11 @@ def fetch_monthly_revenues_in_market (market, year, month):
 
     return df
 
+
 # Get the year and month of the last monthly revenue
 #
 # return the year, month pair
-def get_last_revenue_year_month ():
+def get_last_revenue_year_month():
     # current time
     curr_time = datetime.now()
 
@@ -180,6 +194,7 @@ def get_last_revenue_year_month ():
 
     return year, month
 
+
 # Fetch the monthly revenues for a specific month
 #
 # param
@@ -189,7 +204,7 @@ def get_last_revenue_year_month ():
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def fetch_monthly_revenues (year, month):
+def fetch_monthly_revenues(year, month):
     try:
         revenues_1 = fetch_monthly_revenues_in_market('tse', year, month)
         wait(2, 5)
@@ -201,7 +216,7 @@ def fetch_monthly_revenues (year, month):
 
         print('Concatenating data...')
 
-        revenues = pd.concat([revenues_1, revenues_2], ignore_index = True)
+        revenues = pd.concat([revenues_1, revenues_2], ignore_index=True)
 
         # just for debug
         # print(revenues)
@@ -217,6 +232,7 @@ def fetch_monthly_revenues (year, month):
 
     return revenues
 
+
 # Download the last monthly revenues
 #
 # This will download data and save to
@@ -224,14 +240,14 @@ def fetch_monthly_revenues (year, month):
 #
 # param
 #   output_dir - directory where the CSV file will be saved
-def download_last_monthly_revenues (output_dir = '.'):
+def download_last_monthly_revenues(output_dir='.'):
     print('Fetching...')
 
     # last year, month
     year, month = get_last_revenue_year_month()
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # destination file
     path_name = f'{output_dir}/revenues_{year}{month:02}.csv'
@@ -240,9 +256,10 @@ def download_last_monthly_revenues (output_dir = '.'):
     revenues = fetch_monthly_revenues(year, month)
 
     # save data to file
-    revenues.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
+    revenues.to_csv(path_name, index=False)  # , encoding = 'utf-8-sig')
 
-    print(f'Write to \'{path_name}\' successfully')
+    print(f"Write to '{path_name}' successfully")
+
 
 # Download the monthly revenues starting from a specific date
 #
@@ -253,7 +270,9 @@ def download_last_monthly_revenues (output_dir = '.'):
 #   refetch    - whether to force refetch even if a local file exists
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
-def download_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', output_dir = '.'):
+def download_hist_monthly_revenues(
+    refetch=False, start_date='2013-01-01', output_dir='.'
+):
     print('Fetching...')
 
     # start year, month
@@ -267,7 +286,7 @@ def download_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', 
     # end_year, end_month = end.year, end.month
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     downloaded = 0
     failed = 0
@@ -290,7 +309,7 @@ def download_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', 
                 revenues = fetch_monthly_revenues(year, month)
 
                 # save data to file
-                revenues.to_csv(path_name, index = False) # , encoding = 'utf-8-sig')
+                revenues.to_csv(path_name, index=False)  # , encoding = 'utf-8-sig')
 
                 downloaded += 1
 
@@ -318,14 +337,15 @@ def download_hist_monthly_revenues (refetch = False, start_date = '2013-01-01', 
 
     log(f'\nTotal {count - failed} done, {downloaded} downloaded, {failed} failed\n')
 
-def test ():
+
+def test():
     try:
         output_dir = '../_storage/openData/monthly'
 
-        logger_start(log_name = '_monthly', log_dir = output_dir, add_start_time_to_name = False)
+        logger_start(log_name='_monthly', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
 
         # test 1
-        download_last_monthly_revenues(output_dir = output_dir)
+        download_last_monthly_revenues(output_dir=output_dir)
 
         # test 2
         # download_hist_monthly_revenues(start_date = '2013-01-01', output_dir = output_dir)
@@ -342,6 +362,7 @@ def test ():
     print(f'({time_elapsed} elapsed)')
 
     print('Goodbye!')
+
 
 if __name__ == '__main__':
     test()

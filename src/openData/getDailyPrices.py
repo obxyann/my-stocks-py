@@ -12,10 +12,15 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
-from utils.ass import get_last_market_close_day, get_date_from_path_name, parse_date_string
+from utils.ass import (
+    get_last_market_close_day,
+    get_date_from_path_name,
+    parse_date_string,
+)
 from utils.logger import log, logger_start, logger_end
 from utils.ansiColors import Colors, use_color
 from utils.getTradingHoliday import isTradingHoliday
+
 
 # Download the (latest) daily prices file in TWSE (Taiwan Stock Exchange)
 #
@@ -25,7 +30,7 @@ from utils.getTradingHoliday import isTradingHoliday
 # return the full path of the saved file 'STOCK_DAY_ALL_{YYYYMMDD}.csv'
 #
 # raise an exception on failure
-def download_daily_prices_in_twse (output_dir = '.'):
+def download_daily_prices_in_twse(output_dir='.'):
     log('Downloading TWSE daily prices...\n')
 
     # get the last daily trading prices
@@ -38,10 +43,10 @@ def download_daily_prices_in_twse (output_dir = '.'):
     response = requests.get(url)
 
     if response.status_code != 200:
-        raise Exception(f'Failed to download data. status_code = {response.status_code}')
+        raise Exception(f'Failed to download data. status_code = {response.status_code}')  # fmt: skip
 
     # get the download file name
-    '''
+    """
     response.headers = {
     ...
     'Content-Disposition': 'attachment; filename="STOCK_DAY_ALL_20241106.csv"'
@@ -51,7 +56,7 @@ def download_daily_prices_in_twse (output_dir = '.'):
     see:
     https://stackoverflow.com/questions/31804799/how-to-get-pdf-filename-with-python-requests
     https://stackoverflow.com/questions/37060344/how-to-determine-the-filename-of-content-downloaded-with-http-in-python
-    '''
+    """
     header_value = response.headers.get('Content-Disposition', '')
 
     if len(header_value):
@@ -61,15 +66,15 @@ def download_daily_prices_in_twse (output_dir = '.'):
             file_name = found[0]
         else:
             # The 'Content-Disposition' header didn't contain the 'filename=' text
-            reason = 'Can\'t get the file name. Not found \'filename=\' in \'Content-Disposition\' header'
+            reason = "Can't get the file name. Not found 'filename=' in 'Content-Disposition' header"
     else:
         # Response didn't contain the 'Content-Disposition' header
-        reason = 'Can\'t get the file name. No \'Content-Disposition\' header'
+        reason = "Can't get the file name. No 'Content-Disposition' header"
 
     if not len(file_name):
         raise Exception(reason)
 
-    '''
+    """
     response.content(*) is like
     ---------------------------
     證券代號,證券名稱,成交股數,成交金額,開盤價,最高價,最低價,收盤價,漲跌價差,成交筆數
@@ -80,18 +85,19 @@ def download_daily_prices_in_twse (output_dir = '.'):
     ---------------------------
     NOTE: this is binary data (for following open file as "wb")
           on the other hand uses response.text for textual data
-    '''
+    """
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # save the response data to a CSV file
-    with open(f'{output_dir}/{file_name}', "wb") as f:
+    with open(f'{output_dir}/{file_name}', 'wb') as f:
         f.write(response.content)
 
-    print(f'  \'{file_name}\' downloaded successfully')
+    print(f"  '{file_name}' downloaded successfully")
 
     return f'{output_dir}/{file_name}'
+
 
 # Download the (latest) daily prices file in TPEx (Taipei Exchange)
 #
@@ -106,7 +112,7 @@ def download_daily_prices_in_twse (output_dir = '.'):
 # not A.D. year
 #
 # raise an exception on failure
-def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
+def download_daily_prices_in_tpex(output_dir='.', include_warrant=False):
     log('Downloading TPEx daily prices...\n')
 
     # get the last daily trading prices
@@ -122,10 +128,10 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
     response = requests.get(url)
 
     if response.status_code != 200:
-        raise Exception(f'Failed to download data. status_code = {response.status_code}')
+        raise Exception(f'Failed to download data. status_code = {response.status_code}')  # fmt: skip
 
     # get the download file name
-    '''
+    """
     response.headers = {
     ...
     'Content-Disposition': 'attachment; filename="RSTA3104_1131107.csv"'
@@ -133,7 +139,7 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
     }
     https://stackoverflow.com/questions/31804799/how-to-get-pdf-filename-with-python-requests
     https://stackoverflow.com/questions/37060344/how-to-determine-the-filename-of-content-downloaded-with-http-in-python
-    '''
+    """
     header_value = response.headers.get('Content-Disposition', '')
 
     if len(header_value):
@@ -143,15 +149,15 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
             file_name = found[0]
         else:
             # The 'Content-Disposition' header didn't contain the 'filename=' text
-            reason = 'Can\'t get the file name. Not found \'filename=\' in \'Content-Disposition\' header'
+            reason = "Can't get the file name. Not found 'filename=' in 'Content-Disposition' header"
     else:
         # Response didn't contain the 'Content-Disposition' header
-        reason = 'Can\'t get the file name. No \'Content-Disposition\' header'
+        reason = "Can't get the file name. No 'Content-Disposition' header"
 
     if not len(file_name):
         raise Exception(reason)
 
-    '''
+    """
     response.content is like
     ------------------------
     上櫃股票行情(含等價、零股、盤後、鉅額交易)
@@ -172,21 +178,21 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
     總成交筆數,"651,781",
     (this is an empty line)
     ------------------------
-    '''
+    """
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # save the content of the response to a temp file
-    temp_name = file_name + '.tmp'
+    temp_file = f'{output_dir}/{file_name}.tmp'
 
-    with open(f'{output_dir}/{temp_name}', "wb") as f:
+    with open(temp_file, 'wb') as f:
         f.write(response.content)
 
     # remove useless lines
     #
     # from temp file
-    with open(f'{output_dir}/{temp_name}', 'rt', encoding = 'cp950') as temp:   # , newline = '\r\n')
+    with open(temp_file, 'rt', encoding='cp950') as temp:  # , newline = '\r\n')
         # to csv file
         with open(f'{output_dir}/{file_name}', 'wb') as csv:
             count = 0
@@ -197,17 +203,22 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
                     count += 1
                     continue
 
-                if line == '\n': # NOTE: '\n', '\r', or '\r\n' are translated to \n when open a file in text mode w/o newline option
+                # NOTE: '\n', '\r', or '\r\n' are translated to \n when open a file in text mode w/o newline option
+                if line == '\n':
                     # once meet an empty line
                     break
 
                 # replace " ---","--- ","---" -> "" or "0"
                 # line = re.sub(r'"[ |-]+"', '""', line)
                 # or
-                line = re.sub(r'\" ?-{3} ?\"', '\"0\"', line)
+                line = re.sub(r'\" ?-{3} ?\"', '"0"', line)
 
                 # replace all "12,345,678","1,234.5" likes -> "12345678","1234.5"
-                line = re.sub(r'\"[0-9]{1,3}(,[0-9]{3})+(\.[0-9]+)?\"', lambda x: x.group(0).replace(',', ''), line)
+                line = re.sub(
+                    r'\"[0-9]{1,3}(,[0-9]{3})+(\.[0-9]+)?\"',
+                    lambda x: x.group(0).replace(',', ''),
+                    line,
+                )
 
                 if not include_warrant:
                     # check if this is leaded by a warrant code like "700000"~"739999", "70000P"~"73999P" or U,T,F,Q
@@ -225,14 +236,15 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
 
     try:
         # remove temp file
-        os.unlink(f'{output_dir}/{temp_name}')
+        os.unlink(temp_file)
 
     except:
-        print(f'  Warning: Can\'t remove \'{temp_name}\'\n')
+        print(f"  Warning: Can't remove '{temp_file}'\n")
 
-    print(f'  \'{file_name}\' downloaded successfully')
+    print(f"  '{file_name}' downloaded successfully")
 
     return f'{output_dir}/{file_name}'
+
 
 # Read the TWSE (latest) daily prices from the prices file
 #
@@ -245,16 +257,18 @@ def download_daily_prices_in_tpex (output_dir = '.', include_warrant = False):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def read_twse_daily_prices (data_dir = '.', remove_download = True):
+def read_twse_daily_prices(data_dir='.', remove_download=True):
     # get date
-    last_date = get_last_market_close_day(close_hour = 13, close_minute = 50) # or after 13:37
+    last_date = get_last_market_close_day(
+        close_hour=13, close_minute=50
+    )  # or after 13:37
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
     path_name = f'{data_dir}/STOCK_DAY_ALL_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_daily_prices_in_twse(output_dir = data_dir)
+        path_name = download_daily_prices_in_twse(output_dir=data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -262,12 +276,30 @@ def read_twse_daily_prices (data_dir = '.', remove_download = True):
         log(f'Reading TWSE daily prices on {file_date} saved...\n')
 
         cols_to_use = [
-            '證券代號', '證券名稱', '開盤價', '最高價', '最低價', '收盤價', '成交股數', '成交金額']
-        prices = pd.read_csv(path_name, index_col = False, usecols = cols_to_use)[cols_to_use].fillna(0)
+            '證券代號',
+            '證券名稱',
+            '開盤價',
+            '最高價',
+            '最低價',
+            '收盤價',
+            '成交股數',
+            '成交金額',
+        ]
+        prices = pd.read_csv(path_name, index_col=False, usecols=cols_to_use)
+
+        prices = prices[cols_to_use].fillna(0)
 
         # set new column names
         prices.columns = [
-            'Code', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Code',
+            'Name',
+            'Open',
+            'High',
+            'Low',
+            'Close',
+            'Volume',
+            'Value',
+        ]
 
         # add 'Market' column
         prices['Market'] = 'tse'
@@ -276,8 +308,9 @@ def read_twse_daily_prices (data_dir = '.', remove_download = True):
         # prices[['Open', 'High', 'Low', 'Close']] = prices[['Open', 'High', 'Low', 'Close']].astype('float32')
         # prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('uint32')
         # or
-        prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('int64')   # MEMO: use Panda's 'Int64' instead of python's 'int64'
-                                                                                    #       to avoid NaN exception
+        prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('int64')
+        # MEMO: use Panda's 'Int64' instead of python's 'int64' to avoid NaN exception
+
         # just for debug
         # print(prices)
 
@@ -288,7 +321,7 @@ def read_twse_daily_prices (data_dir = '.', remove_download = True):
 
             except:
                 use_color(Colors.WARNING)
-                log(f'  Warning: Can\'t remove \'{path_name}\'\n')
+                log(f"  Warning: Can't remove '{path_name}'\n")
                 use_color(Colors.RESET)
 
     except Exception as error:
@@ -301,6 +334,7 @@ def read_twse_daily_prices (data_dir = '.', remove_download = True):
     log(f'  {len(prices)} records\n')
 
     return prices, file_date
+
 
 # Read the TPEx (latest) daily prices from the prices file
 #
@@ -313,16 +347,18 @@ def read_twse_daily_prices (data_dir = '.', remove_download = True):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def read_tpex_daily_prices (data_dir = '.', remove_download = True):
+def read_tpex_daily_prices(data_dir='.', remove_download=True):
     # get date
-    last_date = get_last_market_close_day(close_hour = 14, close_minute = 55, min_guo_year = True)  # or after 14:51
+    last_date = get_last_market_close_day(
+        close_hour=14, close_minute=55, min_guo_year=True
+    )  # or after 14:51
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
     path_name = f'{data_dir}/RSTA3104_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_daily_prices_in_tpex(output_dir = data_dir)
+        path_name = download_daily_prices_in_tpex(output_dir=data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -330,12 +366,30 @@ def read_tpex_daily_prices (data_dir = '.', remove_download = True):
         log(f'Reading TPEx daily prices on {file_date} saved...\n')
 
         cols_to_use = [
-            '代號', '名稱', '開盤', '最高', '最低', '收盤', '成交股數','成交金額(元)']
-        prices = pd.read_csv(path_name, usecols = cols_to_use)[cols_to_use].fillna(0)
+            '代號',
+            '名稱',
+            '開盤',
+            '最高',
+            '最低',
+            '收盤',
+            '成交股數',
+            '成交金額(元)',
+        ]
+        prices = pd.read_csv(path_name, usecols=cols_to_use)
+
+        prices = prices[cols_to_use].fillna(0)
 
         # set new column names
         prices.columns = [
-            'Code', 'Name', 'Open', 'High', 'Low', 'Close', 'Volume', 'Value']
+            'Code',
+            'Name',
+            'Open',
+            'High',
+            'Low',
+            'Close',
+            'Volume',
+            'Value',
+        ]
 
         # add 'Market' column
         prices['Market'] = 'otc'
@@ -344,8 +398,8 @@ def read_tpex_daily_prices (data_dir = '.', remove_download = True):
         # prices[['Open', 'High', 'Low', 'Close']] = prices[['Open', 'High', 'Low', 'Close']].astype('float32')
         # prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('uint32')
         # or
-        prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('int64')   # MEMO: use Panda's 'Int64' instead of python's 'int64'
-                                                                                    #       to avoid NaN exception
+        prices[['Volume', 'Value']] = prices[['Volume', 'Value']].astype('int64')
+        # MEMO: use Panda's 'Int64' instead of python's 'int64' to avoid NaN exception
         # just for debug
         # print(prices)
 
@@ -356,7 +410,7 @@ def read_tpex_daily_prices (data_dir = '.', remove_download = True):
 
             except:
                 use_color(Colors.WARNING)
-                log(f'  Warning: Can\'t remove \'{path_name}\'\n')
+                log(f"  Warning: Can't remove '{path_name}'\n")
                 use_color(Colors.RESET)
 
     except Exception as error:
@@ -370,6 +424,7 @@ def read_tpex_daily_prices (data_dir = '.', remove_download = True):
 
     return prices, file_date
 
+
 # Fetch the (latest) daily prices
 #
 # After the function returns, the files downloaded during period will be removed.
@@ -380,10 +435,10 @@ def read_tpex_daily_prices (data_dir = '.', remove_download = True):
 # return the result in pandas.DataFrame
 #
 # raise an exception on failure
-def fetch_daily_prices (temp_dir = '.'):
+def fetch_daily_prices(temp_dir='.'):
     try:
-        prices_1, date_1 = read_twse_daily_prices(data_dir = temp_dir)
-        prices_2, date_2 = read_tpex_daily_prices(data_dir = temp_dir)
+        prices_1, date_1 = read_twse_daily_prices(data_dir=temp_dir)
+        prices_2, date_2 = read_tpex_daily_prices(data_dir=temp_dir)
 
         # just for debug
         # prices_1.to_csv(f'{temp_dir}/~prices_tse_{date_1}.csv', index = False)
@@ -392,7 +447,7 @@ def fetch_daily_prices (temp_dir = '.'):
         if date_1 == date_2:
             print('Concatenating data...')
 
-            prices = pd.concat([prices_1, prices_2], ignore_index = True)
+            prices = pd.concat([prices_1, prices_2], ignore_index=True)
 
             # just for debug
             # print(prices)
@@ -405,7 +460,7 @@ def fetch_daily_prices (temp_dir = '.'):
             log(f'Warning: There is data ({exchange}) waiting to be updated\n')
             use_color(Colors.RESET)
 
-            raise Exception(f'Can\'t concatenate data with different dates {date_1}, {date_2}')
+            raise Exception(f"Can't concatenate data with different dates {date_1}, {date_2}")  # fmt: skip
 
     except Exception as error:
         use_color(Colors.FAIL)
@@ -418,38 +473,42 @@ def fetch_daily_prices (temp_dir = '.'):
 
     return prices, date_1
 
+
 # Download the last daily prices
 #
-# This will try to get data from remote and save to 
+# This will try to get data from remote and save to
 # 'prices_{YYYYMMDD}.csv' without return the data.
 #
 # param
 #   output_dir - directory where the CSV file will be saved
-def download_last_daily_prices (output_dir = '.'):
+def download_last_daily_prices(output_dir='.'):
     print('Fetching...')
 
     # make an output directory
-    os.makedirs(output_dir, exist_ok = True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # fetch prices from remote
-    prices, this_date = fetch_daily_prices() # data_dir = output_dir)
+    prices, this_date = fetch_daily_prices()  # data_dir = output_dir)
 
     # destination file
     path_name = f'{output_dir}/prices_{this_date}.csv'
 
     # save data to file
-    prices.to_csv(path_name, index = False)
+    prices.to_csv(path_name, index=False)
 
-    print(f'Write to \'{path_name}\' successfully')
+    print(f"Write to '{path_name}' successfully")
+
 
 # Check if the local file of last daily prices exists or not
-def check_last_daily_prices_exist (data_dir = '.'):
+def check_last_daily_prices_exist(data_dir='.'):
     print('Checking local...')
 
     # get today
-    today = datetime.now().replace(hour = 0, minute = 0, second = 0, microsecond = 0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     # and last market close day
-    last_close = parse_date_string(get_last_market_close_day(close_hour = 14, close_minute = 55))
+    last_close = parse_date_string(
+        get_last_market_close_day(close_hour=14, close_minute=55)
+    )
 
     year, month, day = last_close.year, last_close.month, last_close.day
 
@@ -459,7 +518,7 @@ def check_last_daily_prices_exist (data_dir = '.'):
             print(f'Warning: This is not a trading day')
         else:
             print(f'Warning: The market is not closed today')
-        print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')
+        print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')  # fmt: skip
         use_color(Colors.RESET)
 
     # local file
@@ -467,19 +526,20 @@ def check_last_daily_prices_exist (data_dir = '.'):
 
     # check local
     if os.path.isfile(path_name) and os.path.getsize(path_name):
-         log(f'[{year}-{month:02}-{day:02}] prices already exists\n')
+        log(f'[{year}-{month:02}-{day:02}] prices already exists\n')
 
-         return True
+        return True
     # else:
     return False
 
-def test ():
+
+def test():
     try:
         output_dir = '../_storage/openData/daily'
 
-        logger_start(log_name = '_daily', log_dir = output_dir, add_start_time_to_name = False)
+        logger_start(log_name='_daily', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
 
-        download_last_daily_prices(output_dir = output_dir)
+        download_last_daily_prices(output_dir=output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')
@@ -493,6 +553,7 @@ def test ():
     print(f'({time_elapsed} elapsed)')
 
     print('Goodbye!')
+
 
 if __name__ == '__main__':
     test()
