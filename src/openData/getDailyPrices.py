@@ -238,7 +238,7 @@ def download_daily_prices_in_tpex(output_dir='.', include_warrant=False):
         # remove temp file
         os.unlink(temp_file)
 
-    except:
+    except OSError:
         print(f"  Warning: Can't remove '{temp_file}'\n")
 
     print(f"  '{file_name}' downloaded successfully")
@@ -319,7 +319,7 @@ def read_twse_daily_prices(data_dir='.', remove_download=True):
                 # remove download
                 os.unlink(path_name)
 
-            except:
+            except OSError:
                 use_color(Colors.WARNING)
                 log(f"  Warning: Can't remove '{path_name}'\n")
                 use_color(Colors.RESET)
@@ -408,7 +408,7 @@ def read_tpex_daily_prices(data_dir='.', remove_download=True):
                 # remove download
                 os.unlink(path_name)
 
-            except:
+            except OSError:
                 use_color(Colors.WARNING)
                 log(f"  Warning: Can't remove '{path_name}'\n")
                 use_color(Colors.RESET)
@@ -515,9 +515,9 @@ def check_last_daily_prices_exist(data_dir='.'):
     if today != last_close:
         use_color(Colors.WARNING)
         if isTradingHoliday(today):
-            print(f'Warning: This is not a trading day')
+            print('Warning: This is not a trading day')
         else:
-            print(f'Warning: The market is not closed today')
+            print('Warning: The market is not closed today')
         print(f'         Try to get the last trading day ({year}-{month:02}-{day:02}?) prices')  # fmt: skip
         use_color(Colors.RESET)
 

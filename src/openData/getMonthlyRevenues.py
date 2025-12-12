@@ -52,8 +52,7 @@ def fetch_monthly_revenues_in_market(market, year, month):
         raise ValueError(f"Invalid year '{year}'")
 
     if year < 2013:
-        # below the start year which TWSE provides the CSV data of monthly revenues
-        # HTML data is not supported in this moment
+        # after this year TWSE provides the CSV data of monthly revenues
         raise ValueError(f"Only HTML data is available in '{year}' which not supported")
 
     if month < 1 or month > 12:
@@ -313,9 +312,7 @@ def download_hist_monthly_revenues(
 
                 downloaded += 1
 
-            except:
-                pass
-
+            except Exception:
                 failed += 1
 
             delay = True

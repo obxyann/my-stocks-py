@@ -13,7 +13,6 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
-from utils.ass import file_is_old
 from utils.ansiColors import Colors, use_color
 
 
@@ -328,7 +327,7 @@ def download_stock_list(refetch=False, output_dir='.'):
 
     # check local
     if not refetch and os.path.isfile(path_name) and os.path.getsize(path_name):
-        print(f'Stock list already exists')
+        print('Stock list already exists')
     else:
         try:
             # fetch list from remote
@@ -338,7 +337,8 @@ def download_stock_list(refetch=False, output_dir='.'):
             stock_list.to_csv(path_name, index=False)
 
             print(f"Write to '{path_name}' successfully")
-        except:
+
+        except Exception:
             pass
 
     # print('Done')

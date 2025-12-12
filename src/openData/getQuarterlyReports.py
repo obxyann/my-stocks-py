@@ -3,7 +3,6 @@ import requests
 from io import StringIO
 import os
 from datetime import datetime, date
-import time
 
 import pandas as pd
 
@@ -84,14 +83,13 @@ def fetch_financial_statements_in_market(
     else:
         raise ValueError(f"Not support market '{market}'")
 
-    if year < 1962: 
+    if year < 1962:
         # below the start year of TWSE
         raise ValueError(f"Invalid year '{year}'")
 
     if year < 2013:
-        # below the start year which TWSE change to the HTML layout
-        # old HTML data is not supported in this moment
-        raise ValueError(f'Old HTML data is not supported')
+        # after this year TWSE had changed the HTML layout
+        raise ValueError('Old HTML format is not supported')
 
     if quarter < 1 or quarter > 4:
         raise ValueError(f"Invalid quarter '{quarter}'")
@@ -109,7 +107,7 @@ def fetch_financial_statements_in_market(
     else:
         raise ValueError(f"Not support statement '{statement}'")
 
-    if sectors == None:
+    if sectors is None:
         # 金融業, 證券期貨業, 一般業, 金控業, 保險業, 異業
         sectors = ['basi', 'bd', 'ci', 'fh', 'ins', 'mim']
     elif not isinstance(sectors, list):
@@ -303,7 +301,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
                     return 'min'  # 異業
 
             use_color(Colors.WARNING)
-            log(f"  Warning: Industry sector is ambiguous - value set to 'bd_ci_min'\n")  # fmt: skip
+            log("  Warning: Industry sector is ambiguous - value set to 'bd_ci_min'\n")  # fmt: skip
             log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
             use_color(Colors.RESET)
 
@@ -331,7 +329,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
             return 'ci'  # only 一般業
 
     use_color(Colors.WARNING)
-    log(f"  Warning: Unable to decide the industry sector - value set to '--'\n")  # fmt: skip
+    log("  Warning: Unable to decide the industry sector - value set to '--'\n")  # fmt: skip
     log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
     use_color(Colors.RESET)
 
@@ -678,7 +676,7 @@ def adjustDf(df, statement):
         rename = adjust_table[statement]['rename']
         remove = adjust_table[statement]['remove']
 
-    except:
+    except KeyError:
         use_color(Colors.WARNING)
         log(f"  Warning: Not found '{statement}' in the adjust table\n")
         use_color(Colors.RESET)
@@ -698,7 +696,7 @@ def adjustDf(df, statement):
     try:
         df = df.drop(remove, axis=1)
 
-    except:
+    except Exception:
         pass
 
     return df
@@ -709,7 +707,7 @@ def sortDfColumns(df, statement):
     try:
         sequence = adjust_table[statement]['sequence']
 
-    except:
+    except KeyError:
         use_color(Colors.WARNING)
         log(f"  Warning: Not found '{statement}' in the adjust table\n")
         use_color(Colors.RESET)
@@ -722,7 +720,7 @@ def sortDfColumns(df, statement):
         try:
             return sequence.index(item)
 
-        except:
+        except Exception:
             use_color(Colors.WARNING)
             log(f"  Warning: Not found '{item}' in sequence list\n")
             use_color(Colors.RESET)
@@ -955,9 +953,7 @@ def download_hist_quarterly_reports(
 
                 downloaded += 1
 
-            except:
-                pass
-
+            except Exception:
                 failed += 1
 
             delay = True
