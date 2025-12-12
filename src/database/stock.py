@@ -211,7 +211,7 @@ class StockDatabase:
                 'name',
                 'market',
                 'type',
-            ] 
+            ]
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
             if missing_cols:

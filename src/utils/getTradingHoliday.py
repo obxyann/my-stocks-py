@@ -280,7 +280,7 @@ def isTradingHoliday(the_date=None):
         d = the_date.date()
     elif isinstance(the_date, date):
         d = the_date
-    elif the_date == None:
+    elif the_date is None:
         d = date.today()
     else:
         print(f"Error: Not a valid paramter '{the_date}'")

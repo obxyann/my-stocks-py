@@ -124,6 +124,7 @@ def parse_date_string(date_str):
 # file time #
 #############
 
+
 # Get the creation time of path
 #
 # return the seconds since the epoch (Unix epoch time)
@@ -218,6 +219,7 @@ def file_is_old(path_name, hour=0, minute=0, second=0, quiet=True):
 # directory #
 #############
 
+
 # Create directory if it doesn't exist
 def ensure_directory_exists(path_name):
     dir_name = os.path.dirname(path_name)
@@ -230,9 +232,10 @@ def ensure_directory_exists(path_name):
 # backup #
 ##########
 
-# import os
+
 import time
 import zipfile
+# import os
 
 D_ARROW = '\u2193'  # '↓' U+2193
 R_ARROW = '\u2192'  # '→' U+2192
@@ -357,6 +360,7 @@ def backup_files(files, zip_path=None):
 # ask #
 #######
 
+
 def to_continue(question='Do you want to continue?'):
     while True:
         user_input = input(f'{question} (yes/no): ')
@@ -377,13 +381,14 @@ def to_continue(question='Do you want to continue?'):
 # spinner #
 ###########
 
+
 # ref:
 # https://stackoverflow.com/questions/48854567/how-do-i-make-an-asynchronous-progress-spinner-in-python
 
 import sys
-# import time # fmt: skip
 import threading
 import random
+# import time
 
 spin_done = None
 spin_thread = None
