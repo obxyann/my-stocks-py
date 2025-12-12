@@ -214,7 +214,7 @@ class StockDatabase:
             # remove rows with empty code
             df.dropna(subset = ['code'], inplace = True)
 
-            # convert 'code' to string to match schema
+            # ensure 'code' in string format
             df['code'] = df['code'].astype(str)
 
             # replace NaNs with None for SQLite compatibility
@@ -424,6 +424,16 @@ class StockDatabase:
 
         updated_time = self.get_table_updated_time('daily_prices')
 
+        # define column mapping
+        col_mapping = {
+            'Code': 'code',
+            'Open': 'open_price',
+            'High': 'high_price',
+            'Low': 'low_price',
+            'Close': 'close_price',
+            'Volume': 'volume'
+        }
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.search(r'prices_(\d{4})(\d{2})(\d{2})\.csv', file)
@@ -441,57 +451,72 @@ class StockDatabase:
 
                 if updated_time and csv_mod_time <= updated_time:
                     print(f'{csv_path} is old')
-
                     continue
 
                 print(f'Importing {csv_path}')
 
                 # read CSV
-                df = pd.read_csv(csv_path)
+                try:
+                    df = pd.read_csv(csv_path)
 
-                # drop unnecessary columns
-                if 'Name' in df.columns:
-                    df = df.drop('Name', axis=1)
-                if 'Value' in df.columns:
-                    df = df.drop('Value', axis=1)
-                if 'Market' in df.columns:
-                    df = df.drop('Market', axis=1)
+                except Exception as e:
+                    print(f"Error: Failed reading: {e}")
 
-                # add trade_date column
+                    continue
+
+                # add new column
                 df['trade_date'] = trade_date
 
-                # rename columns to match schema
-                df.rename(columns = {
-                    'Code': 'code',
-                    'Open': 'open_price',
-                    'High': 'high_price',
-                    'Low': 'low_price',
-                    'Close': 'close_price',
-                    'Volume': 'volume'
-                }, inplace = True)
+                # build rename and need columns (based on mapping)
+                rename_dict = {}
+                need_cols = ['trade_date']
 
-                # convert 'code' to string to match schema
+                for csv_col, db_col in col_mapping.items():
+                    if csv_col in df.columns:
+                        rename_dict[csv_col] = db_col
+
+                    need_cols.append(db_col)
+
+                # rename columns
+                df.rename(columns = rename_dict, inplace = True)
+
+                # available columns
+                avail_cols = [c for c in df.columns if c in need_cols]
+
+                # check for mandatory columns
+                # (based on table schema NOT NULL constraints)
+                mandatory_cols = ['code', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'] # and 'trade_date' 
+                missing_cols = [c for c in mandatory_cols if c not in avail_cols]
+
+                if missing_cols:
+                    print(f"Error: Missing mandatory columns {missing_cols}")
+
+                    continue
+
+                # keep only relevant columns
+                df = df[avail_cols]
+
+                # remove rows with empty code
+                df.dropna(subset = ['code'], inplace = True)
+
+                # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
 
-                # select and reorder columns for insertion
-                df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
+                # replace NaNs with None for SQLite compatibility
+                df = df.where(pd.notnull(df), None)
+
+                # prepare SQL
+                columns = ', '.join(avail_cols)
+                placeholders = ', '.join(['?'] * len(avail_cols))
+
+                sql = f'INSERT OR REPLACE INTO daily_prices ({columns}) VALUES ({placeholders})'
+
+                data = df.values.tolist()
+
+                cursor = conn.cursor()
 
                 # insert or replace data
-                for _, row in df.iterrows():
-                    cursor = conn.cursor()
-
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        row['code'],
-                        row['trade_date'],
-                        row['open_price'],
-                        row['high_price'],
-                        row['low_price'],
-                        row['close_price'],
-                        row['volume']
-                    ))
+                cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
 
@@ -529,6 +554,16 @@ class StockDatabase:
 
         updated_time = self.get_table_updated_time('daily_prices')
 
+        # define column mapping
+        col_mapping = {
+            'Date': 'trade_date',
+            'Open': 'open_price',
+            'High': 'high_price',
+            'Low': 'low_price',
+            'Close': 'close_price',
+            'Volume': 'volume'
+        }
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.match(r'^([A-Za-z0-9]+)_prices\.csv$', file)
@@ -544,49 +579,69 @@ class StockDatabase:
 
                 if updated_time and csv_mod_time <= updated_time:
                     print(f'{csv_path} is old')
-
                     continue
 
                 print(f'Importing {csv_path}')
 
                 # read CSV
-                df = pd.read_csv(csv_path)
+                try:
+                    df = pd.read_csv(csv_path)
 
-                # add code column
+                except Exception as e:
+                    print(f"Error: Failed reading: {e}")
+
+                    continue
+
+                # add new column
                 df['code'] = code
 
-                # rename columns to match schema
-                df.rename(columns = {
-                    'Date': 'trade_date',
-                    'Open': 'open_price',
-                    'High': 'high_price',
-                    'Low': 'low_price',
-                    'Close': 'close_price',
-                    'Volume': 'volume'
-                }, inplace = True)
+                # build rename and need columns (based on mapping)
+                rename_dict = {}
+                need_cols = ['code']
+
+                for csv_col, db_col in col_mapping.items():
+                    if csv_col in df.columns:
+                        rename_dict[csv_col] = db_col
+
+                    need_cols.append(db_col)
+
+                # rename columns
+                df.rename(columns = rename_dict, inplace = True)
+
+                # available columns
+                avail_cols = [c for c in df.columns if c in need_cols]
+
+                # check for mandatory columns
+                # (based on table schema NOT NULL constraints)
+                mandatory_cols = ['trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'] # and 'code'
+                missing_cols = [c for c in mandatory_cols if c not in avail_cols]
+
+                if missing_cols:
+                    print(f"Error: Missing mandatory columns {missing_cols}")
+
+                    continue
+
+                # keep only relevant columns
+                df = df[avail_cols]
 
                 # ensure 'trade_date' in correct string format
                 df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
 
-                # select and reorder columns
-                df = df[['code', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']]
+                # replace NaNs with None for SQLite compatibility
+                df = df.where(pd.notnull(df), None)
+
+                # prepare SQL
+                columns = ', '.join(avail_cols)
+                placeholders = ', '.join(['?'] * len(avail_cols))
+
+                sql = f'INSERT OR REPLACE INTO daily_prices ({columns}) VALUES ({placeholders})'
+
+                data = df.values.tolist()
+
+                cursor = conn.cursor()
 
                 # insert or replace data
-                for _, row in df.iterrows():
-                    cursor = conn.cursor()
-
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO daily_prices (code, trade_date, open_price, high_price, low_price, close_price, volume)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        row['code'],
-                        row['trade_date'],
-                        row['open_price'],
-                        row['high_price'],
-                        row['low_price'],
-                        row['close_price'],
-                        row['volume']
-                    ))
+                cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
 
@@ -659,6 +714,13 @@ class StockDatabase:
 
         updated_time = self.get_table_updated_time('monthly_revenue')
 
+        # define column mapping
+        col_mapping = {
+            'Code': 'code',
+            'Revenue': 'revenue',
+            'Note': 'note'
+        }
+
         with self.get_connection() as conn:
             for file in files:
                 match = re.search(r'revenues_(\d{4})(\d{2})\.csv', file)
@@ -674,40 +736,73 @@ class StockDatabase:
 
                 if updated_time and csv_mod_time <= updated_time:
                     print(f'{csv_path} is old')
-
                     continue
 
                 print(f'Importing {csv_path}')
 
                 # read CSV
-                df = pd.read_csv(csv_path)
+                try:
+                    df = pd.read_csv(csv_path)
 
+                except Exception as e:
+                    print(f"Error: Failed reading: {e}")
+
+                    continue
+
+                # add new columns
                 df['year'] = year
                 df['month'] = month
 
-                # rename columns to match schema
-                df.rename(columns = {'Code': 'code', 'Revenue': 'revenue', 'Note': 'note'}, inplace = True)
+                # build rename and need columns (based on mapping)
+                rename_dict = {}
+                need_cols = ['year', 'month']
 
-                # select and reorder columns
-                df = df[['code', 'year', 'month', 'revenue', 'note']]
+                for csv_col, db_col in col_mapping.items():
+                    if csv_col in df.columns:
+                        rename_dict[csv_col] = db_col
 
-                # convert 'code' to string to match schema
+                    need_cols.append(db_col)
+
+                # rename columns
+                df.rename(columns = rename_dict, inplace = True)
+
+                # available columns
+                avail_cols = [c for c in df.columns if c in need_cols]
+
+                # check for mandatory columns
+                # (based on table schema NOT NULL constraints)
+                mandatory_cols = ['code', 'revenue'] # and 'year', 'month'
+                missing_cols = [c for c in mandatory_cols if c not in avail_cols]
+
+                if missing_cols:
+                    print(f"Error: Missing mandatory columns {missing_cols}")
+
+                    continue
+
+                # keep only relevant columns
+                df = df[avail_cols]
+
+                # remove rows with empty code
+                df.dropna(subset = ['code'], inplace = True)
+
+                # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
 
-                # insert or replace data
-                for _, row in df.iterrows():
-                    cursor = conn.cursor()
+                # replace NaNs with None for SQLite compatibility
+                df = df.where(pd.notnull(df), None)
 
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO monthly_revenue (code, year, month, revenue, note)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', (
-                        row['code'],
-                        row['year'],
-                        row['month'],
-                        row['revenue'],
-                        row['note']
-                    ))
+                # prepare SQL
+                columns = ', '.join(avail_cols)
+                placeholders = ', '.join(['?'] * len(avail_cols))
+
+                sql = f'INSERT OR REPLACE INTO monthly_revenue ({columns}) VALUES ({placeholders})'
+
+                data = df.values.tolist()
+
+                cursor = conn.cursor()
+
+                # insert or replace data
+                cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
 
@@ -967,13 +1062,13 @@ class StockDatabase:
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                mandatory_cols = ['code']                
+                mandatory_cols = ['code'] # and 'year', 'quarter'
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
                     print(f"Error: Missing mandatory columns {missing_cols}")
 
-                    return 0
+                    continue
 
                 # keep only relevant columns
                 df = df[avail_cols]
@@ -981,7 +1076,7 @@ class StockDatabase:
                 # remove rows with empty code
                 df.dropna(subset = 'code', inplace = True)
 
-                # convert 'code' to string to match schema
+                # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
 
                 # replace NaNs with None for SQLite compatibility
