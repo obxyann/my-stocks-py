@@ -3,37 +3,42 @@ import os
 from datetime import datetime
 
 # globals
-file_logger = None # calling the logger's debug(), info(), warning(), error()
+file_logger = None  # calling the logger's debug(), info(), warning(), error()
 
 start_time = None
 
+
 # NOTE: this log will not add a newline after message
-def log (msg, quiet = False):
+def log(msg, quiet=False):
     if not quiet:
-        print(msg, end = '', flush = True)
+        print(msg, end='', flush=True)
     if file_logger:
         file_logger.info(msg)
 
-def logger_start (log_name = 'log', log_ext = '.txt', log_dir = '.', add_start_time_to_name = True):
+
+def logger_start(
+    log_name='log', log_ext='.txt', log_dir='.', add_start_time_to_name=True
+):
     # create a file logger
     global file_logger, start_time
 
     start_time = datetime.now()
 
-    os.makedirs(log_dir, exist_ok = True)
+    os.makedirs(log_dir, exist_ok=True)
 
     if add_start_time_to_name:
-        path_name = f'{log_dir}/{log_name}_{start_time.strftime("%Y%m%d_%H%M")}{log_ext}'
+        path_name = f'{log_dir}/{log_name}_{start_time.strftime("%Y%m%d_%H%M")}{log_ext}'  # fmt: skip
     else:
         path_name = f'{log_dir}/{log_name}{log_ext}'
 
-    file_logger = setup_file_logger(path_name, end = '')
+    file_logger = setup_file_logger(path_name, end='')
 
     if not add_start_time_to_name:
         # add a start time line at begin
         file_logger.info(f'=== {start_time.strftime("%Y/%m/%d %H:%M:%S")} Begin ===\n')
 
-def logger_end ():
+
+def logger_end():
     # NOTE: It's risky to measure elapsed time by two datetime.now() because
     #       datetime.now() may be changed by like network time syncing, daylight savings switchover
     #       or the user twiddling the clock
@@ -56,8 +61,9 @@ def logger_end ():
 
     return None
 
+
 # return Logger
-def setup_file_logger (path_name = 'log.txt', end = '\n'):
+def setup_file_logger(path_name='log.txt', end='\n'):
     try:
         # get the logger
         #
@@ -94,7 +100,8 @@ def setup_file_logger (path_name = 'log.txt', end = '\n'):
 
     return logger
 
-def test ():
+
+def test():
     try:
         logger_start('log1')
 
@@ -118,6 +125,7 @@ def test ():
     print(f'({time_elapsed} elapsed)')
 
     print('Goodbye!')
+
 
 if __name__ == '__main__':
     test()
