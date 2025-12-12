@@ -1,14 +1,15 @@
-import sys
-import os
-from datetime import datetime
+# import sys
+# import os
+# from datetime import datetime
 
 # add the parent directory for importing foo from sibling directory
 # sys.path.append('..')
 # then
-from openData.getStockList import get_stock_list
+# from openData.getStockList import get_stock_list
 from database.stock import StockDatabase
 
-def initialize_database ():
+
+def initialize_database():
     """Initialize database and import CSV data if needed"""
     try:
         # Initialize database
@@ -22,29 +23,31 @@ def initialize_database ():
         print(f'Database initialization failed: {error}')
         raise
 
-def test_database (db):
+
+def test_database(db):
     """Dump short information of database"""
     info = db.get_database_info()
-    print(f'Database path: {info['database_path']}')
-    print(f'Tables: {info['tables']}')
+    print(f'Database path: {info["database_path"]}')
+    print(f'Tables: {info["tables"]}')
 
-    print(f'\nTotal stocks: {info['stock_list']['total_count']}')
+    print(f'\nTotal stocks: {info["stock_list"]["total_count"]}')
     print(f'Market distribution:')
     for market, count in info['stock_list']['market_stats'].items():
         print(f'  {market}: {count}')
-    print(f'Last updated: {info['stock_list']['last_updated']}')
+    print(f'Last updated: {info["stock_list"]["last_updated"]}')
 
-    print(f'\nTotal monthly revenues: {info['monthly_revenue']['total_count']}')
-    print(f'  min month: {info['monthly_revenue']['min_year_month']}')
-    print(f'  max month: {info['monthly_revenue']['max_year_month']}')
-    print(f'Last updated: {info['monthly_revenue']['last_updated']}')
+    print(f'\nTotal monthly revenues: {info["monthly_revenue"]["total_count"]}')
+    print(f'  min month: {info["monthly_revenue"]["min_year_month"]}')
+    print(f'  max month: {info["monthly_revenue"]["max_year_month"]}')
+    print(f'Last updated: {info["monthly_revenue"]["last_updated"]}')
 
-    print(f'\nTotal daily prices: {info['daily_prices']['total_count']}')
-    print(f'  min date: {info['daily_prices']['min_trade_date']}')
-    print(f'  max date: {info['daily_prices']['max_trade_date']}')
-    print(f'Last updated: {info['daily_prices']['last_updated']}')
+    print(f'\nTotal daily prices: {info["daily_prices"]["total_count"]}')
+    print(f'  min date: {info["daily_prices"]["min_trade_date"]}')
+    print(f'  max date: {info["daily_prices"]["max_trade_date"]}')
+    print(f'Last updated: {info["daily_prices"]["last_updated"]}')
 
-def test_stock_list (db):
+
+def test_stock_list(db):
     """Test various database operations"""
     try:
         # Test retrieving data
@@ -73,6 +76,7 @@ def test_stock_list (db):
         print(f'Database operations failed: {error}')
         raise
 
+
 def test_monthly_revenue(db):
     """Test function for monthly revenue data"""
     try:
@@ -91,6 +95,7 @@ def test_monthly_revenue(db):
     except Exception as error:
         print(f'Database operations failed: {error}')
         raise
+
 
 def test_daily_prices(db):
     """Test function for daily prices data"""
@@ -122,10 +127,11 @@ def test_daily_prices(db):
         print(f'Database operations failed: {error}')
         raise
 
-def test ():
+
+def test():
     """Main test function"""
     try:
-        output_dir = 'storage'
+        # output_dir = 'storage'
 
         # Test 1: Download fresh data
         # print('=== Downloading fresh stock list data ===')
@@ -162,6 +168,7 @@ def test ():
         return
 
     print('Goodbye!')
+
 
 if __name__ == '__main__':
     test()

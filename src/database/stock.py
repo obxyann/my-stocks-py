@@ -1,4 +1,3 @@
-import sys
 import sqlite3
 from datetime import datetime
 import os
@@ -11,10 +10,11 @@ import numpy as np
 # then
 from utils.ass import ensure_directory_exists, modification_time, parse_date_string
 
+
 class StockDatabase:
     """Database manager for stock data using SQLite"""
 
-    def __init__ (self, db_path = 'storage/stock_data.db'):
+    def __init__(self, db_path='storage/stock_data.db'):
         """Initialize database
 
         Args:
@@ -30,7 +30,7 @@ class StockDatabase:
 
         self.db_path = db_path
 
-    def get_connection (self):
+    def get_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(self.db_path)
 
@@ -52,18 +52,18 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # create table
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS metadata (
                     table_name TEXT PRIMARY KEY,
                     last_updated TIMESTAMP NOT NULL
                 )
-            ''')
+                """)
 
             conn.commit()
 
         self.metadata_table_initialized = True
 
-    def update_table_updated_time(self, table_name, updated_time = None):
+    def update_table_updated_time(self, table_name, updated_time=None):
         """Update last updated time for specific table
 
         Creates metadata table if missing. Uses current time if no timestamp provided.
@@ -77,18 +77,20 @@ class StockDatabase:
 
         # convert to ISO-8601 string 'YYYY-MM-DD HH:MM:SS'
         if not updated_time:
-            time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         else:
-            time_str = updated_time.strftime("%Y-%m-%d %H:%M:%S")
+            time_str = updated_time.strftime('%Y-%m-%d %H:%M:%S')
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
             # insert or replace data
-            cursor.execute('''
+            cursor.execute("""
                 INSERT OR REPLACE INTO metadata (table_name, last_updated)
                 VALUES (?, ?)
-            ''', (table_name, time_str))
+                """,
+                (table_name, time_str),
+            )
 
             conn.commit()
 
@@ -105,11 +107,13 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # retrieve data
-            cursor.execute('''
+            cursor.execute("""
                 SELECT last_updated
                 FROM metadata
                 WHERE table_name = ?
-            ''', (table_name,))
+                """,
+                (table_name,),
+            )
 
             result = cursor.fetchone()
 
@@ -128,7 +132,7 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # create table
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS stock_list (
                     code TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -136,13 +140,13 @@ class StockDatabase:
                     industry TEXT,
                     type TEXT NOT NULL
                 )
-            ''')
+                """)
 
             conn.commit()
 
         self.stock_list_table_initialized = True
 
-    def import_stock_list_csv_to_database(self, csv_path = 'storage/stock_list.csv'):
+    def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
         """Import stock list from CSV to database
 
         Args:
@@ -175,7 +179,7 @@ class StockDatabase:
             'Name': 'name',
             'Market': 'market',
             'Industry': 'industry',
-            'Type': 'type'
+            'Type': 'type',
         }
 
         try:
@@ -193,18 +197,23 @@ class StockDatabase:
                 need_cols.append(db_col)
 
             # rename columns
-            df.rename(columns = rename_dict, inplace = True)
+            df.rename(columns=rename_dict, inplace=True)
 
             # available columns
             avail_cols = [c for c in df.columns if c in need_cols]
 
             # check for mandatory columns
             # (based on table schema NOT NULL constraints)
-            mandatory_cols = ['code', 'name', 'market', 'type']
+            mandatory_cols = [
+                'code',
+                'name',
+                'market',
+                'type',
+            ]
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
             if missing_cols:
-                print(f"Error: Missing mandatory columns {missing_cols}")
+                print(f'Error: Missing mandatory columns {missing_cols}')
 
                 return 0
 
@@ -212,7 +221,7 @@ class StockDatabase:
             df = df[avail_cols]
 
             # remove rows with empty code
-            df.dropna(subset = ['code'], inplace = True)
+            df.dropna(subset=['code'], inplace=True)
 
             # ensure 'code' in string format
             df['code'] = df['code'].astype(str)
@@ -245,7 +254,7 @@ class StockDatabase:
             return len(df)
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f'Error: {e}')
 
             return 0
 
@@ -257,11 +266,13 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # read data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 ORDER BY code
-            ''', conn)
+                """,
+                conn,
+            )
 
         return df
 
@@ -276,11 +287,14 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE code = ?
-            ''', conn, params = (stock_code,))
+                """,
+                conn,
+                params=(stock_code,),
+            )
 
         return df
 
@@ -295,12 +309,15 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE code LIKE ? OR name LIKE ?
                 ORDER BY code
-            ''', conn, params = (f'%{keyword}%', f'%{keyword}%'))
+                """,
+                conn,
+                params=(f'%{keyword}%', f'%{keyword}%'),
+            )
 
         return df
 
@@ -315,12 +332,15 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE market = ?
                 ORDER BY code
-            ''', conn, params = (market,))
+                """,
+                conn,
+                params=(market,),
+            )
 
         return df
 
@@ -335,12 +355,15 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE industry = ?
                 ORDER BY code
-            ''', conn, params = (industry,))
+                """,
+                conn,
+                params=(industry,),
+            )
 
         return df
 
@@ -357,7 +380,7 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # create table
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS daily_prices (
                     code TEXT NOT NULL,
                     trade_date TEXT NOT NULL,
@@ -369,13 +392,13 @@ class StockDatabase:
                     PRIMARY KEY (code, trade_date),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
-            ''')
+                """)
 
             conn.commit()
 
         self.daily_price_table_initialized = True
 
-    def get_prices_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
+    def get_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
         """Get daily prices for stock code within date range
 
         Args:
@@ -392,17 +415,20 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT *
                 FROM daily_prices
                 WHERE code = ?
                   AND trade_date BETWEEN ? AND ?
                 ORDER BY trade_date
-            ''', conn, params = (stock_code, start_date, end_date))
+                """,
+                conn,
+                params=(stock_code, start_date, end_date),
+            )
 
         return df
 
-    def import_daily_prices_csv_to_database(self, csv_folder = 'storage/daily'):
+    def import_daily_prices_csv_to_database(self, csv_folder='storage/daily'):
         """Import daily prices from CSV to database
 
         Args:
@@ -418,7 +444,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # track latest modification time of all files
+        last_mod_time = None  # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -431,7 +457,7 @@ class StockDatabase:
             'High': 'high_price',
             'Low': 'low_price',
             'Close': 'close_price',
-            'Volume': 'volume'
+            'Volume': 'volume',
         }
 
         with self.get_connection() as conn:
@@ -440,9 +466,13 @@ class StockDatabase:
                 if not match:
                     continue
 
-                year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                year, month, day = (
+                    int(match.group(1)),
+                    int(match.group(2)),
+                    int(match.group(3)),
+                )
 
-                trade_date = f"{year}-{month:02d}-{day:02d}"
+                trade_date = f'{year}-{month:02d}-{day:02d}'
 
                 csv_path = os.path.join(csv_folder, file)
 
@@ -460,7 +490,7 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
-                    print(f"Error: Failed reading: {e}")
+                    print(f'Error: Failed reading: {e}')
 
                     continue
 
@@ -478,18 +508,25 @@ class StockDatabase:
                     need_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns = rename_dict, inplace = True)
+                df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in need_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                mandatory_cols = ['code', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'] # and 'trade_date' 
+                mandatory_cols = [
+                    'code',
+                    'open_price',
+                    'high_price',
+                    'low_price',
+                    'close_price',
+                    'volume',
+                ]  # and 'trade_date'
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
-                    print(f"Error: Missing mandatory columns {missing_cols}")
+                    print(f'Error: Missing mandatory columns {missing_cols}')
 
                     continue
 
@@ -497,7 +534,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset = ['code'], inplace = True)
+                df.dropna(subset=['code'], inplace=True)
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
@@ -532,7 +569,7 @@ class StockDatabase:
 
         return total_imported_records
 
-    def import_ohlc_prices_csv_to_database(self, csv_folder = 'storage/ohlc'):
+    def import_ohlc_prices_csv_to_database(self, csv_folder='storage/ohlc'):
         """Import OHLC prices from CSV to database
 
         Args:
@@ -548,7 +585,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # track latest modification time of all files
+        last_mod_time = None  # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -561,7 +598,7 @@ class StockDatabase:
             'High': 'high_price',
             'Low': 'low_price',
             'Close': 'close_price',
-            'Volume': 'volume'
+            'Volume': 'volume',
         }
 
         with self.get_connection() as conn:
@@ -588,7 +625,7 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
-                    print(f"Error: Failed reading: {e}")
+                    print(f'Error: Failed reading: {e}')
 
                     continue
 
@@ -606,18 +643,25 @@ class StockDatabase:
                     need_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns = rename_dict, inplace = True)
+                df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in need_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                mandatory_cols = ['trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'] # and 'code'
+                mandatory_cols = [
+                    'trade_date',
+                    'open_price',
+                    'high_price',
+                    'low_price',
+                    'close_price',
+                    'volume',
+                ]  # and 'code'
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
-                    print(f"Error: Missing mandatory columns {missing_cols}")
+                    print(f'Error: Missing mandatory columns {missing_cols}')
 
                     continue
 
@@ -670,7 +714,7 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # create table
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS monthly_revenue (
                     code TEXT NOT NULL,
                     year INTEGER NOT NULL,
@@ -686,13 +730,13 @@ class StockDatabase:
                     PRIMARY KEY (code, year, month),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
-            ''')
+                """)
 
             conn.commit()
 
         self.monthly_revenue_table_initialized = True
 
-    def import_monthly_revenue_csv_to_database(self, csv_folder = 'storage/monthly'):
+    def import_monthly_revenue_csv_to_database(self, csv_folder='storage/monthly'):
         """Import monthly revenue from CSV to database
 
         Args:
@@ -708,7 +752,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # track latest modification time of all files
+        last_mod_time = None  # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -718,7 +762,7 @@ class StockDatabase:
         col_mapping = {
             'Code': 'code',
             'Revenue': 'revenue',
-            'Note': 'note'
+            'Note': 'note',
         }
 
         with self.get_connection() as conn:
@@ -745,7 +789,7 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
-                    print(f"Error: Failed reading: {e}")
+                    print(f'Error: Failed reading: {e}')
 
                     continue
 
@@ -764,18 +808,23 @@ class StockDatabase:
                     need_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns = rename_dict, inplace = True)
+                df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in need_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                mandatory_cols = ['code', 'revenue'] # and 'year', 'month'
+                # fmt: off
+                mandatory_cols = [
+                    'code',
+                    'revenue',
+                ]  # and 'year', 'month'
+                # fmt: on
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
-                    print(f"Error: Missing mandatory columns {missing_cols}")
+                    print(f'Error: Missing mandatory columns {missing_cols}')
 
                     continue
 
@@ -783,7 +832,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset = ['code'], inplace = True)
+                df.dropna(subset=['code'], inplace=True)
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
@@ -829,21 +878,23 @@ class StockDatabase:
             if df.empty:
                 return
 
-            df.sort_values(by = ['code', 'year', 'month'], inplace = True)
+            df.sort_values(by=['code', 'year', 'month'], inplace=True)
 
             # calculate derived fields
+            # fmt: off
             df['revenue_last_year'] = df.groupby('code')['revenue'].transform(lambda x: x.shift(12))
             df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
             df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].transform(lambda x: x.shift(12))
-            df['mom'] = df.groupby('code')['revenue'].pct_change(periods = 1) * 100
-            df['yoy'] = df.groupby('code')['revenue'].pct_change(periods = 12) * 100
+            df['mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
+            df['yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
             df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
+            # fmt: on
 
             # replace infinite values with NaN
             df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
             # update data
-            update_query = '''
+            update_query = """
                 UPDATE monthly_revenue
                 SET revenue_last_year = ?,
                     cumulative_revenue = ?,
@@ -852,8 +903,9 @@ class StockDatabase:
                     yoy = ?,
                     cumulative_revenue_yoy = ?
                 WHERE code = ? AND year = ? AND month = ?
-            '''
+                """
 
+            # fmt: off
             update_data = [
                 (
                     row['revenue_last_year'] if pd.notna(row['revenue_last_year']) else None,
@@ -864,10 +916,11 @@ class StockDatabase:
                     row['cumulative_revenue_yoy'] if pd.notna(row['cumulative_revenue_yoy']) else None,
                     row['code'],
                     row['year'],
-                    row['month']
+                    row['month'],
                 )
                 for _, row in df.iterrows()
             ]
+            # fmt: on
 
             cursor = conn.cursor()
 
@@ -875,7 +928,7 @@ class StockDatabase:
 
             conn.commit()
 
-    def get_revenue_by_code(self, stock_code, start_date = '2013-01-01', end_date = None):
+    def get_revenue_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
         """Get monthly revenue data for specific stock
 
         Args:
@@ -904,13 +957,16 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query('''
+            df = pd.read_sql_query("""
                 SELECT *
                 FROM monthly_revenue
                 WHERE code = ?
                   AND (year * 100 + month) BETWEEN ? AND ?
                 ORDER BY year, month
-            ''', conn, params = (stock_code, start_period, end_period))
+                """,
+                conn,
+                params=(stock_code, start_period, end_period),
+            )
 
         return df
 
@@ -927,7 +983,7 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # create table
-            cursor.execute('''
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS financial_core (
                     code TEXT NOT NULL,
                     year INTEGER NOT NULL,
@@ -968,13 +1024,13 @@ class StockDatabase:
                     PRIMARY KEY (code, year, quarter),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
-            ''')
+                """)
 
             conn.commit()
 
         self.financial_core_table_initialized = True
 
-    def import_income_reports_csv_to_database(self, csv_folder = 'storage/quarterly'):
+    def import_income_reports_csv_to_database(self, csv_folder='storage/quarterly'):
         """Import income reports from CSV to database
 
         Args:
@@ -990,7 +1046,7 @@ class StockDatabase:
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
         total_imported_records = 0
-        last_mod_time = None # track latest modification time of all files
+        last_mod_time = None  # track latest modification time of all files
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
@@ -1008,7 +1064,7 @@ class StockDatabase:
             '稅前淨利': 'pre_tax_income',
             '所得稅費用': 'income_tax',
             '本期淨利': 'net_income',
-            '每股盈餘': 'eps'
+            '每股盈餘': 'eps',
         }
 
         with self.get_connection() as conn:
@@ -1036,7 +1092,7 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
-                    print(f"Error: Failed reading: {e}")
+                    print(f'Error: Failed reading: {e}')
 
                     continue
 
@@ -1055,18 +1111,22 @@ class StockDatabase:
                     need_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns = rename_dict, inplace = True)
+                df.rename(columns=rename_dict, inplace=True)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in need_cols]
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                mandatory_cols = ['code'] # and 'year', 'quarter'
+                # fmt: off
+                mandatory_cols = [
+                    'code',
+                ]  # and 'year', 'quarter'
+                # fmt: on
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
-                    print(f"Error: Missing mandatory columns {missing_cols}")
+                    print(f'Error: Missing mandatory columns {missing_cols}')
 
                     continue
 
@@ -1074,7 +1134,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset = 'code', inplace = True)
+                df.dropna(subset='code', inplace=True)
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
@@ -1087,24 +1147,28 @@ class StockDatabase:
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
                 # update part: exclude code, year, quarter from SET
-                update_cols = [c for c in avail_cols if c not in ('code', 'year', 'quarter')]
+                update_cols = [
+                    c for c in avail_cols if c not in ('code', 'year', 'quarter')
+                ]
 
                 if not update_cols:
                     # insert data
-                    sql = f'''
+                    sql = f"""
                         INSERT OR IGNORE INTO financial_core ({columns})
                         VALUES ({placeholders})
-                    '''
+                        """
                 else:
-                    update_assignments = ', '.join([f"{col}=excluded.{col}" for col in update_cols])
+                    update_assignments = ', '.join(
+                        [f'{col}=excluded.{col}' for col in update_cols]
+                    )
 
                     # upsert data
-                    sql = f'''
+                    sql = f"""
                         INSERT INTO financial_core ({columns})
                         VALUES ({placeholders})
                         ON CONFLICT(code, year, quarter) DO UPDATE SET
                         {update_assignments}
-                    '''
+                        """
 
                 data = df.values.tolist()
 
@@ -1141,22 +1205,30 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # get all tables in database
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            cursor.execute("""
+                SELECT name 
+                FROM sqlite_master
+                WHERE type='table'
+                ORDER BY name
+                """)
             tables = [table[0] for table in cursor.fetchall()]
 
             # for stock list table
             stock_list = {}
             # 1. get total count
-            cursor.execute('SELECT COUNT(*) FROM stock_list')
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM stock_list
+                """)
             stock_list['total_count'] = cursor.fetchone()[0]
 
             # 2. get market distribution
-            cursor.execute('''
+            cursor.execute("""
                 SELECT market, COUNT(*)
                 FROM stock_list
                 GROUP BY market
                 ORDER BY market
-            ''')
+                """)
             stock_list['market_stats'] = dict(cursor.fetchall())
 
             # 3. get last update time from metadata
@@ -1165,11 +1237,17 @@ class StockDatabase:
             # for monthly revenue table
             monthly_revenue = {}
             # 1. get total count
-            cursor.execute('SELECT COUNT(*) FROM monthly_revenue')
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM monthly_revenue
+                """)
             monthly_revenue['total_count'] = cursor.fetchone()[0]
 
             # 2. get min and max year-month
-            cursor.execute('SELECT MIN(year * 100 + month), MAX(year * 100 + month) FROM monthly_revenue')
+            cursor.execute("""
+                SELECT MIN(year * 100 + month), MAX(year * 100 + month)
+                FROM monthly_revenue
+                """)
             min_max_result = cursor.fetchone()
             monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None
             monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
@@ -1180,11 +1258,17 @@ class StockDatabase:
             # for daily prices table
             daily_prices = {}
             # 1. get total count
-            cursor.execute('SELECT COUNT(*) FROM daily_prices')
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM daily_prices
+                """)
             daily_prices['total_count'] = cursor.fetchone()[0]
 
             # 2. get min and max trade date
-            cursor.execute('SELECT MIN(trade_date), MAX(trade_date) FROM daily_prices')
+            cursor.execute("""
+                SELECT MIN(trade_date), MAX(trade_date)
+                FROM daily_prices
+                """)
             min_max_result = cursor.fetchone()
             daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None
             daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
@@ -1195,8 +1279,8 @@ class StockDatabase:
         return {
             'database_path': self.db_path,
             'tables': tables,
-
+            #
             'stock_list': stock_list,
             'monthly_revenue': monthly_revenue,
-            'daily_prices': daily_prices
+            'daily_prices': daily_prices,
         }

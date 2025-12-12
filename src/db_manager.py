@@ -7,10 +7,14 @@ sys.path.append('..')
 # then
 from database.stock import StockDatabase
 from openData.getStockList import download_stock_list
-from openData.getDailyPrices import download_last_daily_prices, check_last_daily_prices_exist
+from openData.getDailyPrices import (
+    download_last_daily_prices,
+    check_last_daily_prices_exist,
+)
 from openData.getMonthlyRevenues import download_hist_monthly_revenues
 
-def import_csv_to_db(csv_dir = None, db_path = None):
+
+def import_csv_to_db(csv_dir=None, db_path=None):
     """Import CSV data to database"""
     if csv_dir is None:
         csv_dir = 'storage'
@@ -24,7 +28,7 @@ def import_csv_to_db(csv_dir = None, db_path = None):
         print('Importing stock list from CSV to database...')
 
         csv_path = os.path.join(csv_dir, 'stock_list.csv')
-        
+
         if not os.path.exists(csv_path):
             print(f'File not found: {csv_path}')
         else:
@@ -91,9 +95,10 @@ def import_csv_to_db(csv_dir = None, db_path = None):
         print(f'Import failed: {e}')
         return False
 
-def download(refetch = False, output_dir = None):
+
+def download(refetch=False, output_dir=None):
     """Download fresh data and import to database"""
-    if refetch == True:
+    if refetch:
         action = 'Downloading fresh'
     else:
         action = 'Downloading'
@@ -105,14 +110,14 @@ def download(refetch = False, output_dir = None):
 
     try:
         print(f'{action} stock list...')
-        download_stock_list(refetch = refetch, output_dir = output_dir)
-        print(f'Done')
+        download_stock_list(refetch=refetch, output_dir=output_dir)
+        print('Done')
 
         print(f'\n{action} last daily prices...')
         dest_dir = os.path.join(output_dir, 'daily')
         if not refetch and not check_last_daily_prices_exist(dest_dir):
-            download_last_daily_prices(output_dir = dest_dir)
-        print(f'Done')
+            download_last_daily_prices(output_dir=dest_dir)
+        print('Done')
 
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
@@ -120,81 +125,84 @@ def download(refetch = False, output_dir = None):
         print(f'Done')
         
         return True
-        
+
     except Exception as e:
         print(f'Download failed: {e}')
         return False
 
-def show_db_info(db_path = None):
+
+def show_db_info(db_path=None):
     """Show database information"""
     try:
         db = StockDatabase(db_path) if db_path else StockDatabase()
-        
-        info = db.get_database_info()
-        
-        print(f'Database path: {info['database_path']}')
-        print(f'Tables: {info['tables']}')
 
-        print(f'\nTotal stocks: {info['stock_list']['total_count']}')
-        print(f'Market distribution:')
+        info = db.get_database_info()
+
+        print(f'Database path: {info["database_path"]}')
+        print(f'Tables: {info["tables"]}')
+
+        print(f'\nTotal stocks: {info["stock_list"]["total_count"]}')
+        print('Market distribution:')
         for market, count in info['stock_list']['market_stats'].items():
             print(f'  {market}: {count}')
-        print(f'Last updated: {info['stock_list']['last_updated']}')
+        print(f'Last updated: {info["stock_list"]["last_updated"]}')
 
-        print(f'\nTotal monthly revenues: {info['monthly_revenue']['total_count']}')
-        print(f'  min month: {info['monthly_revenue']['min_year_month']}')
-        print(f'  max month: {info['monthly_revenue']['max_year_month']}')
-        print(f'Last updated: {info['monthly_revenue']['last_updated']}')
-            
+        print(f'\nTotal monthly revenues: {info["monthly_revenue"]["total_count"]}')
+        print(f'  min month: {info["monthly_revenue"]["min_year_month"]}')
+        print(f'  max month: {info["monthly_revenue"]["max_year_month"]}')
+        print(f'Last updated: {info["monthly_revenue"]["last_updated"]}')
+
         return True
-        
+
     except Exception as e:
         print(f'Failed to get database info: {e}')
         return False
+
 
 def search_stocks(keyword, db_path=None):
     """Search stocks by keyword"""
     try:
         db = StockDatabase(db_path) if db_path else StockDatabase()
         results = db.search_stocks(keyword)
-        
+
         if results.empty:
             print(f'No stocks found for keyword: {keyword}')
         else:
             print(f'Found {len(results)} stocks matching "{keyword}":')
             print(results.to_string(index=False))
-            
+
         return True
-        
+
     except Exception as e:
         print(f'Search failed: {e}')
         return False
 
+
 def main():
     """Main function for command line interface"""
-    parser = argparse.ArgumentParser(description = 'Stock Database Manager')
-    parser.add_argument('--db-path', help = 'database file path')
-    
-    subparsers = parser.add_subparsers(dest ='command', help = 'available commands')
-    
+    parser = argparse.ArgumentParser(description='Stock Database Manager')
+    parser.add_argument('--db-path', help='database file path')
+
+    subparsers = parser.add_subparsers(dest='command', help='available commands')
+
     # import command
-    import_parser = subparsers.add_parser('import', help = 'import CSV to database')
-    import_parser.add_argument('--from_folder', help = 'read from folder')
-    
+    import_parser = subparsers.add_parser('import', help='import CSV to database')
+    import_parser.add_argument('--from_folder', help='read from folder')
+
     # download command
-    download_parser = subparsers.add_parser('download', help = 'download data')
-    download_parser.add_argument('--refetch', action = 'store_true', help = 'refetch data')
-    download_parser.add_argument('--to_folder', help = 'write to folder')
+    download_parser = subparsers.add_parser('download', help='download data')
+    download_parser.add_argument('--refetch', action='store_true', help='refetch data')
+    download_parser.add_argument('--to_folder', help='write to folder')
 
     # info command
-    subparsers.add_parser('info', help = 'show database information')
-    
+    subparsers.add_parser('info', help='show database information')
+
     # search command
-    search_parser = subparsers.add_parser('search', help = 'search stocks')
-    search_parser.add_argument('keyword', help = 'search keyword')
-    
+    search_parser = subparsers.add_parser('search', help='search stocks')
+    search_parser.add_argument('keyword', help='search keyword')
+
     args = parser.parse_args()
-    
+
     if args.command == 'import':
         import_csv_to_db(args.from_folder, args.db_path)
     elif args.command == 'download':
@@ -205,6 +213,7 @@ def main():
         search_stocks(args.keyword, args.db_path)
     else:
         parser.print_help()
+
 
 if __name__ == '__main__':
     main()
