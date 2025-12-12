@@ -12,7 +12,7 @@ from openData.getDailyPrices import (
 )
 from openData.getMonthlyRevenues import download_hist_monthly_revenues
 from openData.getStockList import download_stock_list
-
+from openData.getQuarterlyReports import download_hist_quarterly_reports
 
 def import_csv_to_db(csv_dir=None, db_path=None):
     """Import CSV data to database"""
@@ -111,18 +111,29 @@ def download(refetch=False, output_dir=None):
     try:
         print(f'{action} stock list...')
         download_stock_list(refetch=refetch, output_dir=output_dir)
-        print('Done')
+        # print('Done')
 
         print(f'\n{action} last daily prices...')
         dest_dir = os.path.join(output_dir, 'daily')
         if not refetch and not check_last_daily_prices_exist(dest_dir):
             download_last_daily_prices(output_dir=dest_dir)
-        print('Done')
+        # print('Done')
 
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
         download_hist_monthly_revenues(refetch=refetch, start_date='2013-01-01', output_dir=dest_dir)  # fmt: skip
-        print('Done')
+        # print('Done')
+
+        print(f'\n{action} quarterly reports...')
+        dest_dir = os.path.join(output_dir, 'quarterly')
+        download_hist_quarterly_reports('income', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        print('')
+        download_hist_quarterly_reports('balance', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        print('')
+        download_hist_quarterly_reports('cash', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        # print('Done')
+
+        print('\nAll done!')
 
         return True
 
