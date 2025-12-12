@@ -7,10 +7,7 @@ sys.path.append('..')
 # then
 from database.stock import StockDatabase
 from openData.getStockList import download_stock_list
-from openData.getDailyPrices import (
-    download_last_daily_prices,
-    check_last_daily_prices_exist,
-)
+from openData.getDailyPrices import download_last_daily_prices, check_last_daily_prices_exist  # fmt: skip
 from openData.getMonthlyRevenues import download_hist_monthly_revenues
 
 
@@ -55,7 +52,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_daily_prices_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from daily/prices_YYYYMMDD.csv')
+            print(f'Successfully imported {count} records from daily/prices_YYYYMMDD.csv')  # fmt: skip
 
         # import revenues_{YYYYMM}.csv
         print('\nImporting monthly revenues from CSV to database...')
@@ -66,10 +63,10 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_monthly_revenue_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from monthly/revenues_YYYYMM.csv')
+            print(f'Successfully imported {count} records from monthly/revenues_YYYYMM.csv')  # fmt: skip
 
             if count:
-                print('\nCalcatuting and updating monthly revenues in database...\n(long time)')
+                print('\nCalcatuting and updating monthly revenues in database...\n(long time)')  # fmt: skip
                 db.update_monthly_revenue_calculations()
                 print('Successfully')
 
@@ -82,7 +79,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_income_reports_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from quarterly/income_reports_YYYYQN.csv')
+            print(f'Successfully imported {count} records from quarterly/income_reports_YYYYQN.csv')  # fmt: skip
 
             # if count:
             #     print('\nCalcatuting and updating quarterly income reports in database...\n(long time)')
@@ -121,9 +118,9 @@ def download(refetch=False, output_dir=None):
 
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
-        download_hist_monthly_revenues(refetch = refetch, start_date = '2013-01-01', output_dir = dest_dir)
-        print(f'Done')
-        
+        download_hist_monthly_revenues(refetch=refetch, start_date='2013-01-01', output_dir=dest_dir)  # fmt: skip
+        print('Done')
+
         return True
 
     except Exception as e:

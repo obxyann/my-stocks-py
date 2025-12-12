@@ -85,7 +85,8 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # insert or replace data
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO metadata (table_name, last_updated)
                 VALUES (?, ?)
                 """,
@@ -107,7 +108,8 @@ class StockDatabase:
             cursor = conn.cursor()
 
             # retrieve data
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT last_updated
                 FROM metadata
                 WHERE table_name = ?
@@ -209,7 +211,7 @@ class StockDatabase:
                 'name',
                 'market',
                 'type',
-            ]
+            ] 
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
             if missing_cols:
@@ -266,7 +268,8 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # read data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 ORDER BY code
@@ -287,7 +290,8 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE code = ?
@@ -309,7 +313,8 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE code LIKE ? OR name LIKE ?
@@ -332,7 +337,8 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE market = ?
@@ -355,7 +361,8 @@ class StockDatabase:
         """
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT code, name, market, industry, type
                 FROM stock_list
                 WHERE industry = ?
@@ -415,7 +422,8 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT *
                 FROM daily_prices
                 WHERE code = ?
@@ -669,7 +677,9 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # ensure 'trade_date' in correct string format
-                df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
+                df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime(
+                    '%Y-%m-%d'
+                )
 
                 # replace NaNs with None for SQLite compatibility
                 df = df.where(pd.notnull(df), None)
@@ -815,12 +825,10 @@ class StockDatabase:
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                # fmt: off
                 mandatory_cols = [
                     'code',
                     'revenue',
                 ]  # and 'year', 'month'
-                # fmt: on
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
@@ -957,7 +965,8 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             # retrieve data
-            df = pd.read_sql_query("""
+            df = pd.read_sql_query(
+                """
                 SELECT *
                 FROM monthly_revenue
                 WHERE code = ?
@@ -1118,11 +1127,9 @@ class StockDatabase:
 
                 # check for mandatory columns
                 # (based on table schema NOT NULL constraints)
-                # fmt: off
                 mandatory_cols = [
                     'code',
                 ]  # and 'year', 'quarter'
-                # fmt: on
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
@@ -1206,7 +1213,7 @@ class StockDatabase:
 
             # get all tables in database
             cursor.execute("""
-                SELECT name 
+                SELECT name
                 FROM sqlite_master
                 WHERE type='table'
                 ORDER BY name
@@ -1217,7 +1224,7 @@ class StockDatabase:
             stock_list = {}
             # 1. get total count
             cursor.execute("""
-                SELECT COUNT(*) 
+                SELECT COUNT(*)
                 FROM stock_list
                 """)
             stock_list['total_count'] = cursor.fetchone()[0]
@@ -1232,7 +1239,7 @@ class StockDatabase:
             stock_list['market_stats'] = dict(cursor.fetchall())
 
             # 3. get last update time from metadata
-            stock_list['last_updated'] = self.get_table_updated_time('stock_list') # <- datetime
+            stock_list['last_updated'] = self.get_table_updated_time('stock_list')  # <- datetime # fmt: skip
 
             # for monthly revenue table
             monthly_revenue = {}
@@ -1249,17 +1256,17 @@ class StockDatabase:
                 FROM monthly_revenue
                 """)
             min_max_result = cursor.fetchone()
-            monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None
-            monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None
+            monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None  # fmt: skip
+            monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None  # fmt: skip
 
             # 3. get last update time from metadata
-            monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue') # <- datetime
+            monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue')  # <- datetime # fmt: skip
 
             # for daily prices table
             daily_prices = {}
             # 1. get total count
             cursor.execute("""
-                SELECT COUNT(*) 
+                SELECT COUNT(*)
                 FROM daily_prices
                 """)
             daily_prices['total_count'] = cursor.fetchone()[0]
@@ -1270,11 +1277,11 @@ class StockDatabase:
                 FROM daily_prices
                 """)
             min_max_result = cursor.fetchone()
-            daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None
-            daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None
+            daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None  # fmt: skip
+            daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None  # fmt: skip
 
             # 3. get last update time from metadata
-            daily_prices['last_updated'] = self.get_table_updated_time('daily_prices') # <- datetime
+            daily_prices['last_updated'] = self.get_table_updated_time('daily_prices')  # <- datetime # fmt: skip
 
         return {
             'database_path': self.db_path,

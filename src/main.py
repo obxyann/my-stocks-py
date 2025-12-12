@@ -31,7 +31,7 @@ def test_database(db):
     print(f'Tables: {info["tables"]}')
 
     print(f'\nTotal stocks: {info["stock_list"]["total_count"]}')
-    print(f'Market distribution:')
+    print('Market distribution:')
     for market, count in info['stock_list']['market_stats'].items():
         print(f'  {market}: {count}')
     print(f'Last updated: {info["stock_list"]["last_updated"]}')
