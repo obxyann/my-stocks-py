@@ -1,10 +1,10 @@
-import sys
-import requests
-import re
 import os
+import re
+import sys
 from datetime import datetime
 
 import pandas as pd
+import requests
 
 # add the parent directory to where the Python looks for modules
 # for importing foo from sibling directory
@@ -12,14 +12,14 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
+from utils.ansiColors import Colors, use_color
 from utils.ass import (
-    get_last_market_close_day,
     get_date_from_path_name,
+    get_last_market_close_day,
     parse_date_string,
 )
-from utils.logger import log, logger_start, logger_end
-from utils.ansiColors import Colors, use_color
 from utils.getTradingHoliday import isTradingHoliday
+from utils.logger import log, logger_end, logger_start
 
 
 # Download the (latest) daily prices file in TWSE (Taiwan Stock Exchange)

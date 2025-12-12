@@ -1,11 +1,11 @@
-import sys
-import requests
-from io import StringIO
-import re
 import os
+import re
+import sys
 from datetime import datetime
+from io import StringIO
 
 import pandas as pd
+import requests
 
 # add the parent directory to where the Python looks for modules
 # for importing foo from sibling directory

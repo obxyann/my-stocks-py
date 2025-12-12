@@ -1,10 +1,10 @@
-import sys
-import requests
-from io import StringIO
 import os
+import sys
 from datetime import datetime
+from io import StringIO
 
 import pandas as pd
+import requests
 
 # add the parent directory to where the Python looks for modules
 # for importing foo from sibling directory
@@ -12,9 +12,9 @@ import pandas as pd
 # see https://www.geeksforgeeks.org/python-import-from-sibling-directory/
 sys.path.append('..')
 # then
-from utils.logger import log, logger_start, logger_end
-from utils.ass import wait, parse_date_string
 from utils.ansiColors import Colors, use_color
+from utils.ass import parse_date_string, wait
+from utils.logger import log, logger_end, logger_start
 
 # Data source:
 #
