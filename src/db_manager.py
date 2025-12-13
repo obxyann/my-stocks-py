@@ -11,8 +11,9 @@ from openData.getDailyPrices import (
     download_last_daily_prices,
 )
 from openData.getMonthlyRevenues import download_hist_monthly_revenues
-from openData.getStockList import download_stock_list
 from openData.getQuarterlyReports import download_hist_quarterly_reports
+from openData.getStockList import download_stock_list
+
 
 def import_csv_to_db(csv_dir=None, db_path=None):
     """Import CSV data to database"""

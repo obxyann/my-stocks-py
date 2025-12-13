@@ -895,18 +895,15 @@ class StockDatabase:
 
             # calculate derived fields
             # fmt: off
-            df['revenue_last_year'] = df.groupby('code')['revenue'].transform(lambda x: x.shift(12))
+            df['revenue_last_year'] = df.groupby('code')['revenue'].shift(12)
             df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
-            df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].transform(lambda x: x.shift(12))
+            df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].shift(12)
             df['mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
             df['yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
             df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
             # fmt: on
 
-            # replace infinite values with NaN
-            df.replace([np.inf, -np.inf], np.nan, inplace=True)
-
-            # update data
+            # prepare SQL
             update_query = """
                 UPDATE monthly_revenue
                 SET revenue_last_year = ?,
@@ -918,25 +915,26 @@ class StockDatabase:
                 WHERE code = ? AND year = ? AND month = ?
                 """
 
-            # fmt: off
-            update_data = [
-                (
-                    row['revenue_last_year'] if pd.notna(row['revenue_last_year']) else None,
-                    row['cumulative_revenue'] if pd.notna(row['cumulative_revenue']) else None,
-                    row['cumulative_revenue_last_year'] if pd.notna(row['cumulative_revenue_last_year']) else None,
-                    row['mom'] if pd.notna(row['mom']) else None,
-                    row['yoy'] if pd.notna(row['yoy']) else None,
-                    row['cumulative_revenue_yoy'] if pd.notna(row['cumulative_revenue_yoy']) else None,
-                    row['code'],
-                    row['year'],
-                    row['month'],
-                )
-                for _, row in df.iterrows()
+            cols = [
+                'revenue_last_year',
+                'cumulative_revenue',
+                'cumulative_revenue_last_year',
+                'mom',
+                'yoy',
+                'cumulative_revenue_yoy',
+                'code',
+                'year',
+                'month',
             ]
-            # fmt: on
+
+            # replace infinite values and NaN to None
+            df_update = df[cols].replace({np.inf: None, -np.inf: None, np.nan: None})
+
+            update_data = list(df_update.itertuples(index=False, name=None))
 
             cursor = conn.cursor()
 
+            # update data
             cursor.executemany(update_query, update_data)
 
             conn.commit()
