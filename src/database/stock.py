@@ -888,7 +888,7 @@ class StockDatabase:
         with self.get_connection() as conn:
             try:
                 # prepare SQL
-                # use SQL Window Functions to do incremental updates w/o pandas loading 
+                # use SQL Window Functions to do incremental updates w/o pandas loading
                 update_query = """
                     WITH Calculated AS (
                         SELECT
@@ -1031,7 +1031,9 @@ class StockDatabase:
                 ]
 
                 # replace infinite values and NaN to None
-                df_update = df[cols].replace({np.inf: None, -np.inf: None, np.nan: None})
+                df_update = df[cols].replace(
+                    {np.inf: None, -np.inf: None, np.nan: None}
+                )
 
                 update_data = list(df_update.itertuples(index=False, name=None))
 
