@@ -84,17 +84,17 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         else:
             # import balance_reports_{YYYY}Q{Q}.csv
             print('\nImporting balance reports...')
-            count1 = db.import_quarterly_reports_csv_to_database(csv_folder, 'balance_reports')
+            count1 = db.import_quarterly_reports_csv_to_database(csv_folder, 'balance_reports')  # fmt: skip
             print(f'Successfully imported {count1} records')
 
             # import income_reports_{YYYY}Q{Q}.csv
             print('\nImporting income reports...')
-            count2 = db.import_quarterly_reports_csv_to_database(csv_folder, 'income_reports')
+            count2 = db.import_quarterly_reports_csv_to_database(csv_folder, 'income_reports')  # fmt: skip
             print(f'Successfully imported {count2} records')
 
             # import cash_reports_{YYYY}Q{Q}.csv
             print('\nImporting cash reports...')
-            count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports')
+            count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports')  # fmt: skip
             print(f'Successfully imported {count3} records')
 
             # if count:

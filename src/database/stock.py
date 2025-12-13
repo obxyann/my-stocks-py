@@ -45,7 +45,7 @@ class StockDatabase:
     ##################
 
     def ensure_metadata_table(self):
-        """Create metadata table to track table update times if not exists"""
+        """Create metadata table if not exists"""
         if self.metadata_table_initialized:
             return
 
@@ -64,23 +64,21 @@ class StockDatabase:
 
         self.metadata_table_initialized = True
 
-    def update_table_updated_time(self, table_name, updated_time=None):
-        """Update last updated time for specific table
-
-        Creates metadata table if missing. Uses current time if no timestamp provided.
+    def set_table_updated_time(self, table_name, updated_at=None):
+        """Set last updated time for specific table
 
         Args:
-            table_name (str): Name of the table to update
-            updated_time (datetime): Optional time
+            table_name (str): Name of the table
+            updated_at (datetime): Updated time, use current time if not provided
         """
         # create table if not exists
         self.ensure_metadata_table()
 
         # convert to ISO-8601 string 'YYYY-MM-DD HH:MM:SS'
-        if not updated_time:
+        if updated_at is None:
             time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         else:
-            time_str = updated_time.strftime('%Y-%m-%d %H:%M:%S')
+            time_str = updated_at.strftime('%Y-%m-%d %H:%M:%S')
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -121,6 +119,23 @@ class StockDatabase:
             result = cursor.fetchone()
 
         return datetime.fromisoformat(result[0]) if result else None
+
+    def update_table_time(self, table_name, updated_at=None):
+        """Update last updated time for specific table
+
+        Only sets time when it is newer than the last updated time.
+
+        Args:
+            table_name (str): Name of the table
+            updated_at (datetime): Updated time, use current time if not provided
+        """
+        if updated_at is None:
+            updated_at = datetime.now()
+
+        last_time = self.get_table_updated_time(table_name)
+
+        if last_time is None or updated_at > last_time:
+            self.set_table_updated_time(table_name, updated_at)
 
     ####################
     # Stock List table #
@@ -252,7 +267,7 @@ class StockDatabase:
                 conn.commit()
 
                 # update table time
-                self.update_table_updated_time('stock_list', csv_mod_time)
+                self.set_table_updated_time('stock_list', csv_mod_time)
 
             return len(df)
 
@@ -391,9 +406,8 @@ class StockDatabase:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS daily_prices (
                     code TEXT NOT NULL,
-                    --YYYY-MM-DD
                     trade_date TEXT NOT NULL,
-                    --OHLC
+                    --
                     open_price REAL NOT NULL,
                     high_price REAL NOT NULL,
                     low_price REAL NOT NULL,
@@ -429,7 +443,9 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        updated_time = self.get_table_updated_time('daily_prices')
+        # NOTE: '__prices' is not a real table name, just for tracking the
+        #       last updated time of different data sources for 'daily_prices'
+        updated_time = self.get_table_updated_time('__prices')
 
         # define column mapping
         col_mapping = {
@@ -540,14 +556,16 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if file is newer
-                if not last_mod_time or csv_mod_time > last_mod_time:
+                if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update table time
         if last_mod_time:
-            self.update_table_updated_time('daily_prices', last_mod_time)
+            self.set_table_updated_time('__prices', last_mod_time)
+
+            self.update_table_time('daily_prices', last_mod_time)
 
         return total_imported_records
 
@@ -571,7 +589,9 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        updated_time = self.get_table_updated_time('daily_prices')
+        # NOTE: '__abc_prices' is not a real table name, just for tracking the
+        #       last updated time of different data sources for 'daily_prices'
+        updated_time = self.get_table_updated_time('__abc_prices')
 
         # define column mapping
         col_mapping = {
@@ -675,14 +695,16 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if file is newer
-                if not last_mod_time or csv_mod_time > last_mod_time:
+                if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update table time
         if last_mod_time:
-            self.update_table_updated_time('daily_prices', last_mod_time)
+            self.set_table_updated_time('__abc_prices', last_mod_time)
+
+            self.update_table_time('daily_prices', last_mod_time)
 
         return total_imported_records
 
@@ -873,14 +895,14 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if file is newer
-                if not last_mod_time or csv_mod_time > last_mod_time:
+                if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update table time
         if last_mod_time:
-            self.update_table_updated_time('monthly_revenue', last_mod_time)
+            self.set_table_updated_time('monthly_revenue', last_mod_time)
 
         # update calculated fields after import
         # self.update_monthly_revenue_calculations()
@@ -1161,7 +1183,7 @@ class StockDatabase:
         csv_folder='storage/quarterly',
         file_prefix='financial_reports',
         col_mapping=None,
-     ):
+    ):
         """Import financial reports from CSV to database
 
         Args:
@@ -1181,7 +1203,9 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        updated_time = self.get_table_updated_time('financial_core')
+        # NOTE: '__{file_prefix}' is not a real table name, just for tracking the
+        #       last updated time of different data sources for 'financial_core'
+        updated_time = self.get_table_updated_time(f'__{file_prefix}')
 
         # define column mapping
         # NOTE: 1. below with '(i)' mark -> only disclosed in individual financial statements
@@ -1200,14 +1224,14 @@ class StockDatabase:
             '權益總計': 'total_equity',
             '每股淨值': 'book_value',
             # more balance
-            '應收帳款淨額': 'accts_receiv', # (i)
-            '應收帳款及票據': 'accts_notes_receiv', # (?)
-            '存貨': 'inventory', # (i)
-            '預付款項': 'prepaid', # (i)
-            '應付帳款': 'accts_pay', # (i)
-            '應付帳款及票據': 'accts_notes_pay', # (?)
-            '短期借款': 'st_loans', # (i)
-            '長期借款': 'lt_loans', # (i)
+            '應收帳款淨額': 'accts_receiv',  # (i)
+            '應收帳款及票據': 'accts_notes_receiv',  # (?)
+            '存貨': 'inventory',  # (i)
+            '預付款項': 'prepaid',  # (i)
+            '應付帳款': 'accts_pay',  # (i)
+            '應付帳款及票據': 'accts_notes_pay',  # (?)
+            '短期借款': 'st_loans',  # (i)
+            '長期借款': 'lt_loans',  # (i)
             '應付公司債': 'bonds_pay',
             '保留盈餘': 'ret_earnings',
             # income
@@ -1226,7 +1250,7 @@ class StockDatabase:
             '投資活動之淨現金流入': 'inv_cash_flow',
             '籌資活動之淨現金流入': 'fin_cash_flow',
             '期末現金及約當現金': 'cash_equiv',
-            '發放現金股利': 'divs_paid', # TODO: need to check
+            '發放現金股利': 'divs_paid',  # TODO: need to check
         }
 
         if col_mapping is None:
@@ -1349,14 +1373,16 @@ class StockDatabase:
                 total_imported_records += len(df)
 
                 # update last_mod_time if file is newer
-                if not last_mod_time or csv_mod_time > last_mod_time:
+                if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
 
             conn.commit()
 
         # update table time
         if last_mod_time:
-            self.update_table_updated_time('financial_core', last_mod_time)
+            self.set_table_updated_time(f'__{file_prefix}', last_mod_time)
+
+            self.update_table_time('financial_core', last_mod_time)
 
         return total_imported_records
 
