@@ -886,56 +886,159 @@ class StockDatabase:
     def update_monthly_revenue_calculations(self):
         """Update calculated fields in monthly_revenue table"""
         with self.get_connection() as conn:
-            df = pd.read_sql_query('SELECT * FROM monthly_revenue', conn)
+            try:
+                # prepare SQL
+                # use SQL Window Functions to do incremental updates w/o pandas loading 
+                update_query = """
+                    WITH Calculated AS (
+                        SELECT
+                            code,
+                            year,
+                            month,
+                            revenue,
+                            -- revenue_last_year (LAG 12 of revenue)
+                            LAG(revenue, 12) OVER (
+                                PARTITION BY code
+                                ORDER BY year, month
+                            ) as val_revenue_last_year,
+                            -- cumulative_revenue (partition by code, year)
+                            SUM(revenue) OVER (
+                                PARTITION BY code, year
+                                ORDER BY month
+                            ) as val_cumulative_revenue,
+                            -- revenue_prev_month (LAG 1 or revenue) for mom
+                            LAG(revenue, 1) OVER (
+                                PARTITION BY code
+                                ORDER BY year, month
+                            ) as val_revenue_prev_month
+                        FROM monthly_revenue
+                    ),
+                    Refined AS (
+                        SELECT
+                            code,
+                            year,
+                            month,
+                            revenue,
+                            val_revenue_last_year,
+                            val_cumulative_revenue,
+                            -- cumulative_revenue_last_year (LAG 12 of cumulative)
+                            LAG(val_cumulative_revenue, 12) OVER (
+                                PARTITION BY code
+                                ORDER BY year, month
+                            ) as val_cumulative_revenue_last_year,
+                            val_revenue_prev_month
+                        FROM Calculated
+                    ),
+                    Final AS (
+                        SELECT
+                            code,
+                            year,
+                            month,
+                            val_revenue_last_year,
+                            val_cumulative_revenue,
+                            val_cumulative_revenue_last_year,
+                            -- mom
+                            CASE
+                                WHEN val_revenue_prev_month IS NOT NULL AND val_revenue_prev_month != 0
+                                THEN (revenue * 1.0 / val_revenue_prev_month - 1.0) * 100
+                                ELSE NULL
+                            END as val_mom,
+                            -- yoy
+                            CASE
+                                WHEN val_revenue_last_year IS NOT NULL AND val_revenue_last_year != 0
+                                THEN (revenue * 1.0 / val_revenue_last_year - 1.0) * 100
+                                ELSE NULL
+                            END as val_yoy,
+                            -- cumulative_revenue_yoy
+                            CASE
+                                WHEN val_cumulative_revenue_last_year IS NOT NULL AND val_cumulative_revenue_last_year != 0
+                                THEN (val_cumulative_revenue * 1.0 / val_cumulative_revenue_last_year - 1.0) * 100
+                                ELSE NULL
+                            END as val_cumulative_revenue_yoy
+                        FROM Refined
+                    )
+                    UPDATE monthly_revenue as mr
+                    SET
+                        revenue_last_year = f.val_revenue_last_year,
+                        cumulative_revenue = f.val_cumulative_revenue,
+                        cumulative_revenue_last_year = f.val_cumulative_revenue_last_year,
+                        mom = f.val_mom,
+                        yoy = f.val_yoy,
+                        cumulative_revenue_yoy = f.val_cumulative_revenue_yoy
+                    FROM Final f
+                    WHERE mr.code = f.code
+                      AND mr.year = f.year
+                      AND mr.month = f.month
+                      AND (
+                           mr.revenue_last_year IS NOT f.val_revenue_last_year
+                        OR mr.cumulative_revenue IS NOT f.val_cumulative_revenue
+                        OR mr.cumulative_revenue_last_year IS NOT f.val_cumulative_revenue_last_year
+                        OR mr.mom IS NOT f.val_mom
+                        OR mr.yoy IS NOT f.val_yoy
+                        OR mr.cumulative_revenue_yoy IS NOT f.val_cumulative_revenue_yoy
+                      );
+                    """
 
-            if df.empty:
-                return
+                cursor = conn.cursor()
 
-            df.sort_values(by=['code', 'year', 'month'], inplace=True)
+                # execute
+                cursor.execute(update_query)
 
-            # calculate derived fields
-            # fmt: off
-            df['revenue_last_year'] = df.groupby('code')['revenue'].shift(12)
-            df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
-            df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].shift(12)
-            df['mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
-            df['yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
-            df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
-            # fmt: on
+            except sqlite3.OperationalError:
+                print('Warning: SQLite incremental updateing failed, try to use pandas')
+                print('         (it will take a while)')
 
-            # prepare SQL
-            update_query = """
-                UPDATE monthly_revenue
-                SET revenue_last_year = ?,
-                    cumulative_revenue = ?,
-                    cumulative_revenue_last_year = ?,
-                    mom = ?,
-                    yoy = ?,
-                    cumulative_revenue_yoy = ?
-                WHERE code = ? AND year = ? AND month = ?
-                """
+                # fallback to use pandas
+                df = pd.read_sql_query('SELECT * FROM monthly_revenue', conn)
 
-            cols = [
-                'revenue_last_year',
-                'cumulative_revenue',
-                'cumulative_revenue_last_year',
-                'mom',
-                'yoy',
-                'cumulative_revenue_yoy',
-                'code',
-                'year',
-                'month',
-            ]
+                if df.empty:
+                    return
 
-            # replace infinite values and NaN to None
-            df_update = df[cols].replace({np.inf: None, -np.inf: None, np.nan: None})
+                df.sort_values(by=['code', 'year', 'month'], inplace=True)
 
-            update_data = list(df_update.itertuples(index=False, name=None))
+                # calculate derived fields
+                # fmt: off
+                df['revenue_last_year'] = df.groupby('code')['revenue'].shift(12)
+                df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
+                df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].shift(12)
+                df['mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
+                df['yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
+                df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
+                # fmt: on
 
-            cursor = conn.cursor()
+                # prepare SQL
+                update_query = """
+                    UPDATE monthly_revenue
+                    SET revenue_last_year = ?,
+                        cumulative_revenue = ?,
+                        cumulative_revenue_last_year = ?,
+                        mom = ?,
+                        yoy = ?,
+                        cumulative_revenue_yoy = ?
+                    WHERE code = ? AND year = ? AND month = ?
+                    """
 
-            # update data
-            cursor.executemany(update_query, update_data)
+                cols = [
+                    'revenue_last_year',
+                    'cumulative_revenue',
+                    'cumulative_revenue_last_year',
+                    'mom',
+                    'yoy',
+                    'cumulative_revenue_yoy',
+                    'code',
+                    'year',
+                    'month',
+                ]
+
+                # replace infinite values and NaN to None
+                df_update = df[cols].replace({np.inf: None, -np.inf: None, np.nan: None})
+
+                update_data = list(df_update.itertuples(index=False, name=None))
+
+                cursor = conn.cursor()
+
+                # update data
+                cursor.executemany(update_query, update_data)
 
             conn.commit()
 

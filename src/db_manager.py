@@ -70,7 +70,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Successfully imported {count} records from monthly/revenues_YYYYMM.csv')  # fmt: skip
 
             if count:
-                print('\nCalcatuting and updating monthly revenues in database...\n(long time)')  # fmt: skip
+                print('\nCalcatuting and updating monthly revenues in database...')  # fmt: skip
                 db.update_monthly_revenue_calculations()
                 print('Successfully')
 
