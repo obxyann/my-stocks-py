@@ -171,10 +171,20 @@ def show_db_info(db_path=None):
             print(f'  {market}: {count}')
         print(f'Last updated: {info["stock_list"]["last_updated"]}')
 
+        print(f'\nTotal daily prices: {info["daily_prices"]["total_count"]}')
+        print(f'  min date: {info["daily_prices"]["min_date"]}')
+        print(f'  max date: {info["daily_prices"]["max_date"]}')
+        print(f'Last updated: {info["daily_prices"]["last_updated"]}')
+
         print(f'\nTotal monthly revenues: {info["monthly_revenue"]["total_count"]}')
         print(f'  min month: {info["monthly_revenue"]["min_year_month"]}')
         print(f'  max month: {info["monthly_revenue"]["max_year_month"]}')
         print(f'Last updated: {info["monthly_revenue"]["last_updated"]}')
+
+        print(f'\nTotal financial core: {info["financial_core"]["total_count"]}')
+        print(f'  min quarter: {info["financial_core"]["min_year_quarter"]}')
+        print(f'  max quarter: {info["financial_core"]["max_year_quarter"]}')
+        print(f'Last updated: {info["financial_core"]["last_updated"]}')
 
         return True
 

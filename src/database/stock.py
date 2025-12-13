@@ -1429,27 +1429,6 @@ class StockDatabase:
             # 3. get last update time from metadata
             stock_list['last_updated'] = self.get_table_updated_time('stock_list')  # <- datetime # fmt: skip
 
-            # for monthly revenue table
-            monthly_revenue = {}
-            # 1. get total count
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM monthly_revenue
-                """)
-            monthly_revenue['total_count'] = cursor.fetchone()[0]
-
-            # 2. get min and max year-month
-            cursor.execute("""
-                SELECT MIN(year * 100 + month), MAX(year * 100 + month)
-                FROM monthly_revenue
-                """)
-            min_max_result = cursor.fetchone()
-            monthly_revenue['min_year_month'] = min_max_result[0] if min_max_result[0] is not None else None  # fmt: skip
-            monthly_revenue['max_year_month'] = min_max_result[1] if min_max_result[1] is not None else None  # fmt: skip
-
-            # 3. get last update time from metadata
-            monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue')  # <- datetime # fmt: skip
-
             # for daily prices table
             daily_prices = {}
             # 1. get total count
@@ -1464,18 +1443,75 @@ class StockDatabase:
                 SELECT MIN(trade_date), MAX(trade_date)
                 FROM daily_prices
                 """)
-            min_max_result = cursor.fetchone()
-            daily_prices['min_trade_date'] = min_max_result[0] if min_max_result[0] is not None else None  # fmt: skip
-            daily_prices['max_trade_date'] = min_max_result[1] if min_max_result[1] is not None else None  # fmt: skip
+            result = cursor.fetchone()
+            min_date = result[0] if result[0] is not None else None
+            max_date = result[1] if result[1] is not None else None
+            daily_prices['min_date'] = min_date
+            daily_prices['max_date'] = max_date
 
             # 3. get last update time from metadata
             daily_prices['last_updated'] = self.get_table_updated_time('daily_prices')  # <- datetime # fmt: skip
+
+            # for monthly revenue table
+            monthly_revenue = {}
+            # 1. get total count
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM monthly_revenue
+                """)
+            monthly_revenue['total_count'] = cursor.fetchone()[0]
+
+            # 2. get min and max year-month
+            cursor.execute("""
+                SELECT MIN(year * 100 + month), MAX(year * 100 + month)
+                FROM monthly_revenue
+                """)
+            result = cursor.fetchone()
+            min_ym = result[0]
+            max_ym = result[1]
+            monthly_revenue['min_year_month'] = (
+                f'{min_ym // 100}-{min_ym % 100:02d}' if min_ym is not None else None
+            )
+            monthly_revenue['max_year_month'] = (
+                f'{max_ym // 100}-{max_ym % 100:02d}' if max_ym is not None else None
+            )
+
+            # 3. get last update time from metadata
+            monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue')  # <- datetime # fmt: skip
+
+            # for financial_core table
+            financial_core = {}
+            # 1. get total count
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM financial_core
+                """)
+            financial_core['total_count'] = cursor.fetchone()[0]
+
+            # 2. get min and max year-quarter
+            cursor.execute("""
+                SELECT MIN(year * 10 + quarter), MAX(year * 10 + quarter)
+                FROM financial_core
+                """)
+            result = cursor.fetchone()
+            min_yq = result[0]
+            max_yq = result[1]
+            financial_core['min_year_quarter'] = (
+                f'{min_yq // 10}-Q{min_yq % 10}' if min_yq is not None else None
+            )
+            financial_core['max_year_quarter'] = (
+                f'{max_yq // 10}-Q{max_yq % 10}' if max_yq is not None else None
+            )
+
+            # 3. get last update time from metadata
+            financial_core['last_updated'] = self.get_table_updated_time('financial_core')  # <- datetime # fmt: skip
 
         return {
             'database_path': self.db_path,
             'tables': tables,
             #
             'stock_list': stock_list,
-            'monthly_revenue': monthly_revenue,
             'daily_prices': daily_prices,
+            'monthly_revenue': monthly_revenue,
+            'financial_core': financial_core,
         }
