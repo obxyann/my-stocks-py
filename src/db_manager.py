@@ -34,7 +34,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'File not found: {csv_path}')
         else:
             count = db.import_stock_list_csv_to_database(csv_path)
-            print(f'Successfully imported {count} records from stock_list.csv')
+            print(f'Successfully imported {count} records')
 
         # import {XXXX}_prices.csv
         print('\nImporting OHLC prices from CSV to database...')
@@ -45,7 +45,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_ohlc_prices_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from ohlc/XXXX_prices.csv')
+            print(f'Successfully imported {count} records')
 
         # import prices_{YYYYMMDD}.csv
         print('\nImporting daily prices from CSV to database...')
@@ -56,7 +56,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_daily_prices_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from daily/prices_YYYYMMDD.csv')  # fmt: skip
+            print(f'Successfully imported {count} records')
 
         # import revenues_{YYYYMM}.csv
         print('\nImporting monthly revenues from CSV to database...')
@@ -67,27 +67,39 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Folder not found: {csv_folder}')
         else:
             count = db.import_monthly_revenue_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from monthly/revenues_YYYYMM.csv')  # fmt: skip
+            print(f'Successfully imported {count} records')
 
             if count:
                 print('\nCalcatuting and updating monthly revenues in database...')  # fmt: skip
                 db.update_monthly_revenue_calculations()
                 print('Successfully')
 
-        # import income_reports_{YYYY}Q{Q}.csv
-        print('\nImporting quarterly income reports from CSV to database...')
+        # import xx_reports_{YYYY}Q{Q}.csv
+        print('\nImporting quarterly reports from CSV to database:')
 
         csv_folder = os.path.join(csv_dir, 'quarterly')
 
         if not os.path.isdir(csv_folder):
             print(f'Folder not found: {csv_folder}')
         else:
-            count = db.import_income_reports_csv_to_database(csv_folder)
-            print(f'Successfully imported {count} records from quarterly/income_reports_YYYYQN.csv')  # fmt: skip
+            # import balance_reports_{YYYY}Q{Q}.csv
+            print('\nImporting balance reports...')
+            count1 = db.import_quarterly_reports_csv_to_database(csv_folder, 'balance_reports')
+            print(f'Successfully imported {count1} records')
+
+            # import income_reports_{YYYY}Q{Q}.csv
+            print('\nImporting income reports...')
+            count2 = db.import_quarterly_reports_csv_to_database(csv_folder, 'income_reports')
+            print(f'Successfully imported {count2} records')
+
+            # import cash_reports_{YYYY}Q{Q}.csv
+            print('\nImporting cash reports...')
+            count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports')
+            print(f'Successfully imported {count3} records')
 
             # if count:
-            #     print('\nCalcatuting and updating quarterly income reports in database...\n(long time)')
-            #     db.update_monthly_revenue_calculations()
+            #     print('\nCalcatuting and updating financial metrics in database...')
+            #     db.update_financial_metrics_calculations()
             #     print('Successfully')
 
         return True

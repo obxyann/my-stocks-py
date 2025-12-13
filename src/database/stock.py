@@ -391,11 +391,14 @@ class StockDatabase:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS daily_prices (
                     code TEXT NOT NULL,
+                    --YYYY-MM-DD
                     trade_date TEXT NOT NULL,
+                    --OHLC
                     open_price REAL NOT NULL,
                     high_price REAL NOT NULL,
                     low_price REAL NOT NULL,
                     close_price REAL NOT NULL,
+                    --
                     volume INTEGER NOT NULL,
                     PRIMARY KEY (code, trade_date),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
@@ -733,13 +736,14 @@ class StockDatabase:
                     year INTEGER NOT NULL,
                     month INTEGER NOT NULL,
                     revenue INTEGER NOT NULL,
+                    note TEXT,
+                    --
                     revenue_last_year INTEGER,
                     cumulative_revenue INTEGER,
                     cumulative_revenue_last_year INTEGER,
                     mom REAL,
                     yoy REAL,
                     cumulative_revenue_yoy REAL,
-                    note TEXT,
                     PRIMARY KEY (code, year, month),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
@@ -1105,6 +1109,7 @@ class StockDatabase:
                     code TEXT NOT NULL,
                     year INTEGER NOT NULL,
                     quarter INTEGER NOT NULL,
+                    -- balance
                     curr_assets INTEGER,
                     non_curr_assets INTEGER,
                     total_assets INTEGER,
@@ -1113,6 +1118,7 @@ class StockDatabase:
                     total_liabs INTEGER,
                     total_equity INTEGER,
                     book_value REAL,
+                    -- more balance
                     accts_receiv INTEGER,
                     accts_notes_receiv INTEGER,
                     inventory INTEGER,
@@ -1123,6 +1129,7 @@ class StockDatabase:
                     lt_loans INTEGER,
                     bonds_pay INTEGER,
                     ret_earnings INTEGER,
+                    -- income
                     opr_revenue INTEGER,
                     opr_costs INTEGER,
                     gross_profit INTEGER,
@@ -1133,11 +1140,13 @@ class StockDatabase:
                     income_tax INTEGER,
                     net_income INTEGER,
                     eps REAL,
+                    -- cash
                     opr_cash_flow INTEGER,
                     inv_cash_flow INTEGER,
                     fin_cash_flow INTEGER,
                     cash_equiv INTEGER,
                     divs_paid INTEGER,
+                    --
                     PRIMARY KEY (code, year, quarter),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
@@ -1147,8 +1156,13 @@ class StockDatabase:
 
         self.financial_core_table_initialized = True
 
-    def import_income_reports_csv_to_database(self, csv_folder='storage/quarterly'):
-        """Import income reports from CSV to database
+    def import_quarterly_reports_csv_to_database(
+        self,
+        csv_folder='storage/quarterly',
+        file_prefix='financial_reports',
+        col_mapping=None,
+     ):
+        """Import financial reports from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -1170,8 +1184,33 @@ class StockDatabase:
         updated_time = self.get_table_updated_time('financial_core')
 
         # define column mapping
-        col_mapping = {
+        # NOTE: 1. below with '(i)' mark -> only disclosed in individual financial statements
+        #       2. below with '(?)' mark -> only disclosed in some (3rd) data providers
+        #          or get more fields to calculate
+        #       3. others can find in summary reports
+        default_mapping = {
             'Code': 'code',
+            # balance
+            '流動資產': 'curr_assets',
+            '非流動資產': 'non_curr_assets',
+            '資產總計': 'total_assets',
+            '流動負債': 'curr_liabs',
+            '非流動負債': 'non_curr_liabs',
+            '負債總計': 'total_liabs',
+            '權益總計': 'total_equity',
+            '每股淨值': 'book_value',
+            # more balance
+            '應收帳款淨額': 'accts_receiv', # (i)
+            '應收帳款及票據': 'accts_notes_receiv', # (?)
+            '存貨': 'inventory', # (i)
+            '預付款項': 'prepaid', # (i)
+            '應付帳款': 'accts_pay', # (i)
+            '應付帳款及票據': 'accts_notes_pay', # (?)
+            '短期借款': 'st_loans', # (i)
+            '長期借款': 'lt_loans', # (i)
+            '應付公司債': 'bonds_pay',
+            '保留盈餘': 'ret_earnings',
+            # income
             '營業收入': 'opr_revenue',
             '營業成本': 'opr_costs',
             '營業毛利': 'gross_profit',
@@ -1182,11 +1221,24 @@ class StockDatabase:
             '所得稅費用': 'income_tax',
             '本期淨利': 'net_income',
             '每股盈餘': 'eps',
+            # cash
+            '營業活動之淨現金流入': 'opr_cash_flow',
+            '投資活動之淨現金流入': 'inv_cash_flow',
+            '籌資活動之淨現金流入': 'fin_cash_flow',
+            '期末現金及約當現金': 'cash_equiv',
+            '發放現金股利': 'divs_paid', # TODO: need to check
         }
+
+        if col_mapping is None:
+            col_mapping = default_mapping
 
         with self.get_connection() as conn:
             for file in files:
-                match = re.search(r'income_reports_(\d{4})Q(\d)\.csv', file)
+                # avoiding special character in file_prefix
+                pattern = re.compile(rf'{re.escape(file_prefix)}_(\d{{4}})Q(\d)\.csv')
+                match = pattern.search(file)
+                # or
+                # match = re.search(rf'{file_prefix}_(\d{{4}})Q(\d)\.csv', file)
                 if not match:
                     continue
 
