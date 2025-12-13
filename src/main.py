@@ -27,24 +27,7 @@ def initialize_database():
 def test_database(db):
     """Dump short information of database"""
     info = db.get_database_info()
-    print(f'Database path: {info["database_path"]}')
-    print(f'Tables: {info["tables"]}')
-
-    print(f'\nTotal stocks: {info["stock_list"]["total_count"]}')
-    print('Market distribution:')
-    for market, count in info['stock_list']['market_stats'].items():
-        print(f'  {market}: {count}')
-    print(f'Last updated: {info["stock_list"]["last_updated"]}')
-
-    print(f'\nTotal monthly revenues: {info["monthly_revenue"]["total_count"]}')
-    print(f'  min month: {info["monthly_revenue"]["min_year_month"]}')
-    print(f'  max month: {info["monthly_revenue"]["max_year_month"]}')
-    print(f'Last updated: {info["monthly_revenue"]["last_updated"]}')
-
-    print(f'\nTotal daily prices: {info["daily_prices"]["total_count"]}')
-    print(f'  min date: {info["daily_prices"]["min_trade_date"]}')
-    print(f'  max date: {info["daily_prices"]["max_trade_date"]}')
-    print(f'Last updated: {info["daily_prices"]["last_updated"]}')
+    print(f'Database info:\n{info}')
 
 
 def test_stock_list(db):
@@ -128,6 +111,26 @@ def test_daily_prices(db):
         raise
 
 
+def test_financial(db):
+    """Test function for financial data"""
+    try:
+        # Test retrieving data
+        print('• Retrieving financial data for stock 2330 in 2025 ...')
+
+        df = db.get_financial_by_code('2330', '2025-01-01', '2025-12-31')
+
+        if not df.empty:
+            print(df.head(3))
+            print('...')
+            print(df.tail(3))
+        else:
+            print('No data found for stock 2330')
+
+    except Exception as error:
+        print(f'Database operations failed: {error}')
+        raise
+
+
 def test():
     """Main test function"""
     try:
@@ -161,7 +164,9 @@ def test():
         print('\n=== Testing daily prices table ===')
         test_daily_prices(db)
 
-        print('\n=== All tests completed successfully! ===')
+        # Test 5: Financial data
+        print('\n=== Testing financial data table ===')
+        test_financial(db)
 
     except Exception as error:
         print(f'Program terminated: {error}')

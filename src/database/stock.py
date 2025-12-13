@@ -1386,6 +1386,51 @@ class StockDatabase:
 
         return total_imported_records
 
+    def get_financial_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
+        """Get financial data for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date (YYYY-MM-DD)
+            end_date (str): End date (YYYY-MM-DD)
+
+        Returns:
+            pandas.DataFrame: Financial data
+        """
+        # convert date string to datetime
+        start = parse_date_string(start_date)
+        # get year, quarter parts
+        start_year = start.year
+        start_quarter = (start.month - 1) // 3 + 1
+
+        # end year, quarter
+        if end_date:
+            end = parse_date_string(end_date)
+        else:
+            end = datetime.today()
+        end_year = end.year
+        end_quarter = (end.month - 1) // 3 + 1
+
+        # convert to comparable period (YYYYQ)
+        start_period = start_year * 10 + start_quarter
+        end_period = end_year * 10 + end_quarter
+
+        with self.get_connection() as conn:
+            # retrieve data
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM financial_core
+                WHERE code = ?
+                  AND (year * 10 + quarter) BETWEEN ? AND ?
+                ORDER BY year, quarter
+                """,
+                conn,
+                params=(stock_code, start_period, end_period),
+            )
+
+        return df
+
     #################
     # Database info #
     #################
