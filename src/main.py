@@ -60,26 +60,6 @@ def test_stock_list(db):
         raise
 
 
-def test_monthly_revenue(db):
-    """Test function for monthly revenue data"""
-    try:
-        # Test retrieving data
-        print('• Retrieving monthly revenues in 2025 for stock 2330 ...')
-
-        df = db.get_revenue_by_code('2330', '2025-01')
-
-        if not df.empty:
-            print(df.head(3))
-            print('...')
-            print(df.tail(3))
-        else:
-            print('No data found for stock 2330')
-
-    except Exception as error:
-        print(f'Database operations failed: {error}')
-        raise
-
-
 def test_daily_prices(db):
     """Test function for daily prices data"""
     try:
@@ -111,6 +91,27 @@ def test_daily_prices(db):
         raise
 
 
+def test_monthly_revenue(db):
+    """Test function for monthly revenue data"""
+    try:
+        # Test retrieving data
+        print('• Retrieving monthly revenues in 2025 01~03 for stock 2330 ...')
+
+        df = db.get_revenue_by_code('2330', '2025-01', '2025-03')
+
+        if not df.empty:
+            # print(df.head(3))
+            # print('...')
+            # print(df.tail(3))
+            print(df.T)
+        else:
+            print('No data found for stock 2330')
+
+    except Exception as error:
+        print(f'Database operations failed: {error}')
+        raise
+
+
 def test_financial(db):
     """Test function for financial data"""
     try:
@@ -120,9 +121,10 @@ def test_financial(db):
         df = db.get_financial_by_code('2330', '2025-01-01', '2025-12-31')
 
         if not df.empty:
-            print(df.head(3))
-            print('...')
-            print(df.tail(3))
+            # print(df.head(3))
+            # print('...')
+            # print(df.tail(3))
+            print(df.T)
         else:
             print('No data found for stock 2330')
 
@@ -156,15 +158,15 @@ def test():
         print('\n=== Testing stock list table ===')
         test_stock_list(db)
 
-        # Test 3: Monthly revenue
-        print('\n=== Testing monthly revenue table ===')
-        test_monthly_revenue(db)
-
         # Test 4: Daily prices
         print('\n=== Testing daily prices table ===')
         test_daily_prices(db)
 
-        # Test 5: Financial data
+        # Test 5: Monthly revenue
+        print('\n=== Testing monthly revenue table ===')
+        test_monthly_revenue(db)
+
+        # Test 6: Financial data
         print('\n=== Testing financial data table ===')
         test_financial(db)
 
