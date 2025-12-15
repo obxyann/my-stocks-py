@@ -18,6 +18,8 @@ from utils.logger import log, logger_end, logger_start
 
 # Data source:
 #
+# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
+#
 # 公開資訊觀測站 (https://mops.twse.com.tw)
 # 首頁 > 彙總報表 > 財務報表 > 財務報表 > 綜合損益表
 # https://mops.twse.com.tw/mops/#/web/t163sb04
@@ -33,6 +35,8 @@ from utils.logger import log, logger_end, logger_start
 
 
 # Fetch the financial statement of listed companies for a specific market and quarter
+#
+# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
 #
 # NOTE: There are multiple formats of a financial statement for the different industry sectors.
 #       E.g. The 'Balance Sheet' report for all the listed companies will contain up to 6 formats
@@ -820,6 +824,8 @@ def get_last_report_year_quarter():
 
 # Fetch the quarterly reports for a specific quarter
 #
+# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
+#
 # param
 #   year      - A.D. year
 #   quarter   - 1: Q1, 2: Q2, 3: Q3, 4: Q4
@@ -863,6 +869,8 @@ def fetch_quarterly_reports(year, quarter, statement):
 
 # Download the last quarterly reports
 #
+# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
+#
 # This will download data and save to
 # 'revenues_{YYYYMM}.csv' without return the data.
 #
@@ -895,6 +903,8 @@ def download_last_quarterly_reports(statement, output_dir='.'):
 
 
 # Download the quarterly reports starting from a specific date
+#
+# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
 #
 # This will check local file first or download data and save to
 # '{statement}_reports_{YYYY}Q{Q}.csv' without return the data.

@@ -1173,7 +1173,7 @@ class StockDatabase:
             """
 
             # create tables
-            for table_name in ['financial_core', 'financial_cum']:
+            for table_name in ['financial_core', 'financial_ytd']:
                 cursor.execute(
                     f'CREATE TABLE IF NOT EXISTS {table_name} ({schema_content})'
                 )
@@ -1186,13 +1186,16 @@ class StockDatabase:
         self,
         csv_folder='storage/quarterly',
         file_prefix='financial_reports',
-        to_table='financial_core',
+        is_year_to_date=False,
         col_mapping=None,
     ):
         """Import financial reports from CSV to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
+            file_prefix (str): Prefix of CSV files, e.g., 'financial_reports' in 'financial_reports_2025Q1.csv'
+            is_year_to_date (bool): imported is cumulative Year-to-Date (YTD) data (True) or periodic data (False)
+            col_mapping (dict): Mapping from CSV column headers to database
 
         Returns:
             int: Number of records imported
@@ -1202,6 +1205,9 @@ class StockDatabase:
 
         if not os.path.isdir(csv_folder):
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
+
+        # pick target table
+        to_table = 'financial_ytd' if is_year_to_date else 'financial_core'
 
         total_imported_records = 0
         last_mod_time = None  # track latest modification time of all files
