@@ -259,16 +259,14 @@ def download_daily_prices_in_tpex(output_dir='.', include_warrant=False):
 # raise an exception on failure
 def read_twse_daily_prices(data_dir='.', remove_download=True):
     # get date
-    last_date = get_last_market_close_day(
-        close_hour=13, close_minute=50
-    )  # or after 13:37
+    last_date = get_last_market_close_day(13, 50)  # or after 13:37
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
     path_name = f'{data_dir}/STOCK_DAY_ALL_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_daily_prices_in_twse(output_dir=data_dir)
+        path_name = download_daily_prices_in_twse(data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -349,16 +347,14 @@ def read_twse_daily_prices(data_dir='.', remove_download=True):
 # raise an exception on failure
 def read_tpex_daily_prices(data_dir='.', remove_download=True):
     # get date
-    last_date = get_last_market_close_day(
-        close_hour=14, close_minute=55, min_guo_year=True
-    )  # or after 14:51
+    last_date = get_last_market_close_day(14, 55, min_guo_year=True)  # or after 14:51
 
     # check whether the file has been downloaded (if it hasn't been removed yet)
     path_name = f'{data_dir}/RSTA3104_{last_date}.csv'
 
     if not os.path.isfile(path_name) or not os.path.getsize(path_name):
         # download the file
-        path_name = download_daily_prices_in_tpex(output_dir=data_dir)
+        path_name = download_daily_prices_in_tpex(data_dir)
 
     try:
         file_date = get_date_from_path_name(path_name)
@@ -437,8 +433,8 @@ def read_tpex_daily_prices(data_dir='.', remove_download=True):
 # raise an exception on failure
 def fetch_daily_prices(temp_dir='.'):
     try:
-        prices_1, date_1 = read_twse_daily_prices(data_dir=temp_dir)
-        prices_2, date_2 = read_tpex_daily_prices(data_dir=temp_dir)
+        prices_1, date_1 = read_twse_daily_prices(temp_dir)
+        prices_2, date_2 = read_tpex_daily_prices(temp_dir)
 
         # just for debug
         # prices_1.to_csv(f'{temp_dir}/~prices_tse_{date_1}.csv', index = False)
@@ -506,9 +502,7 @@ def check_last_daily_prices_exist(data_dir='.'):
     # get today
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     # and last market close day
-    last_close = parse_date_string(
-        get_last_market_close_day(close_hour=14, close_minute=55)
-    )
+    last_close = parse_date_string(get_last_market_close_day(14, 55))  # or after 14:51
 
     year, month, day = last_close.year, last_close.month, last_close.day
 
@@ -537,9 +531,9 @@ def test():
     try:
         output_dir = '../_storage/openData/daily'
 
-        logger_start(log_name='_daily', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
+        logger_start('_daily', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
 
-        download_last_daily_prices(output_dir=output_dir)
+        download_last_daily_prices(output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')

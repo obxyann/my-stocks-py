@@ -266,11 +266,11 @@ def download_last_monthly_revenues(output_dir='.'):
 # 'revenues_{YYYYMM}.csv' without return the data.
 #
 # param
-#   refetch    - whether to force refetch even if a local file exists
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
+#   refetch    - whether to force refetch even if a local file exists
 def download_hist_monthly_revenues(
-    refetch=False, start_date='2013-01-01', output_dir='.'
+    start_date='2013-01-01', output_dir='.', refetch=False
 ):
     print('Fetching...')
 
@@ -339,13 +339,13 @@ def test():
     try:
         output_dir = '../_storage/openData/monthly'
 
-        logger_start(log_name='_monthly', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
+        logger_start('_monthly', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
 
         # test 1
-        download_last_monthly_revenues(output_dir=output_dir)
+        download_last_monthly_revenues(output_dir)
 
         # test 2
-        # download_hist_monthly_revenues(start_date = '2013-01-01', output_dir = output_dir)
+        # download_hist_monthly_revenues('2013-01-01', output_dir)
 
     except Exception as error:
         print(f'Program terminated: {error}')

@@ -1,11 +1,3 @@
-# import sys
-# import os
-# from datetime import datetime
-
-# add the parent directory for importing foo from sibling directory
-# sys.path.append('..')
-# then
-# from openData.getStockList import get_stock_list
 from database.stock import StockDatabase
 
 

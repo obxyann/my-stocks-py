@@ -905,11 +905,11 @@ def download_last_quarterly_reports(statement, output_dir='.'):
 #                'balance': Balance Sheet (Statement of Financial Position) 資產負債表
 #                'cash':    Cash Flow Statement 現金流量表
 #                'ratio':   Financial ratio 財務比率
-#   refetch    - whether to force refetch even if a local file exists
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
+#   refetch    - whether to force refetch even if a local file exists
 def download_hist_quarterly_reports(
-    statement, refetch=False, start_date='2013-01-01', output_dir='.'
+    statement, start_date='2013-01-01', output_dir='.', refetch=False
 ):
     print('Fetching...')
 
@@ -980,25 +980,25 @@ def test():
     try:
         output_dir = '../_storage/openData/quarterly'
 
-        logger_start(log_name='_quarterly', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
+        logger_start('_quarterly', log_dir=output_dir, add_start_time_to_name=False)  # fmt: skip
 
         # test 1
-        download_last_quarterly_reports('income', output_dir=output_dir)
+        download_last_quarterly_reports('income', output_dir)
         wait(2, 10)
-        download_last_quarterly_reports('balance', output_dir=output_dir)
+        download_last_quarterly_reports('balance', output_dir)
         wait(2, 10)
-        download_last_quarterly_reports('cash', output_dir=output_dir)
+        download_last_quarterly_reports('cash', output_dir)
         wait(2, 10)
-        download_last_quarterly_reports('ratio', output_dir=output_dir)
+        download_last_quarterly_reports('ratio', output_dir)
 
         # test 2
-        # download_hist_quarterly_reports('income', start_date = '2013-01-01', output_dir = output_dir)  # fmt: skip
+        # download_hist_quarterly_reports('income', '2013-01-01', output_dir)  # fmt: skip
         # log('\n')
-        # download_hist_quarterly_reports('balance', start_date = '2013-01-01', output_dir = output_dir)  # fmt: skip
+        # download_hist_quarterly_reports('balance', '2013-01-01', output_dir)  # fmt: skip
         # log('\n')
-        # download_hist_quarterly_reports('cash', start_date = '2013-01-01', output_dir = output_dir)  # fmt: skip
+        # download_hist_quarterly_reports('cash', '2013-01-01', output_dir)  # fmt: skip
         # log('\n')
-        # download_hist_quarterly_reports('ratio', start_date = '2013-01-01', output_dir = output_dir)  # fmt: skip
+        # download_hist_quarterly_reports('ratio', '2013-01-01', output_dir)  # fmt: skip
 
     except Exception as error:
         print(f'Program terminated: {error}')

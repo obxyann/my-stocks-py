@@ -1,10 +1,6 @@
 import argparse
 import os
-import sys
 
-# add the parent directory for importing from sibling directory
-sys.path.append('..')
-# then
 from database.stock import StockDatabase
 from openData.getDailyPrices import (
     check_last_daily_prices_exist,
@@ -123,7 +119,7 @@ def download(refetch=False, output_dir=None):
 
     try:
         print(f'{action} stock list...')
-        download_stock_list(refetch, output_dir)
+        download_stock_list(output_dir, refetch)
         # print('Done')
 
         print(f'\n{action} last daily prices...')
@@ -134,16 +130,16 @@ def download(refetch=False, output_dir=None):
 
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
-        download_hist_monthly_revenues(refetch, '2013-01-01', dest_dir)  # fmt: skip
+        download_hist_monthly_revenues('2013-01-01', dest_dir, refetch)  # fmt: skip
         # print('Done')
 
         print(f'\n{action} quarterly reports...')
         dest_dir = os.path.join(output_dir, 'quarterly')
-        download_hist_quarterly_reports('income', refetch, '2013-01-01', dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('income', '2013-01-01', dest_dir, refetch)  # fmt: skip
         print('')
-        download_hist_quarterly_reports('balance', refetch, '2013-01-01', dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('balance', '2013-01-01', dest_dir, refetch)  # fmt: skip
         print('')
-        download_hist_quarterly_reports('cash', refetch, '2013-01-01', dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('cash', '2013-01-01', dest_dir, refetch)  # fmt: skip
         # print('Done')
 
         print('\nAll done!')

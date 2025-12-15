@@ -304,9 +304,9 @@ def fetch_stock_list():
 # 'stock_list.csv' without return the data.
 #
 # param
-#   refetch    - whether to force refetch even if a local file exists
 #   output_dir - directory where the CSV file will be saved
-def download_stock_list(refetch=False, output_dir='.'):
+#   refetch    - whether to force refetch even if a local file exists
+def download_stock_list(output_dir='.', refetch=False):
     print('Fetching...')
 
     # make an output directory
@@ -377,12 +377,12 @@ def test():
         start_time = datetime.now()
 
         # test 1
-        # download_stock_list(output_dir = output_dir)
+        # download_stock_list(output_dir)
 
         # test 2
-        download_stock_list(refetch=True, output_dir=output_dir)
+        download_stock_list(output_dir, refetch=True)
 
-        df = get_stock_list(data_dir=output_dir)
+        df = get_stock_list(output_dir)
         print('--')
         print(df)
         print('--')
