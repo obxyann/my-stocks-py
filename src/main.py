@@ -110,15 +110,23 @@ def test_financial(db):
         # Test retrieving data
         print('• Retrieving financial data for stock 2330 in 2025 ...')
 
-        df = db.get_financial_by_code('2330', '2025-01-01', '2025-12-31')
+        df1 = db.get_financial_by_code('2330', '2025-01-01', '2025-12-31', year_to_date=True)  # fmt: skip
+        df2 = db.get_financial_by_code('2330', '2025-01-01', '2025-12-31')
 
-        if not df.empty:
+        if not df1.empty:
             # print(df.head(3))
             # print('...')
             # print(df.tail(3))
-            print(df.T)
+            print('YTD\n---')
+            print(df1.T)
         else:
-            print('No data found for stock 2330')
+            print('No YTD data found for stock 2330')
+        print('')
+        if not df2.empty:
+            print('Periodic\n--------')
+            print(df2.T)
+        else:
+            print('No periodic data found for stock 2330')
 
     except Exception as error:
         print(f'Database operations failed: {error}')

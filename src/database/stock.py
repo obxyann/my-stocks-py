@@ -1397,13 +1397,201 @@ class StockDatabase:
 
         return total_imported_records
 
-    def get_financial_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
+    def calc_financial_core_from_ytd(self):
+        """Calculate single quarter (Period) data from YTD data and update financial_core
+
+        1. Read 'financial_ytd' data
+        2. Validate continuity (inter-quarter)
+        3. Calculate 'financial_core' data (Core = Current YTD - Previous YTD)
+        4. Upsert into 'financial_core' table
+        """
+        # define columns
+        # flow columns (need subtraction: Q2 = YTD_Q2 - YTD_Q1)
+        flow_cols = [
+            'opr_revenue',
+            'opr_costs',
+            'gross_profit',
+            'opr_expenses',
+            'opr_profit',
+            'non_opr_income',
+            'pre_tax_income',
+            'income_tax',
+            'net_income',
+            'eps',
+            'opr_cash_flow',
+            'inv_cash_flow',
+            'fin_cash_flow',
+            # 'divs_paid', TODO
+        ]
+
+        # stock columns (snapshot: Q2 = YTD_Q2)
+        stock_cols = [
+            'curr_assets',
+            'non_curr_assets',
+            'total_assets',
+            'curr_liabs',
+            'non_curr_liabs',
+            'total_liabs',
+            'total_equity',
+            'book_value',
+            'accts_receiv',
+            'accts_notes_receiv',
+            'inventory',
+            'prepaid',
+            'accts_pay',
+            'accts_notes_pay',
+            'st_loans',
+            'lt_loans',
+            'bonds_pay',
+            'ret_earnings',
+            'cash_equiv',
+            'divs_paid',  # TODO: tbd
+        ]
+
+        with self.get_connection() as conn:
+            print('Reading financial_ytd...')
+            try:
+                # read all YTD data
+                df_ytd = pd.read_sql_query(
+                    'SELECT * FROM financial_ytd ORDER BY code, year, quarter', conn
+                )
+            except Exception as e:
+                print(f'Error reading financial_ytd: {e}')
+                return
+
+            if df_ytd.empty:
+                print('No YTD data found.')
+                return
+
+            print(f'Processing {len(df_ytd)} YTD records...')
+
+            records_to_upsert = []
+
+            # group by code and year to process each year sequence
+            # (sort_values is redundant if SQL ordered, but safe)
+            groups = df_ytd.groupby(['code', 'year'])
+
+            for (code, year), group in groups:
+                # index by quarter for easy access
+                group = group.set_index('quarter')
+                quarters = sorted(group.index.tolist())
+
+                for q in quarters:
+                    if q == 1:
+                        # Q1: Direct copy (Core = YTD)
+                        row = group.loc[q].to_dict()
+
+                        # prepare record
+                        # (filtering relevant columns to avoid extra fields if any)
+                        record = {
+                            'code': code,
+                            'year': year,
+                            'quarter': 1,
+                        }
+                        for col in flow_cols + stock_cols:
+                            record[col] = row.get(col)
+
+                        records_to_upsert.append(record)
+
+                    else:
+                        # Q2, Q3, Q4: Need subtraction
+                        prev_q = q - 1
+
+                        # Check 1: Previous quarter record must exist
+                        if prev_q not in group.index:
+                            print(
+                                f'[{code} {year}] Missing Q{prev_q} YTD data '
+                                f'when processing Q{q}. Skipping rest of year.'
+                            )
+                            break
+
+                        curr_row = group.loc[q]
+                        prev_row = group.loc[prev_q]
+
+                        # Check 2: Previous quarter flow columns must have values
+                        valid_prev = True
+                        for col in flow_cols:
+                            if pd.isna(prev_row.get(col)):
+                                print(
+                                    f'[{code} {year}] Q{prev_q} YTD has missing '
+                                    f'value for "{col}". Skipping rest of year.'
+                                )
+                                valid_prev = False
+                                break
+
+                        if not valid_prev:
+                            break
+
+                        # Calculate
+                        record = {
+                            'code': code,
+                            'year': year,
+                            'quarter': q,
+                        }
+
+                        # Stock cols: Copy current
+                        for col in stock_cols:
+                            record[col] = curr_row.get(col)
+
+                        # Flow cols: Current - Previous
+                        for col in flow_cols:
+                            val_curr = curr_row.get(col)
+                            val_prev = prev_row.get(col)
+
+                            if pd.isna(val_curr) or pd.isna(val_prev):
+                                record[col] = None
+                            else:
+                                record[col] = val_curr - val_prev
+
+                        records_to_upsert.append(record)
+
+            if not records_to_upsert:
+                print('No records calculated.')
+                return
+
+            print(f'Upserting {len(records_to_upsert)} records to financial_core...')
+
+            # Create DataFrame
+            df_core = pd.DataFrame(records_to_upsert)
+
+            # Prepare SQL for UPSERT
+            columns = ', '.join(df_core.columns)
+            placeholders = ', '.join(['?'] * len(df_core.columns))
+
+            # exclude PK from UPDATE set
+            update_cols = [
+                c for c in df_core.columns if c not in ('code', 'year', 'quarter')
+            ]
+            update_assignments = ', '.join(
+                [f'{col}=excluded.{col}' for col in update_cols]
+            )
+
+            sql = f"""
+                INSERT INTO financial_core ({columns})
+                VALUES ({placeholders})
+                ON CONFLICT(code, year, quarter) DO UPDATE SET
+                {update_assignments}
+            """
+
+            # Handle None/NaN
+            data = df_core.where(pd.notnull(df_core), None).values.tolist()
+
+            cursor = conn.cursor()
+            cursor.executemany(sql, data)
+            conn.commit()
+
+            print('Done.')
+
+    def get_financial_by_code(
+        self, stock_code, start_date='2013-01-01', end_date=None, year_to_date=False
+    ):
         """Get financial data for specific stock
 
         Args:
             stock_code (str): Stock code
             start_date (str): Start date (YYYY-MM-DD)
             end_date (str): End date (YYYY-MM-DD)
+            year_to_date (bool): return cumulative Year-to-Date (YTD) data (True) or periodic data (False)
 
         Returns:
             pandas.DataFrame: Financial data
@@ -1426,12 +1614,15 @@ class StockDatabase:
         start_period = start_year * 10 + start_quarter
         end_period = end_year * 10 + end_quarter
 
+        # pick target table
+        from_table = 'financial_ytd' if year_to_date else 'financial_core'
+
         with self.get_connection() as conn:
             # retrieve data
             df = pd.read_sql_query(
-                """
+                f"""
                 SELECT *
-                FROM financial_core
+                FROM {from_table}
                 WHERE code = ?
                   AND (year * 10 + quarter) BETWEEN ? AND ?
                 ORDER BY year, quarter

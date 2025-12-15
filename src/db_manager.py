@@ -66,7 +66,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Successfully imported {count} records')
 
             if count:
-                print('\nCalcatuting and updating monthly revenues in database...')  # fmt: skip
+                print('\nCalculating and updating monthly revenues in database...')  # fmt: skip
                 db.update_monthly_revenue_calculations()
                 print('Successfully')
 
@@ -92,6 +92,11 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print('\nImporting cash reports...')
             count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports', is_year_to_date=True)  # fmt: skip
             print(f'Successfully imported {count3} records')
+
+            if count1 or count2 or count3:
+                print('\nCalculating and updating financial core table...')
+                db.calc_financial_core_from_ytd()
+                print('Successfully')
 
             # if count:
             #     print('\nCalcatuting and updating financial metrics in database...')
