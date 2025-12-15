@@ -84,17 +84,17 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         else:
             # import balance_reports_{YYYY}Q{Q}.csv
             print('\nImporting balance reports...')
-            count1 = db.import_quarterly_reports_csv_to_database(csv_folder, 'balance_reports')  # fmt: skip
+            count1 = db.import_quarterly_reports_csv_to_database(csv_folder, 'balance_reports', 'financial_cum')  # fmt: skip
             print(f'Successfully imported {count1} records')
 
             # import income_reports_{YYYY}Q{Q}.csv
             print('\nImporting income reports...')
-            count2 = db.import_quarterly_reports_csv_to_database(csv_folder, 'income_reports')  # fmt: skip
+            count2 = db.import_quarterly_reports_csv_to_database(csv_folder, 'income_reports', 'financial_cum')  # fmt: skip
             print(f'Successfully imported {count2} records')
 
             # import cash_reports_{YYYY}Q{Q}.csv
             print('\nImporting cash reports...')
-            count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports')  # fmt: skip
+            count3 = db.import_quarterly_reports_csv_to_database(csv_folder, 'cash_reports', 'financial_cum')  # fmt: skip
             print(f'Successfully imported {count3} records')
 
             # if count:
@@ -123,27 +123,27 @@ def download(refetch=False, output_dir=None):
 
     try:
         print(f'{action} stock list...')
-        download_stock_list(refetch=refetch, output_dir=output_dir)
+        download_stock_list(refetch, output_dir)
         # print('Done')
 
         print(f'\n{action} last daily prices...')
         dest_dir = os.path.join(output_dir, 'daily')
         if not refetch and not check_last_daily_prices_exist(dest_dir):
-            download_last_daily_prices(output_dir=dest_dir)
+            download_last_daily_prices(dest_dir)
         # print('Done')
 
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
-        download_hist_monthly_revenues(refetch=refetch, start_date='2013-01-01', output_dir=dest_dir)  # fmt: skip
+        download_hist_monthly_revenues(refetch, '2013-01-01', dest_dir)  # fmt: skip
         # print('Done')
 
         print(f'\n{action} quarterly reports...')
         dest_dir = os.path.join(output_dir, 'quarterly')
-        download_hist_quarterly_reports('income', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('income', refetch, '2013-01-01', dest_dir)  # fmt: skip
         print('')
-        download_hist_quarterly_reports('balance', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('balance', refetch, '2013-01-01', dest_dir)  # fmt: skip
         print('')
-        download_hist_quarterly_reports('cash', refetch=refetch, start_date = '2013-01-01', output_dir = dest_dir)  # fmt: skip
+        download_hist_quarterly_reports('cash', refetch, '2013-01-01', dest_dir)  # fmt: skip
         # print('Done')
 
         print('\nAll done!')

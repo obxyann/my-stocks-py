@@ -1125,9 +1125,8 @@ class StockDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # create table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS financial_core (
+            # schema content
+            schema_content = """
                     code TEXT NOT NULL,
                     year INTEGER NOT NULL,
                     quarter INTEGER NOT NULL,
@@ -1171,8 +1170,13 @@ class StockDatabase:
                     --
                     PRIMARY KEY (code, year, quarter),
                     FOREIGN KEY (code) REFERENCES stock_list (code)
+            """
+
+            # create tables
+            for table_name in ['financial_core', 'financial_cum']:
+                cursor.execute(
+                    f'CREATE TABLE IF NOT EXISTS {table_name} ({schema_content})'
                 )
-                """)
 
             conn.commit()
 
@@ -1182,6 +1186,7 @@ class StockDatabase:
         self,
         csv_folder='storage/quarterly',
         file_prefix='financial_reports',
+        to_table='financial_core',
         col_mapping=None,
     ):
         """Import financial reports from CSV to database
@@ -1203,9 +1208,9 @@ class StockDatabase:
 
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
-        # NOTE: '__{file_prefix}' is not a real table name, just for tracking the
+        # NOTE: '__{to_table}_{file_prefix}' is not a real table name, just for tracking the
         #       last updated time of different data sources for 'financial_core'
-        updated_time = self.get_table_updated_time(f'__{file_prefix}')
+        updated_time = self.get_table_updated_time(f'__{to_table}_{file_prefix}')
 
         # define column mapping
         # NOTE: 1. below with '(i)' mark -> only disclosed in individual financial statements
@@ -1347,7 +1352,7 @@ class StockDatabase:
                 if not update_cols:
                     # insert data
                     sql = f"""
-                        INSERT OR IGNORE INTO financial_core ({columns})
+                        INSERT OR IGNORE INTO {to_table} ({columns})
                         VALUES ({placeholders})
                         """
                 else:
@@ -1357,7 +1362,7 @@ class StockDatabase:
 
                     # upsert data
                     sql = f"""
-                        INSERT INTO financial_core ({columns})
+                        INSERT INTO {to_table} ({columns})
                         VALUES ({placeholders})
                         ON CONFLICT(code, year, quarter) DO UPDATE SET
                         {update_assignments}
@@ -1380,9 +1385,9 @@ class StockDatabase:
 
         # update table time
         if last_mod_time:
-            self.set_table_updated_time(f'__{file_prefix}', last_mod_time)
+            self.set_table_updated_time(f'__{to_table}_{file_prefix}', last_mod_time)
 
-            self.update_table_time('financial_core', last_mod_time)
+            self.update_table_time(to_table, last_mod_time)
 
         return total_imported_records
 
