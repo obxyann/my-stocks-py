@@ -1,0 +1,35 @@
+# project/pyproject.toml
+
+[tool.ruff]
+# directories to consider when resolving first- vs. third-party imports
+# [".", "src"] is default, aka
+#   1. directory containing the nearest pyproject.toml
+#   2. "src" subdirectory of the project root
+#
+# https://docs.astral.sh/ruff/settings/#src
+#
+# ex.
+#   my_project
+#   ├── pyproject.toml
+#   └── lib
+#       └── my_package
+#           ├── __init__.py
+#           ├── foo.py
+#           └── bar.py
+# src = [   
+#     "lib",  
+# ]
+
+target-version = "py313"
+
+line-length = 88  # 88 is default 
+
+format.quote-style = "single"  # "double" is default
+
+# list of rule codes or prefixes to enable
+# ["E4", "E7", "E9", "F"] is default
+lint.select = [  
+    "E",  # Pycodestyle Errors
+    "F",  # Pyflakes
+    "I",  # isort (Flake8-Import-Order)
+]
