@@ -254,7 +254,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
             return 'bd'  # 證券期貨業
         if name == '保險負債準備淨變動':
             return 'fh'  # 金控業
-        if name == '原始認列生物資產及農產品之利益（損失）':
+        if name == '未實現銷貨（損）益':
             return 'ci'  # 一般業
         if name == '收入':
             return 'mim'  # 異業
@@ -263,6 +263,15 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
         if name == '利息淨收益':
             return 'basi'  # 金融業
         if name == '營業收入':
+            # a large number of them should be...
+            if len(df) >= 500:
+                use_color(Colors.WARNING)
+                log("  Warning: Industry sector should be 'ci' but fall into 'ins'\n")  # fmt: skip
+                log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
+                use_color(Colors.RESET)
+
+                return 'ci'  # 一般業
+
             return 'ins'  # 保險業
 
     # for balance
