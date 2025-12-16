@@ -156,6 +156,7 @@ class StockDatabase:
                     name TEXT NOT NULL,
                     market TEXT NOT NULL,
                     industry TEXT,
+                    sector TEXT,
                     type TEXT NOT NULL
                 )
                 """)
@@ -1188,6 +1189,7 @@ class StockDatabase:
         file_prefix='financial_reports',
         is_year_to_date=False,
         col_mapping=None,
+        only_ci=True,
     ):
         """Import financial reports from CSV to database
 
@@ -1196,6 +1198,7 @@ class StockDatabase:
             file_prefix (str): Prefix of CSV files, e.g., 'financial_reports' in 'financial_reports_2025Q1.csv'
             is_year_to_date (bool): imported is cumulative Year-to-Date (YTD) data (True) or periodic data (False)
             col_mapping (dict): Mapping from CSV column headers to database
+            only_ci (bool): Only import 'ci' (common industry) sector (True) or all industry sectors (False)
 
         Returns:
             int: Number of records imported
@@ -1300,6 +1303,27 @@ class StockDatabase:
 
                     continue
 
+                if only_ci:
+                    if 'Sector' not in df.columns:
+                        print('Warning: No industry sector found, will import all rows')
+
+                    else:
+                        valid_sectors = {'basi', 'bd', 'ci', 'fh', 'ins', 'mim'}
+
+                        # check for unknown sectors
+                        unknown_mask = ~df['Sector'].isin(valid_sectors)
+
+                        if unknown_mask.any():
+                            for _, row in df[unknown_mask].iterrows():
+                                code_val = row.get('Code', 'Unknown')
+                                sector_val = row['Sector']
+                                print(
+                                    f'Warning: Unknown industry sector "{sector_val}" for {code_val}, will remove it'
+                                )
+
+                        # filter: only keep 'ci'
+                        df = df[df['Sector'] == 'ci']
+
                 # add new columns
                 df['year'] = year
                 df['quarter'] = quarter
@@ -1398,15 +1422,9 @@ class StockDatabase:
         return total_imported_records
 
     def calc_financial_core_from_ytd(self):
-        """Calculate single quarter (Period) data from YTD data and update financial_core
-
-        1. Read 'financial_ytd' data
-        2. Validate continuity (inter-quarter)
-        3. Calculate 'financial_core' data (Core = Current YTD - Previous YTD)
-        4. Upsert into 'financial_core' table
-        """
+        """Calculate single quarter (Period) data from YTD data and update financial_core"""
         # flow columns (need subtraction: Q2 = YTD_Q2 - YTD_Q1)
-        # data is Year-to-Date (YTD) can be split to single quarter 
+        # data is Year-to-Date (YTD) can be split to single quarter
         flow_cols = [
             # income
             'opr_revenue',
@@ -1484,7 +1502,7 @@ class StockDatabase:
 
                 for q in quarters:
                     if q == 1:
-                        # Q1: Direct copy (Core = YTD)
+                        # Q1: direct copy (Core = YTD)
                         row = group.loc[q].to_dict()
 
                         # prepare record
@@ -1500,10 +1518,10 @@ class StockDatabase:
                         records_to_upsert.append(record)
 
                     else:
-                        # Q2, Q3, Q4: Need subtraction
+                        # Q2, Q3, Q4: need subtraction
                         prev_q = q - 1
 
-                        # Check 1: Previous quarter record must exist
+                        # check 1: previous quarter record must exist
                         if prev_q not in group.index:
                             print(
                                 f'[{code} {year}] Missing Q{prev_q} YTD data '
@@ -1514,7 +1532,7 @@ class StockDatabase:
                         curr_row = group.loc[q]
                         prev_row = group.loc[prev_q]
 
-                        # Check 2: Previous quarter flow columns must have values
+                        # check 2: previous quarter flow columns must have values
                         valid_prev = True
                         for col in flow_cols:
                             if pd.isna(prev_row.get(col)):
@@ -1528,18 +1546,18 @@ class StockDatabase:
                         if not valid_prev:
                             break
 
-                        # Calculate
+                        # calculate
                         record = {
                             'code': code,
                             'year': year,
                             'quarter': q,
                         }
 
-                        # Stock cols: Copy current
+                        # stock cols: copy current
                         for col in stock_cols:
                             record[col] = curr_row.get(col)
 
-                        # Flow cols: Current - Previous
+                        # flow cols: current - previous
                         for col in flow_cols:
                             val_curr = curr_row.get(col)
                             val_prev = prev_row.get(col)
@@ -1557,10 +1575,10 @@ class StockDatabase:
 
             print(f'Upserting {len(records_to_upsert)} records to financial_core...')
 
-            # Create DataFrame
+            # create DataFrame
             df_core = pd.DataFrame(records_to_upsert)
 
-            # Prepare SQL for UPSERT
+            # prepare SQL for UPSERT
             columns = ', '.join(df_core.columns)
             placeholders = ', '.join(['?'] * len(df_core.columns))
 
@@ -1579,14 +1597,14 @@ class StockDatabase:
                 {update_assignments}
             """
 
-            # Handle None/NaN
+            # handle None/NaN
             data = df_core.where(pd.notnull(df_core), None).values.tolist()
 
             cursor = conn.cursor()
-            cursor.executemany(sql, data)
-            conn.commit()
 
-            print('Done.')
+            cursor.executemany(sql, data)
+
+            conn.commit()
 
     def get_financial_by_code(
         self, stock_code, start_date='2013-01-01', end_date=None, year_to_date=False
