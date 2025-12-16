@@ -1405,9 +1405,10 @@ class StockDatabase:
         3. Calculate 'financial_core' data (Core = Current YTD - Previous YTD)
         4. Upsert into 'financial_core' table
         """
-        # define columns
         # flow columns (need subtraction: Q2 = YTD_Q2 - YTD_Q1)
+        # data is Year-to-Date (YTD) can be split to single quarter 
         flow_cols = [
+            # income
             'opr_revenue',
             'opr_costs',
             'gross_profit',
@@ -1418,6 +1419,7 @@ class StockDatabase:
             'income_tax',
             'net_income',
             'eps',
+            # cash
             'opr_cash_flow',
             'inv_cash_flow',
             'fin_cash_flow',
@@ -1425,7 +1427,9 @@ class StockDatabase:
         ]
 
         # stock columns (snapshot: Q2 = YTD_Q2)
+        # data is current state (regardless of period)
         stock_cols = [
+            # balance
             'curr_assets',
             'non_curr_assets',
             'total_assets',
@@ -1434,6 +1438,7 @@ class StockDatabase:
             'total_liabs',
             'total_equity',
             'book_value',
+            # more balance
             'accts_receiv',
             'accts_notes_receiv',
             'inventory',
@@ -1444,6 +1449,7 @@ class StockDatabase:
             'lt_loans',
             'bonds_pay',
             'ret_earnings',
+            # cash
             'cash_equiv',
             'divs_paid',  # TODO: tbd
         ]

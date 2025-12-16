@@ -18,25 +18,30 @@ from utils.logger import log, logger_end, logger_start
 
 # Data source:
 #
-# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
-#
 # 公開資訊觀測站 (https://mops.twse.com.tw)
-# 首頁 > 彙總報表 > 財務報表 > 財務報表 > 綜合損益表
+# 首頁 > 彙總報表 > 財務報表 > 財務報表 > 綜合損益表 (*)
 # https://mops.twse.com.tw/mops/#/web/t163sb04
 #
 # 首頁 > 彙總報表 > 財務報表 > 財務報表 > 資產負債表
 # https://mops.twse.com.tw/mops/#/web/t163sb05
 #
-# 首頁 > 彙總報表 > 財務報表 > 財務報表 > 現金流量表
+# 首頁 > 彙總報表 > 財務報表 > 財務報表 > 現金流量表 (*)
 # https://mops.twse.com.tw/mops/#/web/t163sb20
 #
-# 首頁 > 彙總報表 > 財務報表 > 財務比率分析 > 營益分析
+# 首頁 > 彙總報表 > 財務報表 > 財務比率分析 > 營益分析 (*)
 # https://mops.twse.com.tw/mops/#/web/t163sb06
-
+#
+# NOTE: (*) 綜合損益表, 現金流量表, 營益分析裡的項目是年度(累計)計算 Year-to-Date (YTD)
+#       而資產負債表是當下狀態 (與周期無關)
+#       如果有
+#       "本期XX" 是指 "該年度初至該季度末...",
+#       "期初XX" 是指 "該年度期初...", 
+#       "期末XX" 是指 "該季度期末..."
+#
+#       'income', 'cash' and 'ratio' data is Year-to-Date (YTD) and
+#       'balance' data is current state (regardless of period)
 
 # Fetch the financial statement of listed companies for a specific market and quarter
-#
-# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
 #
 # NOTE: There are multiple formats of a financial statement for the different industry sectors.
 #       E.g. The 'Balance Sheet' report for all the listed companies will contain up to 6 formats
@@ -824,8 +829,6 @@ def get_last_report_year_quarter():
 
 # Fetch the quarterly reports for a specific quarter
 #
-# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
-#
 # param
 #   year      - A.D. year
 #   quarter   - 1: Q1, 2: Q2, 3: Q3, 4: Q4
@@ -836,6 +839,9 @@ def get_last_report_year_quarter():
 #               'ratio':   Financial ratio 財務比率
 #
 # return the result in pandas.DataFrame
+#
+# NOTE: (**) 'income', 'cash' and 'ratio' data is Year-to-Date (YTD) and
+#       'balance' data is current state (regardless of period)
 #
 # raise an exception on failure
 def fetch_quarterly_reports(year, quarter, statement):
@@ -869,18 +875,19 @@ def fetch_quarterly_reports(year, quarter, statement):
 
 # Download the last quarterly reports
 #
-# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
-#
 # This will download data and save to
 # 'revenues_{YYYYMM}.csv' without return the data.
 #
 # param
 #   statement  - financial statement
-#                'income':  Income Statement (Profit and Loss Statement) 損益表
+#                'income':  Income Statement (Profit and Loss Statement) 損益表 (*)
 #                'balance': Balance Sheet (Statement of Financial Position) 資產負債表
 #                'cash':    Cash Flow Statement 現金流量表
 #                'ratio':   Financial ratio 財務比率
 #   output_dir - directory where the CSV file will be saved
+#
+# NOTE: (**) 'income', 'cash' and 'ratio' data is Year-to-Date (YTD) and
+#       'balance' data is current state (regardless of period)
 def download_last_quarterly_reports(statement, output_dir='.'):
     print('Fetching...')
 
@@ -904,20 +911,21 @@ def download_last_quarterly_reports(statement, output_dir='.'):
 
 # Download the quarterly reports starting from a specific date
 #
-# NOTE: All data is Year-to-Date, YTD. aka cumulative sum of this year
-#
 # This will check local file first or download data and save to
 # '{statement}_reports_{YYYY}Q{Q}.csv' without return the data.
 #
 # param
 #   statement  - financial statement
-#                'income':  Income Statement (Profit and Loss Statement) 損益表
+#                'income':  Income Statement (Profit and Loss Statement) 損益表 (*)
 #                'balance': Balance Sheet (Statement of Financial Position) 資產負債表
 #                'cash':    Cash Flow Statement 現金流量表
 #                'ratio':   Financial ratio 財務比率
 #   start_date - start date
 #   output_dir - directory where the CSV file will be saved
 #   refetch    - whether to force refetch even if a local file exists
+#
+# NOTE: (**) 'income', 'cash' and 'ratio' data is Year-to-Date (YTD) and
+#       'balance' data is current state (regardless of period)
 def download_hist_quarterly_reports(
     statement, start_date='2013-01-01', output_dir='.', refetch=False
 ):
