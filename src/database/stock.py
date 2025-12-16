@@ -106,17 +106,21 @@ class StockDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # retrieve data
-            cursor.execute(
-                """
-                SELECT last_updated
-                FROM metadata
-                WHERE table_name = ?
-                """,
-                (table_name,),
-            )
+            try:
+                # retrieve data
+                cursor.execute(
+                    """
+                    SELECT last_updated
+                    FROM metadata
+                    WHERE table_name = ?
+                    """,
+                    (table_name,),
+                )
 
-            result = cursor.fetchone()
+                result = cursor.fetchone()
+
+            except sqlite3.OperationalError:
+                return None
 
         return datetime.fromisoformat(result[0]) if result else None
 
