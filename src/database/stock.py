@@ -1020,7 +1020,13 @@ class StockDatabase:
                 print('         (it will take a while)')
 
                 # fallback to use pandas
-                df = pd.read_sql_query('SELECT * FROM monthly_revenue', conn)
+                df = pd.read_sql_query(
+                    """
+                    SELECT *
+                    FROM monthly_revenue
+                    """,
+                    conn
+                )
 
                 if df.empty:
                     return
@@ -1477,21 +1483,27 @@ class StockDatabase:
         ]
 
         with self.get_connection() as conn:
-            print('Reading financial_ytd...')
+            print(f'Reading YTD data...')
+
             try:
                 # read all YTD data
                 df_ytd = pd.read_sql_query(
-                    'SELECT * FROM financial_ytd ORDER BY code, year, quarter', conn
+                    """
+                    SELECT *
+                    FROM financial_ytd
+                    ORDER BY code, year, quarter
+                    """,
+                    conn
                 )
             except Exception as e:
-                print(f'Error: Reading financial_ytd: {e}')
+                print(f"Error: {e}")
                 return
 
             if df_ytd.empty:
-                print('Error: No YTD data found')
+                print('Warning: No data found')
                 return
 
-            print(f'Processing {len(df_ytd)} YTD records...')
+            print(f'Processing {len(df_ytd)} records...')
 
             records_to_upsert = []
 
@@ -1499,9 +1511,12 @@ class StockDatabase:
             # (sort_values is redundant if SQL ordered, but safe)
             groups = df_ytd.groupby(['code', 'year'])
 
+            last_warning_code = None
+
             for (code, year), group in groups:
                 # index by quarter for easy access
                 group = group.set_index('quarter')
+
                 quarters = sorted(group.index.tolist())
 
                 for q in quarters:
@@ -1527,28 +1542,27 @@ class StockDatabase:
 
                         # check 1: previous quarter record must exist
                         if prev_q not in group.index:
-                            print(
-                                f'Warning: [{code}] {year}-Q{prev_q} YTD all data missed. '
-                                f'Skipping rest of year.'
-                            )
-                            break
+                            if last_warning_code is not code:
+                                print(f'Warning: [{code}]')
+                                
+                                last_warning_code = code
+
+                            print(f'         {year}-Q{prev_q} YTD has no data')
+
+                            continue
 
                         curr_row = group.loc[q]
                         prev_row = group.loc[prev_q]
 
                         # check 2: previous quarter flow columns must have values
-                        valid_prev = True
                         for col in flow_cols:
                             if pd.isna(prev_row.get(col)):
-                                print(
-                                    f'Warning: [{code}] {year}-Q{prev_q} YTD missing "{col}". '
-                                    f'Skipping rest of year.'
-                                )
-                                valid_prev = False
-                                break
+                                if last_warning_code is not code:
+                                    print(f'Warning: [{code}]')
 
-                        if not valid_prev:
-                            break
+                                    last_warning_code = code
+
+                                print(f'         {year}-Q{prev_q} YTD missing "{col}"')
 
                         # calculate
                         record = {
@@ -1574,10 +1588,11 @@ class StockDatabase:
                         records_to_upsert.append(record)
 
             if not records_to_upsert:
-                print('No records calculated.')
+                print('Warning: No records calculated')
+
                 return
 
-            print(f'Upserting {len(records_to_upsert)} records to financial_core...')
+            print(f'Upserting {len(records_to_upsert)} records...')
 
             # create DataFrame
             df_core = pd.DataFrame(records_to_upsert)
