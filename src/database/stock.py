@@ -1484,11 +1484,11 @@ class StockDatabase:
                     'SELECT * FROM financial_ytd ORDER BY code, year, quarter', conn
                 )
             except Exception as e:
-                print(f'Error reading financial_ytd: {e}')
+                print(f'Error: Reading financial_ytd: {e}')
                 return
 
             if df_ytd.empty:
-                print('No YTD data found.')
+                print('Error: No YTD data found')
                 return
 
             print(f'Processing {len(df_ytd)} YTD records...')
@@ -1528,8 +1528,8 @@ class StockDatabase:
                         # check 1: previous quarter record must exist
                         if prev_q not in group.index:
                             print(
-                                f'[{code} {year}] Missing Q{prev_q} YTD data '
-                                f'when processing Q{q}. Skipping rest of year.'
+                                f'Warning: [{code}] {year}-Q{prev_q} YTD all data missed. '
+                                f'Skipping rest of year.'
                             )
                             break
 
@@ -1541,8 +1541,8 @@ class StockDatabase:
                         for col in flow_cols:
                             if pd.isna(prev_row.get(col)):
                                 print(
-                                    f'[{code} {year}] Q{prev_q} YTD has missing '
-                                    f'value for "{col}". Skipping rest of year.'
+                                    f'Warning: [{code}] {year}-Q{prev_q} YTD missing "{col}". '
+                                    f'Skipping rest of year.'
                                 )
                                 valid_prev = False
                                 break
