@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from datetime import date, datetime
 from io import StringIO
@@ -35,11 +36,12 @@ from utils.logger import log, logger_end, logger_start
 #       而資產負債表是當下狀態 (與周期無關)
 #       如果有
 #       "本期XX" 是指 "該年度初至該季度末...",
-#       "期初XX" 是指 "該年度期初...", 
+#       "期初XX" 是指 "該年度期初...",
 #       "期末XX" 是指 "該季度期末..."
 #
 #       'income', 'cash' and 'ratio' data is Year-to-Date (YTD) and
 #       'balance' data is current state (regardless of period)
+
 
 # Fetch the financial statement of listed companies for a specific market and quarter
 #
@@ -529,7 +531,8 @@ balance_columns_rename = {
     '當期所得稅資產': '本期所得稅資產',
     '待出售資產': '待出售資產',  # no change
     '待出售資產－淨額': '待出售資產',
-    'Unnamed: 12': '待分配予業主之資產',  # no change NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
+    # 'Unnamed: 12': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
+    'Unnamed: 13': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
     '待分配予業主之資產（或處分群組）': '待分配予業主之資產',
     '待分配予業主之資產－淨額': '待分配予業主之資產',
     '貼現及放款－淨額': '貼現及放款',
@@ -703,9 +706,18 @@ def adjustDf(df, statement):
 
     # check if exist column out of mapping table
     for name in df.columns:
+        # check if it is from empty header item
+        match = re.match(r'Unnamed: (\d+)', name)
+        if match:
+            # number = match.group(1)
+            use_color(Colors.WARNING)
+            log(f"  Warning: Found empty header item as '{name}' in '{statement}'\n")  # fmt: skip
+            use_color(Colors.RESET)
+
         if name not in rename:
             use_color(Colors.WARNING)
             log(f"  Warning: Not found '{name}' in the rename table of '{statement}'\n")  # fmt: skip
+            log('           Should add it to the rename table and download again\n')
             use_color(Colors.RESET)
 
     df = df.rename(columns=rename)  # , inplace = True)
