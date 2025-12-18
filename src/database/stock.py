@@ -910,11 +910,11 @@ class StockDatabase:
             self.set_table_updated_time('monthly_revenue', last_mod_time)
 
         # update calculated fields after import
-        # self.update_monthly_revenue_calculations()
+        # self.update_monthly_revenue()
 
         return total_imported_records
 
-    def update_monthly_revenue_calculations(self):
+    def update_monthly_revenue(self):
         """Update calculated fields in monthly_revenue table"""
         with self.get_connection() as conn:
             try:
@@ -1025,7 +1025,7 @@ class StockDatabase:
                     SELECT *
                     FROM monthly_revenue
                     """,
-                    conn
+                    conn,
                 )
 
                 if df.empty:
@@ -1431,8 +1431,12 @@ class StockDatabase:
 
         return total_imported_records
 
-    def calc_financial_core_from_ytd(self):
-        """Calculate single quarter (Period) data from YTD data and update financial_core"""
+    def update_financial_core_from_ytd(self):
+        """Update financial core data from Year-to-Date (YTD) data
+
+        This will update 'financial_core' (single quarter data) table by difference
+        calculating (reverse cumulative sum）the 'financial_ytd' table.
+        """
         # flow columns (need subtraction: Q2 = YTD_Q2 - YTD_Q1)
         # data is Year-to-Date (YTD) can be split to single quarter
         flow_cols = [
@@ -1451,7 +1455,13 @@ class StockDatabase:
             'opr_cash_flow',
             'inv_cash_flow',
             'fin_cash_flow',
-            # 'divs_paid', TODO
+            'divs_paid',
+        ]
+
+        # exclude warning these columns in flow_cols (for missing values)
+        # data not ready in summary reports
+        no_warning_cols = [
+            'divs_paid',
         ]
 
         # stock columns (snapshot: Q2 = YTD_Q2)
@@ -1479,11 +1489,10 @@ class StockDatabase:
             'ret_earnings',
             # cash
             'cash_equiv',
-            'divs_paid',  # TODO: tbd
         ]
 
         with self.get_connection() as conn:
-            print(f'Reading YTD data...')
+            print('Reading YTD data...')
 
             try:
                 # read all YTD data
@@ -1493,15 +1502,19 @@ class StockDatabase:
                     FROM financial_ytd
                     ORDER BY code, year, quarter
                     """,
-                    conn
+                    conn,
                 )
             except Exception as e:
-                print(f"Error: {e}")
+                print(f'Error: {e}')
                 return
 
             if df_ytd.empty:
                 print('Warning: No data found')
                 return
+
+            print('Verifying YTD data...')
+
+            # TODO: verify YTD data
 
             print(f'Processing {len(df_ytd)} records...')
 
@@ -1511,8 +1524,6 @@ class StockDatabase:
             # (sort_values is redundant if SQL ordered, but safe)
             groups = df_ytd.groupby(['code', 'year'])
 
-            last_warning_code = None
-
             for (code, year), group in groups:
                 # index by quarter for easy access
                 group = group.set_index('quarter')
@@ -1520,9 +1531,11 @@ class StockDatabase:
                 quarters = sorted(group.index.tolist())
 
                 for q in quarters:
+                    curr_row = group.loc[q].to_dict()
+
                     if q == 1:
                         # Q1: direct copy (Core = YTD)
-                        row = group.loc[q].to_dict()
+                        # curr_row = group.loc[q].to_dict()
 
                         # prepare record
                         # (filtering relevant columns to avoid extra fields if any)
@@ -1532,7 +1545,7 @@ class StockDatabase:
                             'quarter': 1,
                         }
                         for col in flow_cols + stock_cols:
-                            record[col] = row.get(col)
+                            record[col] = curr_row.get(col)
 
                         records_to_upsert.append(record)
 
@@ -1540,29 +1553,13 @@ class StockDatabase:
                         # Q2, Q3, Q4: need subtraction
                         prev_q = q - 1
 
-                        # check 1: previous quarter record must exist
+                        # check 3: previous quarter record must exist
                         if prev_q not in group.index:
-                            if last_warning_code is not code:
-                                print(f'Warning: [{code}]')
-                                
-                                last_warning_code = code
-
-                            print(f'         {year}-Q{prev_q} YTD has no data')
-
+                            # print(f'Warning: [{code}] {year}-Q{prev_q} YTD data missed')
                             continue
 
-                        curr_row = group.loc[q]
+                        # curr_row = group.loc[q]
                         prev_row = group.loc[prev_q]
-
-                        # check 2: previous quarter flow columns must have values
-                        for col in flow_cols:
-                            if pd.isna(prev_row.get(col)):
-                                if last_warning_code is not code:
-                                    print(f'Warning: [{code}]')
-
-                                    last_warning_code = code
-
-                                print(f'         {year}-Q{prev_q} YTD missing "{col}"')
 
                         # calculate
                         record = {

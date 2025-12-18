@@ -67,7 +67,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
 
             if count:
                 print('\nCalculating and updating monthly revenues in database...')  # fmt: skip
-                db.update_monthly_revenue_calculations()
+                db.update_monthly_revenue()
                 print('Successfully')
 
         # import xx_reports_{YYYY}Q{Q}.csv
@@ -95,7 +95,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
 
             # if count1 or count2 or count3:
             print('\nCalculating and updating financial core table...')
-            db.calc_financial_core_from_ytd()
+            db.update_financial_core_from_ytd()
             print('Successfully')
 
             # if count:
