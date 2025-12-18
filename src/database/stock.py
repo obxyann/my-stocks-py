@@ -1431,11 +1431,14 @@ class StockDatabase:
 
         return total_imported_records
 
-    def update_financial_core_from_ytd(self):
+    def update_financial_core_from_ytd(self, verify_data=True):
         """Update financial core data from Year-to-Date (YTD) data
 
-        This will update 'financial_core' (single quarter data) table by difference
-        calculating (reverse cumulative sum）the 'financial_ytd' table.
+        This will update 'financial_core' (single quarter data) table by calculating
+        quarterly differences from the cumulative 'financial_ytd' table.
+
+        Args:
+            verify_data (bool): Whether to verify YTD data for missing quarters or missing values
         """
         # flow columns (need subtraction: Q2 = YTD_Q2 - YTD_Q1)
         # data is Year-to-Date (YTD) can be split to single quarter
@@ -1512,9 +1515,57 @@ class StockDatabase:
                 print('Warning: No data found')
                 return
 
-            print('Verifying YTD data...')
+            if verify_data:
+                print('Verifying YTD data...')
 
-            # TODO: verify YTD data
+                for code, group in df_ytd.groupby('code'):
+                    # 1. find first and last year, quarter
+                    # (df_ytd is already sorted by code, year, quarter)
+                    start_year = group['year'].iloc[0]
+                    start_q = group['quarter'].iloc[0]
+                    end_year = group['year'].iloc[-1]
+                    end_q = group['quarter'].iloc[-1]
+
+                    # use a lookup set and indexed group for efficiency
+                    existing_periods = set(zip(group['year'], group['quarter']))
+
+                    group_indexed = group.set_index(['year', 'quarter'])
+
+                    # 2. check for missing year, quarter data in the range
+                    year, q = start_year, start_q
+
+                    warning_code = False  # to control layout of warning messages
+
+                    while (year < end_year) or (year == end_year and q <= end_q):
+                        if (year, q) not in existing_periods:
+                            if not warning_code:
+                                print(f'Warning: [{code}]')
+
+                                warning_code = True
+
+                            print(f'         {year}-Q{q} YTD has no data')
+                        else:
+                            # 3. verify flow_cols for missing values
+                            row = group_indexed.loc[(year, q)]
+
+                            for col in flow_cols:
+                                # but exclude no_warning_cols
+                                if col in no_warning_cols:
+                                    continue
+
+                                if pd.isna(row[col]):
+                                    if not warning_code:
+                                        print(f'Warning: [{code}]')
+
+                                        warning_code = True
+
+                                    print(f'         {year}-Q{q} YTD missing "{col}"')
+
+                        # increment year, quarter
+                        q += 1
+                        if q > 4:
+                            q = 1
+                            year += 1
 
             print(f'Processing {len(df_ytd)} records...')
 
