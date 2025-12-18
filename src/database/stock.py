@@ -1543,7 +1543,7 @@ class StockDatabase:
 
                                 warning_code = True
 
-                            print(f'         {year}-Q{q} YTD has no data')
+                            print(f'         {year}-Q{q} has no data')
                         else:
                             # 3. verify flow_cols for missing values
                             row = group_indexed.loc[(year, q)]
@@ -1559,7 +1559,7 @@ class StockDatabase:
 
                                         warning_code = True
 
-                                    print(f'         {year}-Q{q} YTD missing "{col}"')
+                                    print(f'         {year}-Q{q} missing "{col}"')
 
                         # increment year, quarter
                         q += 1
