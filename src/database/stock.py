@@ -1543,7 +1543,10 @@ class StockDatabase:
 
                                 warning_code = True
 
-                            print(f'         {year}-Q{q} has no data')
+                            # append (H1) to Q3 or (A) to Q4
+                            n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''
+
+                            print(f'         {year}-Q{q}{n} has no data')
                         else:
                             # 3. verify flow_cols for missing values
                             row = group_indexed.loc[(year, q)]
@@ -1559,7 +1562,10 @@ class StockDatabase:
 
                                         warning_code = True
 
-                                    print(f'         {year}-Q{q} missing "{col}"')
+                                    # append (H1) to Q3 or (A) to Q4
+                                    n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''    
+
+                                    print(f'         {year}-Q{q}{n} missing "{col}"')
 
                         # increment year, quarter
                         q += 1
