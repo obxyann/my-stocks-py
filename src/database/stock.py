@@ -1539,7 +1539,7 @@ class StockDatabase:
                     while (year < end_year) or (year == end_year and q <= end_q):
                         if (year, q) not in existing_periods:
                             if not warning_code:
-                                print(f'Warning: [{code}]')
+                                print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')
 
                                 warning_code = True
 
@@ -1555,7 +1555,7 @@ class StockDatabase:
 
                                 if pd.isna(row[col]):
                                     if not warning_code:
-                                        print(f'Warning: [{code}]')
+                                        print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')
 
                                         warning_code = True
 
