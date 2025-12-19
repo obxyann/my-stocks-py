@@ -1456,6 +1456,72 @@ class StockDatabase:
 
         return total_imported_records
 
+    def verify_financial_data(self, df, warning_cols=None):
+        """Verify financial reports for missing quarters or missing values
+
+        Args:
+            df (pandas.DataFrame): Financial data
+            warning_cols (list, optional): Columns to check for missing values
+        """
+        if warning_cols is None:
+            warning_cols = []
+
+        for code, group in df.groupby('code'):
+            # 1. find first and last year, quarter
+            # (df is already sorted by code, year, quarter)
+            start_year = group['year'].iloc[0]
+            start_q = group['quarter'].iloc[0]
+            end_year = group['year'].iloc[-1]
+            end_q = group['quarter'].iloc[-1]
+
+            # use a lookup set and indexed group for efficiency
+            existing_periods = set(zip(group['year'], group['quarter']))
+
+            group_indexed = group.set_index(['year', 'quarter'])
+
+            # 2. check for missing year, quarter data in the range
+            year, q = start_year, start_q
+
+            warning_code = False  # to control layout of warning messages
+
+            while (year < end_year) or (year == end_year and q <= end_q):
+                if (year, q) not in existing_periods:
+                    if not warning_code:
+                        print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')  # fmt: skip
+
+                        warning_code = True
+
+                    # append (H1) to Q3 or (A) to Q4
+                    # (NOTE: q == 2 is H1, q == 4 is Annual)
+                    n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''
+
+                    use_color(Colors.ERROR if q == 4 else Colors.WARNING)
+                    print(f'         {year}-Q{q}{n} has no data')
+                    use_color(Colors.RESET)
+                else:
+                    # 3. verify warning_cols for missing values
+                    row = group_indexed.loc[(year, q)]
+
+                    for col in warning_cols:
+                        if pd.isna(row[col]):
+                            if not warning_code:
+                                print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')  # fmt: skip
+
+                                warning_code = True
+
+                            # append (H1) to Q3 or (A) to Q4
+                            n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''
+
+                            use_color(Colors.WARNING)
+                            print(f'         {year}-Q{q}{n} missing "{col}"')
+                            use_color(Colors.RESET)
+
+                # increment year, quarter
+                q += 1
+                if q > 4:
+                    q = 1
+                    year += 1
+
     def update_financial_core_from_ytd(self, verify_data=True):
         """Update financial core data from Year-to-Date (YTD) data
 
@@ -1546,66 +1612,12 @@ class StockDatabase:
                 return
 
             if verify_data:
-                print('Verifying YTD data...')
+                print('Verifying data...')
 
-                for code, group in df_ytd.groupby('code'):
-                    # 1. find first and last year, quarter
-                    # (df_ytd is already sorted by code, year, quarter)
-                    start_year = group['year'].iloc[0]
-                    start_q = group['quarter'].iloc[0]
-                    end_year = group['year'].iloc[-1]
-                    end_q = group['quarter'].iloc[-1]
+                # define warning columns
+                warning_cols = [c for c in flow_cols if c not in no_warning_cols]
 
-                    # use a lookup set and indexed group for efficiency
-                    existing_periods = set(zip(group['year'], group['quarter']))
-
-                    group_indexed = group.set_index(['year', 'quarter'])
-
-                    # 2. check for missing year, quarter data in the range
-                    year, q = start_year, start_q
-
-                    warning_code = False  # to control layout of warning messages
-
-                    while (year < end_year) or (year == end_year and q <= end_q):
-                        if (year, q) not in existing_periods:
-                            if not warning_code:                                
-                                print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')
-
-                                warning_code = True
-
-                            # append (H1) to Q3 or (A) to Q4
-                            n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''
-
-                            use_color(Colors.ERROR if q == 4 else Colors.WARNING)
-                            print(f'         {year}-Q{q}{n} has no data')
-                            use_color(Colors.RESET)
-                        else:
-                            # 3. verify flow_cols for missing values
-                            row = group_indexed.loc[(year, q)]
-
-                            for col in flow_cols:
-                                # but exclude no_warning_cols
-                                if col in no_warning_cols:
-                                    continue
-
-                                if pd.isna(row[col]):
-                                    if not warning_code:
-                                        print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')
-
-                                        warning_code = True
-
-                                    # append (H1) to Q3 or (A) to Q4
-                                    n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''    
-
-                                    use_color(Colors.WARNING)
-                                    print(f'         {year}-Q{q}{n} missing "{col}"')
-                                    use_color(Colors.RESET)
-
-                        # increment year, quarter
-                        q += 1
-                        if q > 4:
-                            q = 1
-                            year += 1
+                self.verify_financial_data(df_ytd, warning_cols)
 
             print(f'Processing {len(df_ytd)} records...')
 
