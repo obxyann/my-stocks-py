@@ -9,6 +9,7 @@ import pandas as pd
 # add parent directory for importing from sibling directory
 # sys.path.append('..')
 # then
+from utils.ansiColors import Colors, use_color
 from utils.ass import ensure_directory_exists, modification_time, parse_date_string
 
 
@@ -236,7 +237,9 @@ class StockDatabase:
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
             if missing_cols:
+                use_color(Colors.ERROR)
                 print(f'Error: Missing mandatory columns {missing_cols}')
+                use_color(Colors.RESET)
 
                 return 0
 
@@ -277,7 +280,9 @@ class StockDatabase:
             return len(df)
 
         except Exception as e:
+            use_color(Colors.ERROR)
             print(f'Error: {e}')
+            use_color(Colors.RESET)
 
             return 0
 
@@ -492,7 +497,9 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
+                    use_color(Colors.ERROR)
                     print(f'Error: Failed reading: {e}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -529,7 +536,9 @@ class StockDatabase:
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
+                    use_color(Colors.ERROR)
                     print(f'Error: Missing mandatory columns {missing_cols}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -632,7 +641,9 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
+                    use_color(Colors.ERROR)
                     print(f'Error: Failed reading: {e}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -669,7 +680,9 @@ class StockDatabase:
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
+                    use_color(Colors.ERROR)
                     print(f'Error: Missing mandatory columns {missing_cols}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -833,7 +846,9 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
+                    use_color(Colors.ERROR)
                     print(f'Error: Failed reading: {e}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -868,7 +883,9 @@ class StockDatabase:
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
+                    use_color(Colors.ERROR)
                     print(f'Error: Missing mandatory columns {missing_cols}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -1016,8 +1033,10 @@ class StockDatabase:
                 cursor.execute(update_query)
 
             except sqlite3.OperationalError:
+                use_color(Colors.WARNING)
                 print('Warning: SQLite incremental updateing failed, try to use pandas')
                 print('         (it will take a while)')
+                use_color(Colors.RESET)
 
                 # fallback to use pandas
                 df = pd.read_sql_query(
@@ -1309,14 +1328,17 @@ class StockDatabase:
                     df = pd.read_csv(csv_path)
 
                 except Exception as e:
+                    use_color(Colors.ERROR)
                     print(f'Error: Failed reading: {e}')
+                    use_color(Colors.RESET)
 
                     continue
 
                 if only_ci:
                     if 'Sector' not in df.columns:
+                        use_color(Colors.WARNING)
                         print('Warning: No industry sector found, will import all rows')
-
+                        use_color(Colors.RESET)
                     else:
                         valid_sectors = {'basi', 'bd', 'ci', 'fh', 'ins', 'mim'}
 
@@ -1327,9 +1349,10 @@ class StockDatabase:
                             for _, row in df[unknown_mask].iterrows():
                                 code_val = row.get('Code', 'Unknown')
                                 sector_val = row['Sector']
-                                print(
-                                    f'Warning: Unknown industry sector "{sector_val}" for {code_val}, will remove it'
-                                )
+
+                                use_color(Colors.WARNING)
+                                print(f'Warning: Unknown industry sector "{sector_val}" for {code_val}, will remove it')  # fmt: skip
+                                use_color(Colors.RESET)
 
                         # filter: only keep 'ci'
                         df = df[df['Sector'] == 'ci']
@@ -1364,7 +1387,9 @@ class StockDatabase:
                 missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
                 if missing_cols:
+                    use_color(Colors.ERROR)
                     print(f'Error: Missing mandatory columns {missing_cols}')
+                    use_color(Colors.RESET)
 
                     continue
 
@@ -1508,11 +1533,16 @@ class StockDatabase:
                     conn,
                 )
             except Exception as e:
+                use_color(Colors.ERROR)
                 print(f'Error: {e}')
+                use_color(Colors.RESET)
+
                 return
 
             if df_ytd.empty:
+                use_color(Colors.WARNING)
                 print('Warning: No data found')
+                use_color(Colors.RESET)
                 return
 
             if verify_data:
@@ -1538,7 +1568,7 @@ class StockDatabase:
 
                     while (year < end_year) or (year == end_year and q <= end_q):
                         if (year, q) not in existing_periods:
-                            if not warning_code:
+                            if not warning_code:                                
                                 print(f'Warning: [{code}] {start_year}-Q{start_q} ~ {end_year}-Q{end_q}')
 
                                 warning_code = True
@@ -1546,7 +1576,9 @@ class StockDatabase:
                             # append (H1) to Q3 or (A) to Q4
                             n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''
 
+                            use_color(Colors.ERROR if q == 4 else Colors.WARNING)
                             print(f'         {year}-Q{q}{n} has no data')
+                            use_color(Colors.RESET)
                         else:
                             # 3. verify flow_cols for missing values
                             row = group_indexed.loc[(year, q)]
@@ -1565,7 +1597,9 @@ class StockDatabase:
                                     # append (H1) to Q3 or (A) to Q4
                                     n = ' (H1)' if q == 2 else ' (A)' if q == 4 else ''    
 
+                                    use_color(Colors.WARNING)
                                     print(f'         {year}-Q{q}{n} missing "{col}"')
+                                    use_color(Colors.RESET)
 
                         # increment year, quarter
                         q += 1
@@ -1642,7 +1676,9 @@ class StockDatabase:
                         records_to_upsert.append(record)
 
             if not records_to_upsert:
+                use_color(Colors.WARNING)
                 print('Warning: No records calculated')
+                use_color(Colors.RESET)
 
                 return
 
