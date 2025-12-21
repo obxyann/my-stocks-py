@@ -26,7 +26,8 @@ class StockDatabase:
         self.stock_list_table_initialized = False
         self.daily_prices_table_initialized = False
         self.monthly_revenue_table_initialized = False
-        self.financial_core_table_initialized = False
+        self.financial_core_ytd_table_initialized = False
+        self.financial_metrics_table_initialized = False
 
         ensure_directory_exists(db_path)
 
@@ -424,8 +425,8 @@ class StockDatabase:
                     close_price REAL NOT NULL,
                     --
                     volume INTEGER NOT NULL,
-                    PRIMARY KEY (code, trade_date),
-                    FOREIGN KEY (code) REFERENCES stock_list (code)
+                    PRIMARY KEY (code, trade_date)
+                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
                 """)
 
@@ -784,8 +785,8 @@ class StockDatabase:
                     mom REAL,
                     yoy REAL,
                     cumulative_revenue_yoy REAL,
-                    PRIMARY KEY (code, year, month),
-                    FOREIGN KEY (code) REFERENCES stock_list (code)
+                    PRIMARY KEY (code, year, month)
+                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
                 """)
 
@@ -1149,7 +1150,7 @@ class StockDatabase:
 
     def ensure_financial_core_table(self):
         """Create financial_core table if not exists"""
-        if self.financial_core_table_initialized:
+        if self.financial_core_ytd_table_initialized:
             return
 
         with self.get_connection() as conn:
@@ -1203,8 +1204,8 @@ class StockDatabase:
                     cash_equiv INTEGER,
                     divs_paid INTEGER,
                     --
-                    PRIMARY KEY (code, year, quarter),
-                    FOREIGN KEY (code) REFERENCES stock_list (code)
+                    PRIMARY KEY (code, year, quarter)
+                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
             """
 
             # create tables
@@ -1215,7 +1216,7 @@ class StockDatabase:
 
             conn.commit()
 
-        self.financial_core_table_initialized = True
+        self.financial_core_ytd_table_initialized = True
 
     def import_quarterly_reports_csv_to_database(
         self,
@@ -1271,14 +1272,19 @@ class StockDatabase:
             '負債總計': 'total_liabs',
             '權益總計': 'total_equity',
             '每股淨值': 'book_value',
-            # more balance
-            '應收帳款淨額': 'accts_receiv',  # (i)
+            # balance details
+            '應收帳款': 'accts_receiv',  # (i)
+            '應收票據': 'notes_receiv',  # (i)
+            '其他應收款': 'other_receiv',  # (i)
             '應收帳款及票據': 'accts_notes_receiv',  # (?)
             '存貨': 'inventory',  # (i)
             '預付款項': 'prepaid',  # (i)
             '應付帳款': 'accts_pay',  # (i)
+            '應付票據': 'notes_pay',  # (i)
+            '其他應付款': 'other_pay',  # (i)
             '應付帳款及票據': 'accts_notes_pay',  # (?)
             '短期借款': 'st_loans',  # (i)
+            '一年內到期長期負債': 'lt_liabs_due_1y',  # (i)
             '長期借款': 'lt_loans',  # (i)
             '應付公司債': 'bonds_pay',
             '保留盈餘': 'ret_earnings',
@@ -1298,7 +1304,7 @@ class StockDatabase:
             '投資活動之淨現金流入': 'inv_cash_flow',
             '籌資活動之淨現金流入': 'fin_cash_flow',
             '期末現金及約當現金': 'cash_equiv',
-            '發放現金股利': 'divs_paid',  # TODO: need to check
+            '配發股利': 'divs_paid',
         }
 
         if col_mapping is None:
@@ -1575,7 +1581,7 @@ class StockDatabase:
             'total_liabs',
             'total_equity',
             'book_value',
-            # more balance
+            # balance details
             'accts_receiv',
             'accts_notes_receiv',
             'inventory',
@@ -1782,6 +1788,307 @@ class StockDatabase:
             )
 
         return df
+
+    ###########################
+    # Financial Metrics table #
+    ###########################
+
+    def ensure_financial_metrics_table(self):
+        """Create financial_metric table if not exists"""
+        if self.financial_metrics_table_initialized:
+            return
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # create table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS financial_metrics (
+                    code TEXT NOT NULL,
+                    year INTEGER NOT NULL,
+                    quarter INTEGER NOT NULL,
+                    --
+                    free_cash_flow INTEGER,
+                    days_inventory_outstd REAL,
+                    days_sales_outstd REAL,
+                    days_pay_outstd REAL,
+                    ccc REAL,
+                    -- 
+                    curr_ratio REAL,
+                    quick_ratio REAL,
+                    debt_ratio REAL,
+                    fin_debt_ratio REAL,
+                    core_profit_ratio REAL,
+                    asset_turn_ratio REAL,
+                    -- 
+                    gross_margin REAL,
+                    opr_margin REAL,
+                    pre_tax_margin REAL,
+                    net_margin REAL,
+                    roa REAL,
+                    roe REAL,
+                    annual_roa REAL,
+                    annual_roe REAL,
+                    rore REAL,
+                    --
+                    eps_qoq REAL,
+                    eps_yoy REAL,
+                    net_income_qoq REAL,
+                    net_income_yoy REAL,
+                    opr_cash_flow_qoq REAL,
+                    opr_cash_flow_yoy REAL,
+                    gross_margin_qoq REAL,
+                    gross_margin_yoy REAL,
+                    opr_margin_qoq REAL,
+                    opr_margin_yoy REAL,
+                    net_margin_qoq REAL,
+                    net_margin_yoy REAL,
+                    roe_qoq REAL,
+                    roe_yoy REAL,
+                    --
+                    pe_ratio REAL,
+                    pb_ratio REAL,
+                    div_yield REAL,
+                    annual_payout_ratio REAL,
+                    irr REAL,
+                    --
+                    PRIMARY KEY (code, year, quarter)
+                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
+                )
+                """)
+
+            conn.commit()
+
+        self.financial_metrics_table_initialized = True
+
+    def update_financial_metrics(self):
+        """Calculate and update financial metrics from financial core data"""
+        self.ensure_financial_metrics_table()
+
+        print('Calculating financial metrics...')
+
+        with self.get_connection() as conn:
+            # read financial_core
+            df = pd.read_sql_query(
+                'SELECT * FROM financial_core ORDER BY code, year, quarter', conn
+            )
+
+        if df.empty:
+            use_color(Colors.WARNING)
+            print('Warning: No financial core data found.')
+            use_color(Colors.RESET)
+            return
+
+        # calculations
+        # handle missing data using pandas standard NaN propagation
+
+        # --- balance & ratios helpers ---
+
+        # create temporary series for calculation
+        # 1. Receivables
+        # if 'accts_notes_receiv' is present, use it.
+        # else 'accts_receiv' + 'notes_receiv'
+        receiv_sum = df['accts_receiv'].fillna(0) + df['notes_receiv'].fillna(0)
+
+        # Where accts_notes_receiv is NaN, use receiv_sum
+        temp_receiv = df['accts_notes_receiv'].fillna(receiv_sum)
+
+        # 2. Payables
+        pay_sum = df['accts_pay'].fillna(0) + df['notes_pay'].fillna(0)
+        temp_pay = df['accts_notes_pay'].fillna(pay_sum)
+
+        # constant: days in quarter (approx)
+        DAYS = 365 / 4
+
+        # --- metrics calculation ---
+
+        # Free Cash Flow = Opr Cash Flow + Inv Cash Flow
+        df['free_cash_flow'] = df['opr_cash_flow'] + df['inv_cash_flow']
+
+        # Days Inventory = (Inventory / Opr Costs) * Days
+        df['days_inventory_outstd'] = (df['inventory'] / df['opr_costs']) * DAYS
+
+        # Days Sales = (Receivables / Revenue) * Days
+        df['days_sales_outstd'] = (temp_receiv / df['opr_revenue']) * DAYS
+
+        # Days Payables = (Payables / Opr Costs) * Days
+        df['days_pay_outstd'] = (temp_pay / df['opr_costs']) * DAYS
+
+        # CCC
+        df['ccc'] = (
+            df['days_inventory_outstd']
+            + df['days_sales_outstd']
+            - df['days_pay_outstd']
+        )
+
+        # Current Ratio
+        df['curr_ratio'] = df['curr_assets'] / df['curr_liabs']
+
+        # Quick Ratio = (Curr Assets - Inventory - Prepaid) / Curr Liabs
+        df['quick_ratio'] = (
+            df['curr_assets'] - df['inventory'] - df['prepaid'].fillna(0)
+        ) / df['curr_liabs']
+
+        # Debt Ratio
+        df['debt_ratio'] = df['total_liabs'] / df['total_assets']
+
+        # Financial Debt Ratio = (loans + bonds) / total assets
+        # fin debt = st_loans + notes_pay + lt_liabs_due_1y + lt_loans + bonds_pay
+        fin_debt = (
+            df['st_loans'].fillna(0)
+            + df['notes_pay'].fillna(0)
+            + df['lt_liabs_due_1y'].fillna(0)
+            + df['lt_loans'].fillna(0)
+            + df['bonds_pay'].fillna(0)
+        )
+        df['fin_debt_ratio'] = fin_debt / df['total_assets']
+
+        # Core Profit Ratio = Opr Profit / Pre-tax Income
+        df['core_profit_ratio'] = df['opr_profit'] / df['pre_tax_income']
+
+        # Asset Turnover = Revenue / Total Assets (Quarterly)
+        df['asset_turn_ratio'] = df['opr_revenue'] / df['total_assets']
+
+        # Margins
+        df['gross_margin'] = df['gross_profit'] / df['opr_revenue']
+        df['opr_margin'] = df['opr_profit'] / df['opr_revenue']
+        df['pre_tax_margin'] = df['pre_tax_income'] / df['opr_revenue']
+        df['net_margin'] = df['net_income'] / df['opr_revenue']
+
+        # Returns
+        df['roa'] = df['net_income'] / df['total_assets']
+        df['roe'] = df['net_income'] / df['total_equity']
+
+        # Annualized Returns
+        df['annual_roa'] = df['roa'] * 4
+        df['annual_roe'] = df['roe'] * 4
+
+        # ? RORE (Return on Retained Earnings)
+        # TODO: 保留盈餘報酬率 = (稅後淨利 - 配發股利?) / 保留盈餘
+        df['rore'] = df['net_income'] / df['ret_earnings']
+
+        # ? Annual Payout Ratio = Divs Paid / Net Income
+        # TODO: 年配息率 = 全年_現金股利 / 全年_EPS
+        df['annual_payout_ratio'] = df['divs_paid'] / df['net_income']
+
+        # placeholders for metrics requiring price or external data
+        df['pe_ratio'] = None
+        df['pb_ratio'] = None
+        df['div_yield'] = None
+        df['irr'] = None
+
+        # --- Growth (QoQ, YoY) ---
+
+        def calc_growth(series, shift_n):
+            prev = series.shift(shift_n)
+            # return (curr - prev) / abs(prev)
+            return (series - prev) / prev.abs()
+
+        # group by code
+        g = df.groupby('code')
+
+        # QoQ (1 quarter)
+        # fmt: off
+        df['eps_qoq'] = g['eps'].transform(lambda x: calc_growth(x, 1))
+        df['net_income_qoq'] = g['net_income'].transform(lambda x: calc_growth(x, 1))
+        df['opr_cash_flow_qoq'] = g['opr_cash_flow'].transform(lambda x: calc_growth(x, 1))
+        df['gross_margin_qoq'] = g['gross_margin'].transform(lambda x: calc_growth(x, 1))
+        df['opr_margin_qoq'] = g['opr_margin'].transform(lambda x: calc_growth(x, 1))
+        df['net_margin_qoq'] = g['net_margin'].transform(lambda x: calc_growth(x, 1))
+        df['roe_qoq'] = g['roe'].transform(lambda x: calc_growth(x, 1))
+        # fmt: on
+
+        # YoY (4 quarters)
+        # fmt: off
+        df['eps_yoy'] = g['eps'].transform(lambda x: calc_growth(x, 4))
+        df['net_income_yoy'] = g['net_income'].transform(lambda x: calc_growth(x, 4))
+        df['opr_cash_flow_yoy'] = g['opr_cash_flow'].transform(lambda x: calc_growth(x, 4))
+        df['gross_margin_yoy'] = g['gross_margin'].transform(lambda x: calc_growth(x, 4))
+        df['opr_margin_yoy'] = g['opr_margin'].transform(lambda x: calc_growth(x, 4))
+        df['net_margin_yoy'] = g['net_margin'].transform(lambda x: calc_growth(x, 4))
+        df['roe_yoy'] = g['roe'].transform(lambda x: calc_growth(x, 4))
+        # fmt: on
+
+        # --- upsert logic ---
+
+        cols_map = [
+            'code',
+            'year',
+            'quarter',
+            'free_cash_flow',
+            'days_inventory_outstd',
+            'days_sales_outstd',
+            'days_pay_outstd',
+            'ccc',
+            'curr_ratio',
+            'quick_ratio',
+            'debt_ratio',
+            'fin_debt_ratio',
+            'core_profit_ratio',
+            'asset_turn_ratio',
+            'gross_margin',
+            'opr_margin',
+            'pre_tax_margin',
+            'net_margin',
+            'roa',
+            'roe',
+            'annual_roa',
+            'annual_roe',
+            'rore',
+            'eps_qoq',
+            'eps_yoy',
+            'net_income_qoq',
+            'net_income_yoy',
+            'opr_cash_flow_qoq',
+            'opr_cash_flow_yoy',
+            'gross_margin_qoq',
+            'gross_margin_yoy',
+            'opr_margin_qoq',
+            'opr_margin_yoy',
+            'net_margin_qoq',
+            'net_margin_yoy',
+            'roe_qoq',
+            'roe_yoy',
+            'pe_ratio',
+            'pb_ratio',
+            'div_yield',
+            'annual_payout_ratio',
+            'irr',
+        ]
+
+        # select relevant columns
+        df_upsert = df[cols_map].copy()
+
+        # clean NaN/Inf
+        df_upsert.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # convert NaN to None
+        df_upsert = df_upsert.where(pd.notnull(df_upsert), None)
+
+        print(f'Upserting {len(df_upsert)} metrics records...')
+
+        with self.get_connection() as conn:
+            # prepare SQL
+            columns = ', '.join(cols_map)
+            placeholders = ', '.join(['?'] * len(cols_map))
+
+            # update exclusions
+            update_cols = [c for c in cols_map if c not in ('code', 'year', 'quarter')]
+            update_assignments = ', '.join(
+                [f'{col}=excluded.{col}' for col in update_cols]
+            )
+
+            sql = f"""
+                INSERT INTO financial_metrics ({columns})
+                VALUES ({placeholders})
+                ON CONFLICT(code, year, quarter) DO UPDATE SET
+                {update_assignments}
+            """
+
+            cursor = conn.cursor()
+
+            cursor.executemany(sql, df_upsert.values.tolist())
+
+            conn.commit()
 
     #################
     # Database info #
