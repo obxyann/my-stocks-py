@@ -1870,37 +1870,25 @@ class StockDatabase:
         with self.get_connection() as conn:
             # read financial_core
             df = pd.read_sql_query(
-                'SELECT * FROM financial_core ORDER BY code, year, quarter', conn
+                """
+                SELECT * 
+                FROM financial_core
+                ORDER BY code, year, quarter
+                """,
+                conn,
             )
 
         if df.empty:
             use_color(Colors.WARNING)
-            print('Warning: No financial core data found.')
+            print('Warning: No financial core data found')
             use_color(Colors.RESET)
             return
-
-        # calculations
-        # handle missing data using pandas standard NaN propagation
-
-        # --- balance & ratios helpers ---
-
-        # create temporary series for calculation
-        # 1. Receivables
-        # if 'accts_notes_receiv' is present, use it.
-        # else 'accts_receiv' + 'notes_receiv'
-        receiv_sum = df['accts_receiv'].fillna(0) + df['notes_receiv'].fillna(0)
-
-        # Where accts_notes_receiv is NaN, use receiv_sum
-        temp_receiv = df['accts_notes_receiv'].fillna(receiv_sum)
-
-        # 2. Payables
-        pay_sum = df['accts_pay'].fillna(0) + df['notes_pay'].fillna(0)
-        temp_pay = df['accts_notes_pay'].fillna(pay_sum)
 
         # constant: days in quarter (approx)
         DAYS = 365 / 4
 
         # --- metrics calculation ---
+        # P.S. NaN will be propagated through the calculation
 
         # Free Cash Flow = Opr Cash Flow + Inv Cash Flow
         df['free_cash_flow'] = df['opr_cash_flow'] + df['inv_cash_flow']
@@ -1908,45 +1896,46 @@ class StockDatabase:
         # Days Inventory = (Inventory / Opr Costs) * Days
         df['days_inventory_outstd'] = (df['inventory'] / df['opr_costs']) * DAYS
 
-        # Days Sales = (Receivables / Revenue) * Days
-        df['days_sales_outstd'] = (temp_receiv / df['opr_revenue']) * DAYS
+        # Days Sales (DSO) = (Receivables / Revenue) * Days
+        receivables = df['accts_notes_receiv'].combine_first(
+            df[['accts_receiv', 'notes_receiv']].sum(axis=1, min_count=1)
+        )
+        df['days_sales_outstd'] = (receivables / df['opr_revenue']) * DAYS
 
-        # Days Payables = (Payables / Opr Costs) * Days
-        df['days_pay_outstd'] = (temp_pay / df['opr_costs']) * DAYS
+        # Days Payables (DPO) = (Payables / Opr Costs) * Days
+        payables = df['accts_notes_pay'].combine_first(
+            df[['accts_pay', 'notes_pay']].sum(axis=1, min_count=1)
+        )
+        df['days_pay_outstd'] = (payables / df['opr_costs']) * DAYS
 
         # CCC
-        df['ccc'] = (
-            df['days_inventory_outstd']
-            + df['days_sales_outstd']
-            - df['days_pay_outstd']
-        )
+        df['ccc'] = (df['days_inventory_outstd'] + df['days_sales_outstd'] - df['days_pay_outstd'])  # fmt: skip
 
         # Current Ratio
         df['curr_ratio'] = df['curr_assets'] / df['curr_liabs']
 
         # Quick Ratio = (Curr Assets - Inventory - Prepaid) / Curr Liabs
-        df['quick_ratio'] = (
-            df['curr_assets'] - df['inventory'] - df['prepaid'].fillna(0)
-        ) / df['curr_liabs']
+        quick_reduce = df[['inventory', 'prepaid']].sum(axis=1, min_count=1)
+        df['quick_ratio'] = (df['curr_assets'] - quick_reduce) / df['curr_liabs']
 
         # Debt Ratio
         df['debt_ratio'] = df['total_liabs'] / df['total_assets']
 
-        # Financial Debt Ratio = (loans + bonds) / total assets
-        # fin debt = st_loans + notes_pay + lt_liabs_due_1y + lt_loans + bonds_pay
-        fin_debt = (
-            df['st_loans'].fillna(0)
-            + df['notes_pay'].fillna(0)
-            + df['lt_liabs_due_1y'].fillna(0)
-            + df['lt_loans'].fillna(0)
-            + df['bonds_pay'].fillna(0)
-        )
+        # Financial Debt Ratio = (Loans + Bonds) / Total Assets
+        fin_debt_cols = [
+            'st_loans',
+            'notes_pay',
+            'lt_liabs_due_1y',
+            'lt_loans',
+            'bonds_pay',
+        ]
+        fin_debt = df[fin_debt_cols].sum(axis=1, min_count=1)
         df['fin_debt_ratio'] = fin_debt / df['total_assets']
 
         # Core Profit Ratio = Opr Profit / Pre-tax Income
         df['core_profit_ratio'] = df['opr_profit'] / df['pre_tax_income']
 
-        # Asset Turnover = Revenue / Total Assets (Quarterly)
+        # Asset Turnover = Revenue / Total Assets
         df['asset_turn_ratio'] = df['opr_revenue'] / df['total_assets']
 
         # Margins
@@ -1960,6 +1949,7 @@ class StockDatabase:
         df['roe'] = df['net_income'] / df['total_equity']
 
         # Annualized Returns
+        # TODO: 4Q/4Y
         df['annual_roa'] = df['roa'] * 4
         df['annual_roe'] = df['roe'] * 4
 
@@ -1977,7 +1967,7 @@ class StockDatabase:
         df['div_yield'] = None
         df['irr'] = None
 
-        # --- Growth (QoQ, YoY) ---
+        # --- growth (QoQ, YoY) calculation ---
 
         def calc_growth(series, shift_n):
             prev = series.shift(shift_n)
