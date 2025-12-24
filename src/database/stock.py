@@ -260,7 +260,11 @@ class StockDatabase:
             columns = ', '.join(avail_cols)
             placeholders = ', '.join(['?'] * len(avail_cols))
 
-            sql = f'INSERT INTO stock_list ({columns}) VALUES ({placeholders})'
+            # insert data
+            sql = f"""
+                INSERT INTO stock_list ({columns}) 
+                VALUES ({placeholders})
+                """
 
             data = df.values.tolist()
 
@@ -270,7 +274,6 @@ class StockDatabase:
                 # clear existing data
                 cursor.execute('DELETE FROM stock_list')
 
-                # insert new data
                 cursor.executemany(sql, data)
 
                 conn.commit()
@@ -559,13 +562,16 @@ class StockDatabase:
                 columns = ', '.join(avail_cols)
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                sql = f'INSERT OR REPLACE INTO daily_prices ({columns}) VALUES ({placeholders})'
+                # insert or replace data
+                sql = f"""
+                    INSERT OR REPLACE INTO daily_prices ({columns})
+                    VALUES ({placeholders})
+                    """
 
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-
-                # insert or replace data
+                
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
@@ -702,13 +708,16 @@ class StockDatabase:
                 columns = ', '.join(avail_cols)
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                sql = f'INSERT OR REPLACE INTO daily_prices ({columns}) VALUES ({placeholders})'
+                # insert or replace data
+                sql = f"""
+                    INSERT OR REPLACE INTO daily_prices ({columns})
+                    VALUES ({placeholders})
+                    """
 
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-
-                # insert or replace data
+                
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
@@ -779,12 +788,12 @@ class StockDatabase:
                     revenue INTEGER NOT NULL,
                     note TEXT,
                     --
-                    revenue_last_year INTEGER,
-                    cumulative_revenue INTEGER,
-                    cumulative_revenue_last_year INTEGER,
-                    mom REAL,
-                    yoy REAL,
-                    cumulative_revenue_yoy REAL,
+                    revenue_ly INTEGER,
+                    revenue_ytd INTEGER,
+                    revenue_ytd_ly INTEGER,
+                    revenue_mom REAL,
+                    revenue_yoy REAL,
+                    revenue_ytd_yoy REAL,
                     PRIMARY KEY (code, year, month)
                     -- , FOREIGN KEY (code) REFERENCES stock_list (code)
                 )
@@ -906,13 +915,16 @@ class StockDatabase:
                 columns = ', '.join(avail_cols)
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                sql = f'INSERT OR REPLACE INTO monthly_revenue ({columns}) VALUES ({placeholders})'
+                # insert or replace data
+                sql = f"""
+                    INSERT OR REPLACE INTO monthly_revenue ({columns}) 
+                    VALUES ({placeholders})
+                    """
 
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-
-                # insert or replace data
+                
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
@@ -945,21 +957,21 @@ class StockDatabase:
                             year,
                             month,
                             revenue,
-                            -- revenue_last_year (LAG 12 of revenue)
+                            -- revenue_ly (prev year, LAG 12 of revenue)
                             LAG(revenue, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_last_year,
-                            -- cumulative_revenue (partition by code, year)
+                            ) as val_revenue_ly,
+                            -- revenue_ytd (year-to-date, partition by code, year)
                             SUM(revenue) OVER (
                                 PARTITION BY code, year
                                 ORDER BY month
-                            ) as val_cumulative_revenue,
-                            -- revenue_prev_month (LAG 1 or revenue) for mom
+                            ) as val_revenue_ytd,
+                            -- revenue_lm (prev month, LAG 1 of revenue) only for mom
                             LAG(revenue, 1) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_prev_month
+                            ) as val_revenue_lm
                         FROM monthly_revenue
                     ),
                     Refined AS (
@@ -968,14 +980,14 @@ class StockDatabase:
                             year,
                             month,
                             revenue,
-                            val_revenue_last_year,
-                            val_cumulative_revenue,
-                            -- cumulative_revenue_last_year (LAG 12 of cumulative)
-                            LAG(val_cumulative_revenue, 12) OVER (
+                            val_revenue_ly,
+                            val_revenue_ytd,
+                            -- revenue_ytd_ly (YTD prev year, LAG 12 of YTD)
+                            LAG(val_revenue_ytd, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_cumulative_revenue_last_year,
-                            val_revenue_prev_month
+                            ) as val_revenue_ytd_ly,
+                            val_revenue_lm
                         FROM Calculated
                     ),
                     Final AS (
@@ -983,48 +995,48 @@ class StockDatabase:
                             code,
                             year,
                             month,
-                            val_revenue_last_year,
-                            val_cumulative_revenue,
-                            val_cumulative_revenue_last_year,
+                            val_revenue_ly,
+                            val_revenue_ytd,
+                            val_revenue_ytd_ly,
                             -- mom
                             CASE
-                                WHEN val_revenue_prev_month IS NOT NULL AND val_revenue_prev_month != 0
-                                THEN (revenue * 1.0 / val_revenue_prev_month - 1.0) * 100
+                                WHEN val_revenue_lm IS NOT NULL AND val_revenue_lm != 0
+                                THEN (revenue * 1.0 / val_revenue_lm - 1.0) * 100
                                 ELSE NULL
-                            END as val_mom,
+                            END as val_revenue_mom,
                             -- yoy
                             CASE
-                                WHEN val_revenue_last_year IS NOT NULL AND val_revenue_last_year != 0
-                                THEN (revenue * 1.0 / val_revenue_last_year - 1.0) * 100
+                                WHEN val_revenue_ly IS NOT NULL AND val_revenue_ly != 0
+                                THEN (revenue * 1.0 / val_revenue_ly - 1.0) * 100
                                 ELSE NULL
-                            END as val_yoy,
-                            -- cumulative_revenue_yoy
+                            END as val_revenue_yoy,
+                            -- revenue_ytd_yoy
                             CASE
-                                WHEN val_cumulative_revenue_last_year IS NOT NULL AND val_cumulative_revenue_last_year != 0
-                                THEN (val_cumulative_revenue * 1.0 / val_cumulative_revenue_last_year - 1.0) * 100
+                                WHEN val_revenue_ytd_ly IS NOT NULL AND val_revenue_ytd_ly != 0
+                                THEN (val_revenue_ytd * 1.0 / val_revenue_ytd_ly - 1.0) * 100
                                 ELSE NULL
-                            END as val_cumulative_revenue_yoy
+                            END as val_revenue_ytd_yoy
                         FROM Refined
                     )
                     UPDATE monthly_revenue as mr
                     SET
-                        revenue_last_year = f.val_revenue_last_year,
-                        cumulative_revenue = f.val_cumulative_revenue,
-                        cumulative_revenue_last_year = f.val_cumulative_revenue_last_year,
-                        mom = f.val_mom,
-                        yoy = f.val_yoy,
-                        cumulative_revenue_yoy = f.val_cumulative_revenue_yoy
+                        revenue_ly = f.val_revenue_ly,
+                        revenue_ytd = f.val_revenue_ytd,
+                        revenue_ytd_ly = f.val_revenue_ytd_ly,
+                        revenue_mom = f.val_revenue_mom,
+                        revenue_yoy = f.val_revenue_yoy,
+                        revenue_ytd_yoy = f.val_revenue_ytd_yoy
                     FROM Final f
                     WHERE mr.code = f.code
                       AND mr.year = f.year
                       AND mr.month = f.month
                       AND (
-                           mr.revenue_last_year IS NOT f.val_revenue_last_year
-                        OR mr.cumulative_revenue IS NOT f.val_cumulative_revenue
-                        OR mr.cumulative_revenue_last_year IS NOT f.val_cumulative_revenue_last_year
-                        OR mr.mom IS NOT f.val_mom
-                        OR mr.yoy IS NOT f.val_yoy
-                        OR mr.cumulative_revenue_yoy IS NOT f.val_cumulative_revenue_yoy
+                           mr.revenue_ly IS NOT f.val_revenue_ly
+                        OR mr.revenue_ytd IS NOT f.val_revenue_ytd
+                        OR mr.revenue_ytd_ly IS NOT f.val_revenue_ytd_ly
+                        OR mr.revenue_mom IS NOT f.val_revenue_mom
+                        OR mr.revenue_yoy IS NOT f.val_revenue_yoy
+                        OR mr.revenue_ytd_yoy IS NOT f.val_revenue_ytd_yoy
                       );
                     """
 
@@ -1055,33 +1067,33 @@ class StockDatabase:
 
                 # calculate derived fields
                 # fmt: off
-                df['revenue_last_year'] = df.groupby('code')['revenue'].shift(12)
-                df['cumulative_revenue'] = df.groupby(['code', 'year'])['revenue'].cumsum()
-                df['cumulative_revenue_last_year'] = df.groupby('code')['cumulative_revenue'].shift(12)
-                df['mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
-                df['yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
-                df['cumulative_revenue_yoy'] = (df['cumulative_revenue'] / df['cumulative_revenue_last_year'] - 1) * 100
+                df['revenue_ly'] = df.groupby('code')['revenue'].shift(12)
+                df['revenue_ytd'] = df.groupby(['code', 'year'])['revenue'].cumsum()
+                df['revenue_ytd_ly'] = df.groupby('code')['revenue_ytd'].shift(12)
+                df['revenue_mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
+                df['revenue_yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
+                df['revenue_ytd_yoy'] = (df['revenue_ytd'] / df['revenue_ytd_ly'] - 1) * 100
                 # fmt: on
 
                 # prepare SQL
                 update_query = """
                     UPDATE monthly_revenue
-                    SET revenue_last_year = ?,
-                        cumulative_revenue = ?,
-                        cumulative_revenue_last_year = ?,
-                        mom = ?,
-                        yoy = ?,
-                        cumulative_revenue_yoy = ?
+                    SET revenue_ly = ?,
+                        revenue_ytd = ?,
+                        revenue_ytd_ly = ?,
+                        revenue_mom = ?,
+                        revenue_yoy = ?,
+                        revenue_ytd_yoy = ?
                     WHERE code = ? AND year = ? AND month = ?
                     """
 
                 cols = [
-                    'revenue_last_year',
-                    'cumulative_revenue',
-                    'cumulative_revenue_last_year',
-                    'mom',
-                    'yoy',
-                    'cumulative_revenue_yoy',
+                    'revenue_ly',
+                    'revenue_ytd',
+                    'revenue_ytd_ly',
+                    'revenue_mom',
+                    'revenue_yoy',
+                    'revenue_ytd_yoy',
                     'code',
                     'year',
                     'month',
@@ -1173,13 +1185,11 @@ class StockDatabase:
                     -- balance details
                     accts_receiv INTEGER,
                     notes_receiv INTEGER,
-                    other_receiv INTEGER,
                     accts_notes_receiv INTEGER,
                     inventory INTEGER,
                     prepaid INTEGER,
                     accts_pay INTEGER,
                     notes_pay INTEGER,
-                    other_pay INTEGER,
                     accts_notes_pay INTEGER,
                     st_loans INTEGER,
                     lt_liabs_due_1y INTEGER,
@@ -1275,13 +1285,11 @@ class StockDatabase:
             # balance details
             '應收帳款': 'accts_receiv',  # (i)
             '應收票據': 'notes_receiv',  # (i)
-            '其他應收款': 'other_receiv',  # (i)
             '應收帳款及票據': 'accts_notes_receiv',  # (?)
             '存貨': 'inventory',  # (i)
             '預付款項': 'prepaid',  # (i)
             '應付帳款': 'accts_pay',  # (i)
             '應付票據': 'notes_pay',  # (i)
-            '其他應付款': 'other_pay',  # (i)
             '應付帳款及票據': 'accts_notes_pay',  # (?)
             '短期借款': 'st_loans',  # (i)
             '一年內到期長期負債': 'lt_liabs_due_1y',  # (i)
@@ -1710,7 +1718,7 @@ class StockDatabase:
             # create DataFrame
             df_core = pd.DataFrame(records_to_upsert)
 
-            # prepare SQL for UPSERT
+            # prepare SQL
             columns = ', '.join(df_core.columns)
             placeholders = ', '.join(['?'] * len(df_core.columns))
 
@@ -1722,6 +1730,7 @@ class StockDatabase:
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
 
+            # upset data
             sql = f"""
                 INSERT INTO financial_core ({columns})
                 VALUES ({placeholders})
@@ -2067,6 +2076,7 @@ class StockDatabase:
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
 
+            # upsert data
             sql = f"""
                 INSERT INTO financial_metrics ({columns})
                 VALUES ({placeholders})
