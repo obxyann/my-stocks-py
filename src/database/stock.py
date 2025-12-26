@@ -143,9 +143,9 @@ class StockDatabase:
         if last_time is None or updated_at > last_time:
             self.set_table_updated_time(table_name, updated_at)
 
-    ####################
-    # Stock List table #
-    ####################
+    ################
+    # Stocks table #
+    ################
 
     def ensure_stocks_table(self):
         """Create stocks table if not exists"""
@@ -154,7 +154,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
- 
+
             # create table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS stocks (
@@ -168,7 +168,7 @@ class StockDatabase:
                 """)
 
             conn.commit()
-  
+
         self.stocks_table_initialized = True
 
     def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
@@ -570,7 +570,7 @@ class StockDatabase:
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-                
+
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
@@ -716,7 +716,7 @@ class StockDatabase:
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-                
+
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)
@@ -929,7 +929,7 @@ class StockDatabase:
                 data = df.values.tolist()
 
                 cursor = conn.cursor()
-                
+
                 cursor.executemany(sql, data)
 
                 total_imported_records += len(df)

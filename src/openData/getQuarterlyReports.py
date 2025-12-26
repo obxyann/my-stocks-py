@@ -205,7 +205,7 @@ def fetch_financial_statements_in_market(
     for i in range(1, n):  # don't use dfs[0]
         df = dfs[i]
 
-        sector = guessIndustrySector(df, market, i, n)
+        sector = guessSector(df, market, i, n)
 
         df = adjustDf(df, statement)
 
@@ -243,7 +243,7 @@ def fetch_financial_statements_in_market(
 
 
 # Guess the sector accroding some rules
-def guessIndustrySector(df, market, tbl_index, tbl_num):
+def guessSector(df, market, tbl_index, tbl_num):
     columns = df.columns
 
     # for income
@@ -268,7 +268,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
             # a large number of them should be...
             if len(df) >= 500:
                 use_color(Colors.WARNING)
-                log("  Warning: Industry sector should be 'ci' but fall into 'ins'\n")  # fmt: skip
+                log("  Warning: Sector should be 'ci' but fall into 'ins'\n")  # fmt: skip
                 log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
                 use_color(Colors.RESET)
 
@@ -321,7 +321,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
                     return 'min'  # 異業
 
             use_color(Colors.WARNING)
-            log("  Warning: Industry sector is ambiguous - value set to 'bd_ci_min'\n")  # fmt: skip
+            log("  Warning: Sector is ambiguous - value set to 'bd_ci_min'\n")  # fmt: skip
             log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
             use_color(Colors.RESET)
 
@@ -349,7 +349,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
             return 'ci'  # only 一般業
 
     use_color(Colors.WARNING)
-    log("  Warning: Unable to decide the industry sector - value set to '--'\n")  # fmt: skip
+    log("  Warning: Unable to decide the sector - value set to '--'\n")  # fmt: skip
     log(f'           market: {market}, tbl_num: {tbl_num}, tbl_index: {tbl_index}\n')  # fmt: skip
     use_color(Colors.RESET)
 
@@ -359,7 +359,7 @@ def guessIndustrySector(df, market, tbl_index, tbl_num):
     print('--')
 
     # stop
-    # raise Exception('Failed to guess the industry sector')
+    # raise Exception('Failed to guess the sector')
     # or keep going
     return '--'  # all possible?
 
