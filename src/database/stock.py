@@ -162,8 +162,8 @@ class StockDatabase:
                     name TEXT NOT NULL,
                     market TEXT NOT NULL,
                     industry TEXT,
-                    security_type TEXT NOT NULL,
-                    fin_report_type TEXT
+                    security_type TEXT,
+                    business_type TEXT
                 )
                 """)
 
@@ -233,7 +233,6 @@ class StockDatabase:
                 'code',
                 'name',
                 'market',
-                'security_type',
             ]
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
@@ -300,7 +299,7 @@ class StockDatabase:
             # read data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, security_type
+                SELECT code, name, market, industry, security_type, business_type
                 FROM stocks
                 ORDER BY code
                 """,
@@ -322,7 +321,7 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, security_type
+                SELECT code, name, market, industry, security_type, business_type
                 FROM stocks
                 WHERE code = ?
                 """,
@@ -345,7 +344,7 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, security_type
+                SELECT code, name, market, industry, security_type, business_type
                 FROM stocks
                 WHERE code LIKE ? OR name LIKE ?
                 ORDER BY code
@@ -369,7 +368,7 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, security_type
+                SELECT code, name, industry, security_type
                 FROM stocks
                 WHERE market = ?
                 ORDER BY code
@@ -393,7 +392,7 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, security_type
+                SELECT code, name, market
                 FROM stocks
                 WHERE industry = ?
                 ORDER BY code
