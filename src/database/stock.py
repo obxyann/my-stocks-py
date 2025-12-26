@@ -154,7 +154,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
-
+ 
             # create table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS stocks (
@@ -162,13 +162,13 @@ class StockDatabase:
                     name TEXT NOT NULL,
                     market TEXT NOT NULL,
                     industry TEXT,
-                    security_type TEXT NOT NULL
-                    fin_report_type TEXT,
+                    security_type TEXT NOT NULL,
+                    fin_report_type TEXT
                 )
                 """)
 
             conn.commit()
-
+  
         self.stocks_table_initialized = True
 
     def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
