@@ -23,7 +23,7 @@ class StockDatabase:
             db_path (str): Path to SQLite database file
         """
         self.metadata_table_initialized = False
-        self.stock_list_table_initialized = False
+        self.stocks_table_initialized = False
         self.daily_prices_table_initialized = False
         self.monthly_revenue_table_initialized = False
         self.financial_core_ytd_table_initialized = False
@@ -147,9 +147,9 @@ class StockDatabase:
     # Stock List table #
     ####################
 
-    def ensure_stock_list_table(self):
-        """Create stock_list table if not exists"""
-        if self.stock_list_table_initialized:
+    def ensure_stocks_table(self):
+        """Create stocks table if not exists"""
+        if self.stocks_table_initialized:
             return
 
         with self.get_connection() as conn:
@@ -157,19 +157,19 @@ class StockDatabase:
 
             # create table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS stock_list (
+                CREATE TABLE IF NOT EXISTS stocks (
                     code TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     market TEXT NOT NULL,
                     industry TEXT,
-                    sector TEXT,
-                    type TEXT NOT NULL
+                    security_type TEXT NOT NULL
+                    fin_report_type TEXT,
                 )
                 """)
 
             conn.commit()
 
-        self.stock_list_table_initialized = True
+        self.stocks_table_initialized = True
 
     def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
         """Import stock list from CSV to database
@@ -181,7 +181,7 @@ class StockDatabase:
             int: Number of records imported
         """
         # create table if not exists
-        self.ensure_stock_list_table()
+        self.ensure_stocks_table()
 
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f'CSV file not found: {csv_path}')
@@ -189,7 +189,7 @@ class StockDatabase:
         # compare file modification time with table updated time
         csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
 
-        updated_time = self.get_table_updated_time('stock_list')
+        updated_time = self.get_table_updated_time('stocks')
 
         if updated_time and csv_mod_time <= updated_time:
             print(f'{csv_path} is old')
@@ -204,7 +204,7 @@ class StockDatabase:
             'Name': 'name',
             'Market': 'market',
             'Industry': 'industry',
-            'Type': 'type',
+            'Type': 'security_type',
         }
 
         try:
@@ -233,7 +233,7 @@ class StockDatabase:
                 'code',
                 'name',
                 'market',
-                'type',
+                'security_type',
             ]
             missing_cols = [c for c in mandatory_cols if c not in avail_cols]
 
@@ -262,7 +262,7 @@ class StockDatabase:
 
             # insert data
             sql = f"""
-                INSERT INTO stock_list ({columns}) 
+                INSERT INTO stocks ({columns}) 
                 VALUES ({placeholders})
                 """
 
@@ -272,14 +272,14 @@ class StockDatabase:
                 cursor = conn.cursor()
 
                 # clear existing data
-                cursor.execute('DELETE FROM stock_list')
+                cursor.execute('DELETE FROM stocks')
 
                 cursor.executemany(sql, data)
 
                 conn.commit()
 
                 # update table time
-                self.set_table_updated_time('stock_list', csv_mod_time)
+                self.set_table_updated_time('stocks', csv_mod_time)
 
             return len(df)
 
@@ -290,7 +290,7 @@ class StockDatabase:
 
             return 0
 
-    def get_stock_list(self):
+    def get_stocks(self):
         """Get all stocks from database
 
         Returns:
@@ -300,8 +300,8 @@ class StockDatabase:
             # read data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, type
-                FROM stock_list
+                SELECT code, name, market, industry, security_type
+                FROM stocks
                 ORDER BY code
                 """,
                 conn,
@@ -322,8 +322,8 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, type
-                FROM stock_list
+                SELECT code, name, market, industry, security_type
+                FROM stocks
                 WHERE code = ?
                 """,
                 conn,
@@ -345,8 +345,8 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, type
-                FROM stock_list
+                SELECT code, name, market, industry, security_type
+                FROM stocks
                 WHERE code LIKE ? OR name LIKE ?
                 ORDER BY code
                 """,
@@ -369,8 +369,8 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, type
-                FROM stock_list
+                SELECT code, name, market, industry, security_type
+                FROM stocks
                 WHERE market = ?
                 ORDER BY code
                 """,
@@ -393,8 +393,8 @@ class StockDatabase:
             # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT code, name, market, industry, type
-                FROM stock_list
+                SELECT code, name, market, industry, security_type
+                FROM stocks
                 WHERE industry = ?
                 ORDER BY code
                 """,
@@ -429,7 +429,7 @@ class StockDatabase:
                     --
                     volume INTEGER NOT NULL,
                     PRIMARY KEY (code, trade_date)
-                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
+                    -- , FOREIGN KEY (code) REFERENCES stocks (code)
                 )
                 """)
 
@@ -794,8 +794,14 @@ class StockDatabase:
                     revenue_mom REAL,
                     revenue_yoy REAL,
                     revenue_ytd_yoy REAL,
+                    --
+                    revenue_ma3 REAL,
+                    revenue_ma12 REAL,
+                    revenue_ytd_yoy_ma3 REAL,
+                    revenue_ytd_yoy_ma12 REAL,
+                    --
                     PRIMARY KEY (code, year, month)
-                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
+                    -- , FOREIGN KEY (code) REFERENCES stocks (code)
                 )
                 """)
 
@@ -1211,11 +1217,11 @@ class StockDatabase:
                     opr_cash_flow INTEGER,
                     inv_cash_flow INTEGER,
                     fin_cash_flow INTEGER,
-                    cash_equiv INTEGER,
+                    cash_equivs INTEGER,
                     divs_paid INTEGER,
                     --
                     PRIMARY KEY (code, year, quarter)
-                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
+                    -- , FOREIGN KEY (code) REFERENCES stocks (code)
             """
 
             # create tables
@@ -1311,7 +1317,7 @@ class StockDatabase:
             '營業活動之淨現金流入': 'opr_cash_flow',
             '投資活動之淨現金流入': 'inv_cash_flow',
             '籌資活動之淨現金流入': 'fin_cash_flow',
-            '期末現金及約當現金': 'cash_equiv',
+            '期末現金及約當現金': 'cash_equivs',
             '配發股利': 'divs_paid',
         }
 
@@ -1601,7 +1607,7 @@ class StockDatabase:
             'bonds_pay',
             'ret_earnings',
             # cash
-            'cash_equiv',
+            'cash_equivs',
         ]
 
         with self.get_connection() as conn:
@@ -1862,7 +1868,7 @@ class StockDatabase:
                     irr REAL,
                     --
                     PRIMARY KEY (code, year, quarter)
-                    -- , FOREIGN KEY (code) REFERENCES stock_list (code)
+                    -- , FOREIGN KEY (code) REFERENCES stocks (code)
                 )
                 """)
 
@@ -2113,25 +2119,25 @@ class StockDatabase:
             tables = [table[0] for table in cursor.fetchall()]
 
             # for stock list table
-            stock_list = {}
+            stocks = {}
             # 1. get total count
             cursor.execute("""
                 SELECT COUNT(*)
-                FROM stock_list
+                FROM stocks
                 """)
-            stock_list['total_count'] = cursor.fetchone()[0]
+            stocks['total_count'] = cursor.fetchone()[0]
 
             # 2. get market distribution
             cursor.execute("""
                 SELECT market, COUNT(*)
-                FROM stock_list
+                FROM stocks
                 GROUP BY market
                 ORDER BY market
                 """)
-            stock_list['market_stats'] = dict(cursor.fetchall())
+            stocks['market_stats'] = dict(cursor.fetchall())
 
             # 3. get last update time from metadata
-            stock_list['last_updated'] = self.get_table_updated_time('stock_list')  # <- datetime # fmt: skip
+            stocks['last_updated'] = self.get_table_updated_time('stocks')  # <- datetime # fmt: skip
 
             # for daily prices table
             daily_prices = {}
@@ -2214,7 +2220,7 @@ class StockDatabase:
             'database_path': self.db_path,
             'tables': tables,
             #
-            'stock_list': stock_list,
+            'stocks': stocks,
             'daily_prices': daily_prices,
             'monthly_revenue': monthly_revenue,
             'financial_core': financial_core,

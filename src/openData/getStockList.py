@@ -22,11 +22,12 @@ from utils.ansiColors import Colors, use_color
 #   market            - 'tse': Taiwan Stock Exchange,
 #                       'otc': Over-The-Counter,
 #                       'esb': Emerging Stock Board
-#   include_warrant   - whether to include Warrants (認購(售)權證)
+#   include_warrant   - whether to include Warrants (權證)
 #   include_preferred - whether to include Preferred shares (特別股)
 #   include_etn       - whether to include Exchange Traded Notes (ETN)
-#   include_reit      - whether to include Real estate investment trusts (不動產投資信託)
-#   include_abs       - whether to include Asset-backed securities (資產基礎證券)
+#   include_bs        - whether to include Beneficiary Securities (受益證券) 
+#                       aka Real estate investment trusts (不動產投資信託) +
+#                       Asset-backed securities (資產基礎證券)
 #
 # return the result in pandas.DataFrame
 #
@@ -36,8 +37,7 @@ def fetch_stock_list_in_market(
     include_warrant=False,
     include_preferred=False,
     include_etn=False,
-    include_reit=False,
-    include_abs=False,
+    include_bs=False,
 ):
     print(f'Downloading html for listed companies in {market.upper()}...')
 
@@ -148,24 +148,25 @@ def fetch_stock_list_in_market(
     ETF                CEO*            Collective investment vehicles -> Exchange-traded funds (ETFs) | Open-End
     ETN                CMXXXU/CM*      Collective investment vehicles -> Miscellaneous
     臺灣存託憑證(TDR)  EDSDDR/ED*      Equities -> Depositary receipts on equities
-    受益證券-不動產投資信託 CBCIXU/CB* Collective investment vehicles -> Real estate investment trusts (REITs)
-    受益證券-資產基礎證券   DAFUFR/DA* Debt Instruments -> Asset-backed securities
+    受益證券                           Beneficiary Securities
+       -不動產投資信託 CBCIXU/CB*      Collective investment vehicles -> Real estate investment trusts (REITs)
+       -資產基礎證券   DAFUFR/DA*      Debt Instruments -> Asset-backed securities
 
     NOTE: https://en.wikipedia.org/wiki/ISO_10962
     """
 
     def CFI_to_type(cfi):
         if cfi[0] == 'E' and cfi[1] == 'S':  # ESVUFR
-            return 's'  # as Share (or Stock)
+            return 'stk'  # as Stock
 
         if cfi[0] == 'R' and cfi[1] == 'W':  # RW*
-            return 'w'  # as Warrant
+            return 'wnt'  # as Warrant
 
         if cfi[0] == 'E' and cfi[1] == 'P':  # EP*
-            return 'ps'  # as Preferred Share (or Preferred Stock)
+            return 'prf'  # as Preferred Stock
 
         if cfi[0] == 'E' and cfi[1] == 'F':  # EF*
-            return 'ps'  # as Preferred Share (or Preferred Stock)
+            return 'prf'  # as Preferred Stock
 
         if cfi[0] == 'C' and cfi[1] == 'E':  # CEO*
             return 'etf'  # as Exchange Traded Fund
@@ -177,10 +178,14 @@ def fetch_stock_list_in_market(
             return 'tdr'  # as Taiwan Depositary Receipt
 
         if cfi[0] == 'C' and cfi[1] == 'B':  # CBCIXU
-            return 'reit'  # as Real Estate Investment Trust
+            # return 'reit'  # as Real Estate Investment Trust
+            # or
+            return 'bs'  # as Beneficiary Securities
 
         if cfi[0] == 'D' and cfi[1] == 'A':  # DA*
-            return 'abs'  # as Asset Backed Securities
+            # return 'abs'  # as Asset Backed Securities
+            # or
+            return 'bs'  # as Beneficiary Securities
 
         use_color(Colors.WARNING)
         if re.match(r'[A-Z]{6}', cfi):
@@ -219,16 +224,18 @@ def fetch_stock_list_in_market(
             return False
 
         # check type
-        if type == 'w':
+        if type == 'wnt':
             return include_warrant
-        if type == 'ps':
+        if type == 'prf':
             return include_preferred
         if type == 'etn':
             return include_etn
+        if type == 'bs':
+            return include_bs
         if type == 'reit':
-            return include_reit
+            return include_bs
         if type == 'abs':
-            return include_abs
+            return include_bs
 
         return True
 

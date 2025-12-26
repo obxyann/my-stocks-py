@@ -62,7 +62,7 @@ from utils.logger import log, logger_end, logger_start
 #               'balance': Balance Sheet (Statement of Financial Position) 資產負債表
 #               'cash':    Cash Flow Statement 現金流量表
 #               'ratio':   Financial ratio 財務比率
-#   sectors   - single sector
+#   sectors   - industry sector
 #               'basi': 金融業
 #               'bd':   證券期貨業
 #               'ci':   一般業
