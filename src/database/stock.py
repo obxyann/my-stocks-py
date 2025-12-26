@@ -2063,8 +2063,13 @@ class StockDatabase:
         # select relevant columns
         df_upsert = df[cols_map].copy()
 
-        # clean NaN/Inf
-        df_upsert = df_upsert.replace([np.inf, -np.inf], np.nan)
+        # clean all numeric columns for NaN/Inf
+        num_cols = df_upsert.select_dtypes(include=[np.number]).columns
+
+        df_upsert[num_cols] = df_upsert[num_cols].where(
+            np.isfinite(df_upsert[num_cols]), np.nan
+        )
+
         # convert NaN to None
         df_upsert = df_upsert.where(pd.notnull(df_upsert), None)
 
