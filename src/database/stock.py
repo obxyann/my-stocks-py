@@ -2064,7 +2064,7 @@ class StockDatabase:
         df_upsert = df[cols_map].copy()
 
         # clean NaN/Inf
-        df_upsert.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df_upsert = df_upsert.replace([np.inf, -np.inf], np.nan)
         # convert NaN to None
         df_upsert = df_upsert.where(pd.notnull(df_upsert), None)
 
