@@ -196,7 +196,7 @@ class StockDatabase:
 
             return 0
 
-        print(f'Importing {csv_path}')
+        print(f'Reading {csv_path}')
 
         # define column mapping
         col_mapping = {
@@ -279,6 +279,101 @@ class StockDatabase:
 
                 # update table time
                 self.set_table_updated_time('stocks', csv_mod_time)
+
+            return len(df)
+
+        except Exception as e:
+            use_color(Colors.ERROR)
+            print(f'Error: {e}')
+            use_color(Colors.RESET)
+
+            return 0
+
+    def import_business_type_csv_to_stocks(self, csv_folder='storage/quarterly'):
+        """Import business type data from CSV to the 'stocks' table.
+
+        Args:
+            csv_folder (str): Folder containing business_type.csv or income_reports_YYYYQN.csv.
+
+        Returns:
+            int: Number of records processed.
+        """
+        # create table if not exists
+        self.ensure_stocks_table()
+
+        target_csv = os.path.join(csv_folder, 'business_type.csv')
+
+        # check if business_type.csv exists
+        if not os.path.exists(target_csv):
+            # find latest income_reports_YYYYQN.csv
+            files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+            pattern = re.compile(r'income_reports_(\d{4})Q(\d)\.csv')
+
+            latest_file = None
+            latest_val = -1
+
+            for file in files:
+                match = pattern.match(file)
+                if not match:
+                    continue
+
+                year, quarter = int(match.group(1)), int(match.group(2))
+
+                # Use year * 10 + quarter to find the latest
+                val = year * 10 + quarter
+                if val > latest_val:
+                    latest_val = val
+                    latest_file = file
+
+            if latest_file:
+                target_csv = os.path.join(csv_folder, latest_file)
+            else:
+                # no suitable file found
+                return 0
+
+        print(f'Reading {target_csv}')
+
+        try:
+            # read CSV
+            df = pd.read_csv(target_csv)
+
+            if 'Code' not in df.columns or 'Sector' not in df.columns:
+                use_color(Colors.ERROR)
+                print("Error: Missing mandatory columns ['Code', 'Sector']")
+                use_color(Colors.RESET)
+
+                return 0
+
+            # keep only relevant columns
+            df = df[['Code', 'Sector']].copy()
+
+            # remove rows with empty code
+            df.dropna(subset=['Code'], inplace=True)
+
+            # ensure 'code' in string format
+            df['Code'] = df['Code'].astype(str)
+
+            # replace NaNs with None for SQLite compatibility
+            df = df.where(pd.notnull(df), None)
+
+            # update data
+            sql = """
+                UPDATE stocks
+                SET business_type = ?
+                WHERE code = ?
+            """ 
+
+            data = []
+            for _, row in df.iterrows():
+                data.append((row['Sector'], row['Code']))
+
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+
+                cursor.executemany(sql, data)
+
+                conn.commit()
 
             return len(df)
 
@@ -493,7 +588,7 @@ class StockDatabase:
                     print(f'{csv_path} is old')
                     continue
 
-                print(f'Importing {csv_path}')
+                print(f'Reading {csv_path}')
 
                 # read CSV
                 try:
@@ -640,7 +735,7 @@ class StockDatabase:
                     print(f'{csv_path} is old')
                     continue
 
-                print(f'Importing {csv_path}')
+                print(f'Reading {csv_path}')
 
                 # read CSV
                 try:
@@ -854,7 +949,7 @@ class StockDatabase:
                     print(f'{csv_path} is old')
                     continue
 
-                print(f'Importing {csv_path}')
+                print(f'Reading {csv_path}')
 
                 # read CSV
                 try:
@@ -1345,7 +1440,7 @@ class StockDatabase:
 
                     continue
 
-                print(f'Importing {csv_path}')
+                print(f'Reading {csv_path}')
 
                 # read CSV
                 try:
