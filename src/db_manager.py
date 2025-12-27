@@ -43,8 +43,6 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             count = db.import_business_type_csv_to_stocks(csv_folder)
             print(f'Successfully imported {count} records')
 
-        return
-
         # import {XXXX}_prices.csv
         print('\nImporting OHLC prices to database...')
 
