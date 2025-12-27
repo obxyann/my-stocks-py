@@ -403,6 +403,28 @@ class StockDatabase:
 
         return df
 
+    def get_industrial_stocks(self):
+        """Get stocks of general industry and commerce
+
+        (business_type='ci' and security_type='stk')
+
+        Returns:
+            pandas.DataFrame: Filtered stock list data
+        """
+        with self.get_connection() as conn:
+            # retrieve data
+            df = pd.read_sql_query(
+                """
+                SELECT code, name, market, industry
+                FROM stocks
+                WHERE business_type = 'ci' AND security_type = 'stk'
+                ORDER BY code
+                """,
+                conn,
+            )
+
+        return df
+
     def get_stock_by_code(self, stock_code):
         """Get specific stock by stock code
 
@@ -2203,6 +2225,53 @@ class StockDatabase:
             cursor.executemany(sql, df_upsert.values.tolist())
 
             conn.commit()
+
+    def get_financial_metrics_by_code(
+        self, stock_code, start_date='2013-01-01', end_date=None
+    ):
+        """Get financial metrics for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date (YYYY-MM-DD)
+            end_date (str): End date (YYYY-MM-DD)
+
+        Returns:
+            pandas.DataFrame: Financial metrics data
+        """
+        # convert date string to datetime
+        start = parse_date_string(start_date)
+        # get year, quarter parts
+        start_year = start.year
+        start_quarter = (start.month - 1) // 3 + 1
+
+        # end year, quarter
+        if end_date:
+            end = parse_date_string(end_date)
+        else:
+            end = datetime.today()
+        end_year = end.year
+        end_quarter = (end.month - 1) // 3 + 1
+
+        # convert to comparable period (YYYYQ)
+        start_period = start_year * 10 + start_quarter
+        end_period = end_year * 10 + end_quarter
+
+        with self.get_connection() as conn:
+            # retrieve data
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM financial_metrics
+                WHERE code = ?
+                  AND (year * 10 + quarter) BETWEEN ? AND ?
+                ORDER BY year, quarter
+                """,
+                conn,
+                params=(stock_code, start_period, end_period),
+            )
+
+        return df
 
     #################
     # Database info #
