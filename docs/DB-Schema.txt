@@ -1,0 +1,235 @@
+# Database Schema Documentation
+
+## Overview
+This database stores financial and market-related data used by the stock analysis system.
+
+- Database: SQLite
+- Charset: UTF-8
+- Timezone: UTC+8
+
+---
+
+## Naming Conventions
+- Table names: 'snake_case'
+- Column names: 'snake_case'
+- Boolean fields: 'is_', 'has_' prefix
+- Date fields: '_date', '_at'
+- Short naming rules for columns
+
+Short   | Description
+--------|------------
+1y      | 1 year
+accts   | accounts
+annual  | annual / annualized
+curr    | current
+div     | dividend
+divs    | dividends
+equivs  | equivalents
+fin     | financing / financial
+inv     | investing
+liabs   | liabilities
+lt      | long-term
+ly      | lasy year
+mon     | Month-over-Month (MoM) Growth
+opr     | operating
+outstd  | outstanding
+pay     | payable
+receiv  | receivable
+st      | short-term
+turn    | turnover
+yoy     | Year-over-Year (YoY) Growth
+ytd     | Year-to-Date (YTD)
+
+---
+
+## Table: 'stocks'
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+name                    | Name
+market                  | Market:  'tse','otc'
+industry                | Industry
+security_type           | Security Type: 'stk','etf','etn','tdr'
+business_type           | Business Type: 'basi', 'bd', 'ci', 'fh', 'ins', 'mim'
+
+    // market
+    'tse'   Taiwan Stock Exchange
+    'otc'   Over-The-Counter / Taipei Exchange
+
+    // security_type
+    'stk'   Stock
+    'etf'   Exchange Traded Fund
+    'etn'   Exchange Traded Note
+    'tdr'   Taiwan Depositary Receipt
+
+    // business_type
+    'basi'  Banking and Savings Institutions
+    'bd'    Brokers and Dealers
+    'ci'    Commercial and Industrial
+    'fh'    Financial Holding Companies
+    'ins'   Insurance
+    'mim'   Multiple Industrial and Manufacturing
+
+
+## Table: 'daily_prices'
+
+Daily stock price data.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+date                    | Trading Date ('YYYY-MM-DD')
+--                      | *(separator)*
+open_price              | Opening Price
+high_price              | Highest Price
+low_price               | Lowest Price
+close_price             | Closing Price
+volume                  | Trading Volume
+
+
+## Table: 'monthly_revenue'
+
+Monthly revenue data per company.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+year                    | Revenue Year
+month                   | Revenue Month
+revenue                 | Revenue
+note                    | Note
+--                      | *(separator)*
+revenue_ly              | Revenue Same Period Last Year
+revenue_ytd             | Revenue Year-to-Date (YTD)
+revenue_ytd_ly          | Revenue Year-to-Date (YTD) Same Period Last Year
+revenue_mom             | Revenue MoM Growth
+revenue_yoy             | Revenue YoY Growth
+revenue_ytd_yoy         | Revenue Year-to-Date (YTD) YoY Growth
+--                      | *(separator)*
+revenue_3ma             | 3-Month Average Revenue
+revenue_12ma            | 12-Month Average Revenue
+revenue_ytd_yoy_3ma     | 3-Month Average YoY Growth of YTD Revenue
+revenue_ytd_yoy_12ma    | 12-Month Average YoY Growth of YTD Revenue
+
+## Table: 'financial_core', 'financial_ytd'
+
+'financial_core' stores Quarter-to-Date financial statement data.
+
+NOTE: QTD data is not available when a company has only released half-year or annual reports.
+
+'financial_ytd' stores Year-to-Date financial statement data.
+
+NOTE: YTD data is not guaranteed to exist for every quarter.
+      For half-year-only disclosures, YTD data is stored in Q2 and Q4 and
+      for annual-only disclosures, YTD data is stored in Q4 only.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+year                    | Fiscal Year
+quarter                 | Fiscal Quarter
+--                      | *(balance)*
+curr_assets             | Current Assets
+non_curr_assets         | Non-current Assets
+total_assets            | Total Assets
+curr_liabs              | Current Liabilities
+non_curr_liabs          | Non-current Liabilities
+total_liabs             | Total Liabilities
+total_equity            | Total Equity (Stockholders' Equity)
+book_value              | Book Value Per Share
+--                      | *(balance details - for calculating metrics)*
+accts_receiv            | Accounts Receivable, A/R
+notes_receiv            | Notes Receivable
+accts_notes_receiv      | Accounts and Notes Receivable
+inventory               | Inventory
+prepaid                 | Prepaid Expenses (Prepayments)
+accts_pay               | Accounts Payable, A/P
+notes_pay               | Notes Payable
+accts_notes_pay         | Accounts and Notes Payable
+st_loans                | Short-term Loans
+lt_liabs_due_1y         | Current Portion of Long-term Liabilities
+lt_loans                | Long-term Loans
+bonds_pay               | Bonds payable
+ret_earnings            | Retained Earnings
+-| *(income)*
+opr_revenue             | Operating Revenue
+opr_costs               | Operating Costs
+gross_profit            | Gross Profit
+opr_expenses            | Operating Expenses
+opr_profit              | Operating Profit (Operating Income)
+non_opr_income          | Non-operating Income (and Expenses)
+pre_tax_income          | Pre-tax Income (Earnings Before Tax, EBT)
+income_tax              | Income Tax Expense
+net_income              | (After-tax) Net Income, NI
+eps                     | Earnings Per Share, EPS
+--                      | *(cash)*
+opr_cash_flow           | Operating Cash Flow, OCF
+inv_cash_flow           | Investing Cash Flow, ICF
+fin_cash_flow           | Financing Cash Flow, CFC
+cash_equivs             | Cash and Cash Equivalents
+divs_paid               | Dividends Paid
+
+
+## Table: 'financial_metrics'
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+year                    | Fiscal Year
+quarter                 | Fiscal Quarter
+--                      | *(efficiency)*
+free_cash_flow          | Free Cash Flow, FCF
+days_inventory_outstd   | Days Inventory Outstanding, DIO
+days_sales_outstd       | Days Sales Outstanding, DSO
+days_pay_outstd         | Days Payable Outstanding, DPO
+ccc                     | Cash Conversion Cycle, CCC
+--                      | *(financial position)*
+curr_ratio              | Current Ratio
+quick_ratio             | Quick Ratio
+debt_ratio              | Debt Ratio
+fin_debt_ratio          | Financial Debt Ratio
+core_profit_ratio       | Core Profit Ratio
+asset_turn_ratio        | Asset Turnover Ratio
+--                      | *(profitability)*
+gross_margin            | Gross Profit Margin
+opr_margin              | Operating Profit Margin
+pre_tax_margin          | Pre-tax Profit Margin
+net_margin              | (After-tax) Net Profit Margin
+roa                     | Return on Assets
+roe                     | Return on Equity
+annual_roa              | Annualized ROA
+annual_roe              | Annualized ROE
+rore                    | Return on Retained Earnings
+--                      | *(growth)*
+eps_qoq                 | (-) EPS QoQ Growth
+eps_yoy                 | EPS YoY Growth
+net_income_qoq          | (-) (After-tax) Net Income QoQ Growth
+net_income_yoy          | (After-tax) Net Income YoY Growth
+opr_cash_flow_qoq       | (-) Operating Cash Flow QoQ Growth
+opr_cash_flow_yoy       | Operating Cash Flow YoY Growth
+gross_margin_qoq        | Gross Profit Margin QoQ Growth
+gross_margin_yoy        | Gross Profit Margin YoY Growth
+opr_margin_qoq          | Operating Profit Margin QoQ Growth
+opr_margin_yoy          | Operating Profit Margin YoY Growth
+net_margin_qoq          | Net Profit Margin QoQ Growth
+net_margin_yoy          | Net Profit Margin YoY Growth
+roe_qoq                 | ROE QoQ Growth
+roe_yoy                 | (-) ROE YoY Growth
+--                      | *(price indicators)*
+pe_ratio                | Price-to-Earnings Ratio, P/E Ratio, PER
+pb_ratio                | Price-Book Ratio, P/B Ratio, PBR
+div_yield               | Dividend Yield
+annual_payout_ratio     | Annual Payout Ratio, DPR
+irr                     | Internal Rate of Return, IRR
+
+
+## Table: 'dividends'
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+ex_div_date             | Ex-Dividend Date ('YYYY-MM-DD')
+--                      | *(separator)*
+cash_div                | Cash Dividend
+stock_div               | Stock Dividend
