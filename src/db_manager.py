@@ -22,7 +22,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         db = StockDatabase(db_path) if db_path else StockDatabase()
 
         # import stock_list.csv
-        print('Importing stock list from CSV to database...')
+        print('Importing stock list to database...')
 
         csv_path = os.path.join(csv_dir, 'stock_list.csv')
 
@@ -32,8 +32,21 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             count = db.import_stock_list_csv_to_database(csv_path)
             print(f'Successfully imported {count} records')
 
+        # import business_type.csv
+        print('\nImporting business type of stocks to database...')
+
+        csv_folder = os.path.join(csv_dir, 'quarterly')
+
+        if not os.path.isdir(csv_folder):
+            print(f'Folder not found: {csv_folder}')
+        else:
+            count = db.import_business_type_csv_to_stocks(csv_folder)
+            print(f'Successfully imported {count} records')
+
+        return
+
         # import {XXXX}_prices.csv
-        print('\nImporting OHLC prices from CSV to database...')
+        print('\nImporting OHLC prices to database...')
 
         csv_folder = os.path.join(csv_dir, 'ohlc')
 
@@ -44,7 +57,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Successfully imported {count} records')
 
         # import prices_{YYYYMMDD}.csv
-        print('\nImporting daily prices from CSV to database...')
+        print('\nImporting daily prices to database...')
 
         csv_folder = os.path.join(csv_dir, 'daily')
 
@@ -55,7 +68,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Successfully imported {count} records')
 
         # import revenues_{YYYYMM}.csv
-        print('\nImporting monthly revenues from CSV to database...')
+        print('\nImporting monthly revenues to database...')
 
         csv_folder = os.path.join(csv_dir, 'monthly')
 
@@ -71,7 +84,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
                 print('Successfully')
 
         # import xx_reports_{YYYY}Q{Q}.csv
-        print('\nImporting quarterly reports from CSV to database:')
+        print('\nImporting quarterly reports to database:')
 
         csv_folder = os.path.join(csv_dir, 'quarterly')
 

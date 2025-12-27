@@ -222,7 +222,7 @@ class StockDatabase:
                 use_cols.append(db_col)
 
             # rename columns
-            df.rename(columns=rename_dict, inplace=True)
+            df = df.rename(columns=rename_dict)
 
             # available columns
             avail_cols = [c for c in df.columns if c in use_cols]
@@ -247,7 +247,7 @@ class StockDatabase:
             df = df[avail_cols]
 
             # remove rows with empty code
-            df.dropna(subset=['code'], inplace=True)
+            df = df.dropna(subset=['code'])
 
             # ensure 'code' in string format
             df['code'] = df['code'].astype(str)
@@ -346,10 +346,10 @@ class StockDatabase:
                 return 0
 
             # keep only relevant columns
-            df = df[['Code', 'Sector']].copy()
+            df = df[['Code', 'Sector']]
 
             # remove rows with empty code
-            df.dropna(subset=['Code'], inplace=True)
+            df = df.dropna(subset=['Code'])
 
             # ensure 'code' in string format
             df['Code'] = df['Code'].astype(str)
@@ -618,7 +618,7 @@ class StockDatabase:
                     use_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns=rename_dict, inplace=True)
+                df = df.rename(columns=rename_dict)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in use_cols]
@@ -647,7 +647,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset=['code'], inplace=True)
+                df = df.dropna(subset=['code'])
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
@@ -768,7 +768,7 @@ class StockDatabase:
                     use_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns=rename_dict, inplace=True)
+                df = df.rename(columns=rename_dict)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in use_cols]
@@ -986,7 +986,7 @@ class StockDatabase:
                     use_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns=rename_dict, inplace=True)
+                df = df.rename(columns=rename_dict)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in use_cols]
@@ -1012,7 +1012,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset=['code'], inplace=True)
+                df = df.dropna(subset=['code'])
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
@@ -1172,7 +1172,7 @@ class StockDatabase:
                 if df.empty:
                     return
 
-                df.sort_values(by=['code', 'year', 'month'], inplace=True)
+                df = df.sort_values(by=['code', 'year', 'month'])
 
                 # calculate derived fields
                 # fmt: off
@@ -1500,7 +1500,7 @@ class StockDatabase:
                     use_cols.append(db_col)
 
                 # rename columns
-                df.rename(columns=rename_dict, inplace=True)
+                df = df.rename(columns=rename_dict)
 
                 # available columns
                 avail_cols = [c for c in df.columns if c in use_cols]
@@ -1525,7 +1525,7 @@ class StockDatabase:
                 df = df[avail_cols]
 
                 # remove rows with empty code
-                df.dropna(subset='code', inplace=True)
+                df = df.dropna(subset=['code'])
 
                 # ensure 'code' in string format
                 df['code'] = df['code'].astype(str)
