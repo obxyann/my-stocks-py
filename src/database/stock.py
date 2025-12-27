@@ -362,7 +362,7 @@ class StockDatabase:
                 UPDATE stocks
                 SET business_type = ?
                 WHERE code = ?
-            """ 
+            """
 
             data = []
             for _, row in df.iterrows():
@@ -546,14 +546,17 @@ class StockDatabase:
         if not os.path.isdir(csv_folder):
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
-        total_imported_records = 0
-        last_mod_time = None  # track latest modification time of all files
-
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+        pattern = re.compile(r'prices_(\d{4})(\d{2})(\d{2})\.csv')
 
         # NOTE: '__prices' is not a real table name, just for tracking the
         #       last updated time of different data sources for 'daily_prices'
         updated_time = self.get_table_updated_time('__prices')
+
+        last_mod_time = None  # track latest modification time of all files
+
+        total_imported_records = 0
 
         # define column mapping
         col_mapping = {
@@ -567,7 +570,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             for file in files:
-                match = re.search(r'prices_(\d{4})(\d{2})(\d{2})\.csv', file)
+                match = pattern.search(file)
                 if not match:
                     continue
 
@@ -668,11 +671,11 @@ class StockDatabase:
 
                 cursor.executemany(sql, data)
 
-                total_imported_records += len(df)
-
                 # update last_mod_time if file is newer
                 if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
+
+                total_imported_records += len(df)
 
             conn.commit()
 
@@ -699,14 +702,17 @@ class StockDatabase:
         if not os.path.isdir(csv_folder):
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
-        total_imported_records = 0
-        last_mod_time = None  # track latest modification time of all files
-
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+        pattern = re.compile(r'^([A-Za-z0-9]+)_prices\.csv$')
 
         # NOTE: '__abc_prices' is not a real table name, just for tracking the
         #       last updated time of different data sources for 'daily_prices'
         updated_time = self.get_table_updated_time('__abc_prices')
+
+        last_mod_time = None  # track latest modification time of all files
+
+        total_imported_records = 0
 
         # define column mapping
         col_mapping = {
@@ -720,7 +726,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             for file in files:
-                match = re.match(r'^([A-Za-z0-9]+)_prices\.csv$', file)
+                match = pattern.match(file)
                 if not match:
                     continue
 
@@ -814,11 +820,11 @@ class StockDatabase:
 
                 cursor.executemany(sql, data)
 
-                total_imported_records += len(df)
-
                 # update last_mod_time if file is newer
                 if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
+
+                total_imported_records += len(df)
 
             conn.commit()
 
@@ -918,12 +924,15 @@ class StockDatabase:
         if not os.path.isdir(csv_folder):
             raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
 
-        total_imported_records = 0
-        last_mod_time = None  # track latest modification time of all files
-
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
 
+        pattern = re.compile(r'revenues_(\d{4})(\d{2})\.csv')
+
         updated_time = self.get_table_updated_time('monthly_revenue')
+
+        last_mod_time = None  # track latest modification time of all files
+
+        total_imported_records = 0
 
         # define column mapping
         col_mapping = {
@@ -934,7 +943,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             for file in files:
-                match = re.search(r'revenues_(\d{4})(\d{2})\.csv', file)
+                match = pattern.search(file)
                 if not match:
                     continue
 
@@ -1027,11 +1036,11 @@ class StockDatabase:
 
                 cursor.executemany(sql, data)
 
-                total_imported_records += len(df)
-
                 # update last_mod_time if file is newer
                 if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
+
+                total_imported_records += len(df)
 
             conn.commit()
 
@@ -1357,14 +1366,18 @@ class StockDatabase:
         # pick target table
         to_table = 'financial_ytd' if is_year_to_date else 'financial_core'
 
-        total_imported_records = 0
-        last_mod_time = None  # track latest modification time of all files
-
         files = [f for f in os.listdir(csv_folder) if f.endswith('.csv')]
+
+        # avoiding special character in file_prefix
+        pattern = re.compile(rf'{re.escape(file_prefix)}_(\d{{4}})Q(\d)\.csv')
 
         # NOTE: '__{to_table}_{file_prefix}' is not a real table name, just for tracking the
         #       last updated time of different data sources for 'financial_core'
         updated_time = self.get_table_updated_time(f'__{to_table}_{file_prefix}')
+
+        last_mod_time = None  # track latest modification time of all files
+
+        total_imported_records = 0
 
         # define column mapping
         # NOTE: 1. below with '(i)' mark -> only disclosed in individual financial statements
@@ -1420,11 +1433,7 @@ class StockDatabase:
 
         with self.get_connection() as conn:
             for file in files:
-                # avoiding special character in file_prefix
-                pattern = re.compile(rf'{re.escape(file_prefix)}_(\d{{4}})Q(\d)\.csv')
                 match = pattern.search(file)
-                # or
-                # match = re.search(rf'{file_prefix}_(\d{{4}})Q(\d)\.csv', file)
                 if not match:
                     continue
 
@@ -1559,11 +1568,11 @@ class StockDatabase:
                 # insert or upsert data
                 cursor.executemany(sql, data)
 
-                total_imported_records += len(df)
-
                 # update last_mod_time if file is newer
                 if last_mod_time is None or csv_mod_time > last_mod_time:
                     last_mod_time = csv_mod_time
+
+                total_imported_records += len(df)
 
             conn.commit()
 
