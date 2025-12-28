@@ -153,7 +153,7 @@ lt_liabs_due_1y         | Current Portion of Long-term Liabilities
 lt_loans                | Long-term Loans
 bonds_pay               | Bonds payable
 ret_earnings            | Retained Earnings
--| *(income)*
+--                      | *(income)*
 opr_revenue             | Operating Revenue
 opr_costs               | Operating Costs
 gross_profit            | Gross Profit
@@ -173,6 +173,8 @@ divs_paid               | Dividends Paid
 
 
 ## Table: 'financial_metrics'
+
+Financial metrics calculated from financial statements.
 
 Column Name             | Description
 ------------------------|------------
@@ -226,6 +228,8 @@ irr                     | Internal Rate of Return, IRR
 
 
 ## Table: 'dividends'
+
+Dividends paid by a company.
 
 Column Name             | Description
 ------------------------|------------
