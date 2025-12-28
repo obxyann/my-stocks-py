@@ -176,6 +176,8 @@ divs_paid               | Dividends Paid
 
 Financial metrics calculated from financial statements.
 
+NOTE: Values may be null if related financial data is not available.
+
 Column Name             | Description
 ------------------------|------------
 code                    | Stock Code (Symbol)
