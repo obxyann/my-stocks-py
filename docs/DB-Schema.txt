@@ -107,10 +107,11 @@ revenue_mom             | Revenue MoM Growth
 revenue_yoy             | Revenue YoY Growth
 revenue_ytd_yoy         | Revenue Year-to-Date (YTD) YoY Growth
 --                      | *(separator)*
-revenue_3ma             | 3-Month Average Revenue
-revenue_12ma            | 12-Month Average Revenue
-revenue_ytd_yoy_3ma     | 3-Month Average YoY Growth of YTD Revenue
-revenue_ytd_yoy_12ma    | 12-Month Average YoY Growth of YTD Revenue
+revenue_3ma             | 3-Month Moving Average of 'Revenue'
+revenue_12ma            | 12-Month Moving Average of 'Revenue'
+revenue_ytd_yoy_3ma     | 3-Month Moving Average of 'Revenue YTD YoY Growth'
+revenue_ytd_yoy_12ma    | 12-Month Moving Average of 'Revenue YTD YoY Growth'
+
 
 ## Table: 'financial_core', 'financial_ytd'
 

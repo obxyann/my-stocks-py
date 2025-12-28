@@ -1082,7 +1082,7 @@ class StockDatabase:
                 # prepare SQL
                 # use SQL Window Functions to do incremental updates w/o pandas loading
                 update_query = """
-                    WITH Calculated AS (
+                    WITH calc_ly_and_ytd AS (
                         SELECT
                             code,
                             year,
@@ -1105,7 +1105,7 @@ class StockDatabase:
                             ) as val_revenue_lm
                         FROM monthly_revenue
                     ),
-                    Refined AS (
+                    calc_ytd_ly AS (
                         SELECT
                             code,
                             year,
@@ -1113,29 +1113,30 @@ class StockDatabase:
                             revenue,
                             val_revenue_ly,
                             val_revenue_ytd,
+                            val_revenue_lm,
                             -- revenue_ytd_ly (YTD prev year, LAG 12 of YTD)
                             LAG(val_revenue_ytd, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_ytd_ly,
-                            val_revenue_lm
-                        FROM Calculated
+                            ) as val_revenue_ytd_ly                            
+                        FROM calc_ly_and_ytd
                     ),
-                    Final AS (
+                    calc_mom_yoy AS (
                         SELECT
                             code,
                             year,
                             month,
+                            revenue,
                             val_revenue_ly,
                             val_revenue_ytd,
                             val_revenue_ytd_ly,
-                            -- mom
+                            -- revenue_mom
                             CASE
                                 WHEN val_revenue_lm IS NOT NULL AND val_revenue_lm != 0
                                 THEN (revenue * 1.0 / val_revenue_lm - 1.0) * 100
                                 ELSE NULL
                             END as val_revenue_mom,
-                            -- yoy
+                            -- revenue_yoy
                             CASE
                                 WHEN val_revenue_ly IS NOT NULL AND val_revenue_ly != 0
                                 THEN (revenue * 1.0 / val_revenue_ly - 1.0) * 100
@@ -1147,27 +1148,105 @@ class StockDatabase:
                                 THEN (val_revenue_ytd * 1.0 / val_revenue_ytd_ly - 1.0) * 100
                                 ELSE NULL
                             END as val_revenue_ytd_yoy
-                        FROM Refined
+                        FROM calc_ytd_ly
+                    ),
+                    calc_ma AS (
+                        SELECT
+                            code,
+                            year,
+                            month,
+                            revenue,
+                            val_revenue_ly,
+                            val_revenue_ytd,
+                            val_revenue_ytd_ly,
+                            val_revenue_mom,    
+                            val_revenue_yoy,
+                            val_revenue_ytd_yoy,                     
+                            -- revenue_ma3
+                            CASE
+                                WHEN COUNT(revenue) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+                                ) >= 3
+                                THEN AVG(revenue) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+                                )
+                                ELSE NULL
+                            END as val_revenue_ma3,
+                            -- revenue_ma12
+                            CASE
+                                WHEN COUNT(revenue) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
+                                ) >= 12
+                                THEN AVG(revenue) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
+                                )
+                                ELSE NULL
+                            END as val_revenue_ma12,
+                            -- revenue_ytd_yoy_ma3
+                            CASE
+                                WHEN COUNT(val_revenue_ytd_yoy) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+                                ) >= 3
+                                THEN AVG(val_revenue_ytd_yoy) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+                                )
+                                ELSE NULL
+                            END as val_revenue_ytd_yoy_ma3,
+                            -- revenue_ytd_yoy_ma12
+                            CASE
+                                WHEN COUNT(val_revenue_ytd_yoy) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
+                                ) >= 12
+                                THEN AVG(val_revenue_ytd_yoy) OVER (
+                                    PARTITION BY code
+                                    ORDER BY year, month
+                                    ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
+                                )
+                                ELSE NULL
+                            END as val_revenue_ytd_yoy_ma12   
+                        FROM calc_mom_yoy                         
                     )
                     UPDATE monthly_revenue as mr
                     SET
-                        revenue_ly = f.val_revenue_ly,
-                        revenue_ytd = f.val_revenue_ytd,
-                        revenue_ytd_ly = f.val_revenue_ytd_ly,
-                        revenue_mom = f.val_revenue_mom,
-                        revenue_yoy = f.val_revenue_yoy,
-                        revenue_ytd_yoy = f.val_revenue_ytd_yoy
-                    FROM Final f
-                    WHERE mr.code = f.code
-                      AND mr.year = f.year
-                      AND mr.month = f.month
+                        revenue_ly = calc.val_revenue_ly,
+                        revenue_ytd = calc.val_revenue_ytd,
+                        revenue_ytd_ly = calc.val_revenue_ytd_ly,
+                        revenue_mom = calc.val_revenue_mom,
+                        revenue_yoy = calc.val_revenue_yoy,
+                        revenue_ytd_yoy = calc.val_revenue_ytd_yoy,
+                        revenue_ma3 = calc.val_revenue_ma3,
+                        revenue_ma12 = calc.val_revenue_ma12,
+                        revenue_ytd_yoy_ma3 = calc.val_revenue_ytd_yoy_ma3,
+                        revenue_ytd_yoy_ma12 = calc.val_revenue_ytd_yoy_ma12
+                    FROM calc_ma calc
+                    WHERE mr.code = calc.code
+                      AND mr.year = calc.year
+                      AND mr.month = calc.month
                       AND (
-                           mr.revenue_ly IS NOT f.val_revenue_ly
-                        OR mr.revenue_ytd IS NOT f.val_revenue_ytd
-                        OR mr.revenue_ytd_ly IS NOT f.val_revenue_ytd_ly
-                        OR mr.revenue_mom IS NOT f.val_revenue_mom
-                        OR mr.revenue_yoy IS NOT f.val_revenue_yoy
-                        OR mr.revenue_ytd_yoy IS NOT f.val_revenue_ytd_yoy
+                           mr.revenue_ly IS NOT calc.val_revenue_ly
+                        OR mr.revenue_ytd IS NOT calc.val_revenue_ytd
+                        OR mr.revenue_ytd_ly IS NOT calc.val_revenue_ytd_ly
+                        OR mr.revenue_mom IS NOT calc.val_revenue_mom
+                        OR mr.revenue_yoy IS NOT calc.val_revenue_yoy
+                        OR mr.revenue_ytd_yoy IS NOT calc.val_revenue_ytd_yoy
+                        OR mr.revenue_ma3 IS NOT calc.val_revenue_ma3
+                        OR mr.revenue_ma12 IS NOT calc.val_revenue_ma12
+                        OR mr.revenue_ytd_yoy_ma3 IS NOT calc.val_revenue_ytd_yoy_ma3
+                        OR mr.revenue_ytd_yoy_ma12 IS NOT calc.val_revenue_ytd_yoy_ma12
                       );
                     """
 
@@ -1176,10 +1255,10 @@ class StockDatabase:
                 # execute
                 cursor.execute(update_query)
 
-            except sqlite3.OperationalError:
+            except sqlite3.OperationalError as e:
                 use_color(Colors.WARNING)
-                print('Warning: SQLite incremental updateing failed, try to use pandas')
-                print('         (it will take a while)')
+                print(f'Warning: SQLite incremental updateing failed: {e}')
+                print('         try to use pandas...(it will take a while)')
                 use_color(Colors.RESET)
 
                 # fallback to use pandas
@@ -1204,6 +1283,11 @@ class StockDatabase:
                 df['revenue_mom'] = df.groupby('code')['revenue'].pct_change(periods=1) * 100
                 df['revenue_yoy'] = df.groupby('code')['revenue'].pct_change(periods=12) * 100
                 df['revenue_ytd_yoy'] = (df['revenue_ytd'] / df['revenue_ytd_ly'] - 1) * 100
+                # moving averages (min_periods ensures we have enough data)
+                df['revenue_ma3'] = df.groupby('code')['revenue'].transform(lambda x: x.rolling(window=3, min_periods=3).mean()) # fmt: skip
+                df['revenue_ma12'] = df.groupby('code')['revenue'].transform(lambda x: x.rolling(window=12, min_periods=12).mean()) # fmt: skip
+                df['revenue_ytd_yoy_ma3'] = df.groupby('code')['revenue_ytd_yoy'].transform(lambda x: x.rolling(window=3, min_periods=3).mean()) # fmt: skip
+                df['revenue_ytd_yoy_ma12'] = df.groupby('code')['revenue_ytd_yoy'].transform(lambda x: x.rolling(window=12, min_periods=12).mean()) # fmt: skip
                 # fmt: on
 
                 # prepare SQL
@@ -1214,7 +1298,11 @@ class StockDatabase:
                         revenue_ytd_ly = ?,
                         revenue_mom = ?,
                         revenue_yoy = ?,
-                        revenue_ytd_yoy = ?
+                        revenue_ytd_yoy = ?,
+                        revenue_ma3 = ?,
+                        revenue_ma12 = ?,
+                        revenue_ytd_yoy_ma3 = ?,
+                        revenue_ytd_yoy_ma12 = ?
                     WHERE code = ? AND year = ? AND month = ?
                     """
 
@@ -1225,6 +1313,10 @@ class StockDatabase:
                     'revenue_mom',
                     'revenue_yoy',
                     'revenue_ytd_yoy',
+                    'revenue_ma3',
+                    'revenue_ma12',
+                    'revenue_ytd_yoy_ma3',
+                    'revenue_ytd_yoy_ma12',
                     'code',
                     'year',
                     'month',
