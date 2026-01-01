@@ -8,31 +8,29 @@ class StockApp(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
+        # set theme
+        sv_ttk.set_theme('dark')
+
+        dark = sv_ttk.get_theme() == 'dark'
+
+        self.theme_var = tk.BooleanVar(value=dark)
+
+        self.set_style()
+
         self.pack(fill='both', expand=True)
 
-        # self.create_style()
-
+        # create all UI components
         self.create_toolbar()
 
         self.create_main_layout()
 
         self.create_status_bar()
 
-        # def create_style(self):
-        #     # configure ttk styles
-        #     style = ttk.Style()
-        #     style.theme_use("default")
+    def set_style(self):
+        # configure ttk styles
+        style = ttk.Style()
 
-        #     style.configure(
-        #         "Toolbar.TFrame",
-        #         padding=6
-        #     )
-
-        #     style.configure(
-        #         "Status.TLabel",
-        #         padding=4,
-        #         anchor="w"
-        #     )
+        style.configure('Toolbar.TFrame', pady=4)
 
     def create_toolbar(self):
         """Top toolbar"""
@@ -44,8 +42,6 @@ class StockApp(ttk.Frame):
         ttk.Button(tool_bar, text='1Export').pack(side='left')
 
         # toggle: [1|0] Dark
-        dark = sv_ttk.get_theme() == 'dark'
-        self.theme_var = tk.BooleanVar(value=dark)
         ttk.Checkbutton(
             tool_bar,
             text='Dark',
@@ -181,8 +177,6 @@ def main():
     root = tk.Tk()
     root.title('Stock Analysis Tool')
     root.geometry('800x600')
-
-    sv_ttk.set_theme('dark')
 
     app = StockApp(root)
 
