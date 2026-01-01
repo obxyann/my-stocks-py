@@ -6,6 +6,7 @@ trigger: always_on
 - Language: Python
 - Libraries: pandas
 - Database: SQLite
+- UI: Tkinter ttk
 
 ## Code Style
 - Follow PEP 8

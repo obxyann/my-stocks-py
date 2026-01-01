@@ -27,41 +27,41 @@ if not exist "C:\Python\Virtual_Env\" (
 ) else (
 	echo [v] Folder 'C:\Python\Virtual_Env' exists
 )
-if not exist "C:\Python\Virtual_Env\OpenData\" (
+if not exist "C:\Python\Virtual_Env\stocks\" (
         cd /d "C:\Python\Virtual_Env"
-	virtualenv OpenData && echo [+] Virtual environment 'OpenData' is now created
+	virtualenv stocks && echo [+] Virtual environment 'stocks' is now created
 ) else (
-	echo [v] Virtual environment 'OpenData' exists
+	echo [v] Virtual environment 'stocks' exists
 )
-if not exist "C:\Python\Virtual_Env\OpenData\Scripts\activate.bat" (
-	echo Virtual environment 'OpenData' incompleted!
-	echo Please remove 'C:\Python\Virtual_Env\OpenData' folder and reinstall
+if not exist "C:\Python\Virtual_Env\stocks\Scripts\activate.bat" (
+	echo Virtual environment 'stocks' incompleted!
+	echo Please remove 'C:\Python\Virtual_Env\stocks' folder and reinstall
 	exit /b
 )
 echo:
 echo Ready to active the virtual environment
 pause
-call C:\Python\Virtual_Env\OpenData\Scripts\activate.bat
+call C:\Python\Virtual_Env\stocks\Scripts\activate.bat
 echo Continue to check necessary packages
 pause
 cls
 cd /d "%~dp0"
-if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\requests\" (
+if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\requests\" (
         pip install requests && echo [+] Package 'requests' is now installed
 ) else (
 	echo [v] Package 'requests' already installed
 )
-if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\pip_system_certs\" (
+if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\pip_system_certs\" (
         pip install pip_system_certs && echo [+] Package 'pip-system-certs' is now installed
 ) else (
 	echo [v] Package 'pip-system-certs' already installed
 )
-if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\lxml\" (
+if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\lxml\" (
         pip install lxml && echo [+] Package 'lxml' is now installed
 ) else (
 	echo [v] Package 'lxml' already installed
 )
-if not exist "C:\Python\Virtual_Env\OpenData\Lib\site-packages\pandas\" (
+if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\pandas\" (
         pip install pandas && echo [+] Package 'pandas' is now installed
 ) else (
 	echo [v] Package 'pandas' already installed
