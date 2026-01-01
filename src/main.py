@@ -41,7 +41,18 @@ class StockApp(ttk.Frame):
 
         # buttons: [Load][Export]
         ttk.Button(tool_bar, text='Load').pack(side='left', padx=6)
-        ttk.Button(tool_bar, text='Export').pack(side='left')
+        ttk.Button(tool_bar, text='1Export').pack(side='left')
+
+        # toggle: [1|0] Dark
+        dark = sv_ttk.get_theme() == 'dark'
+        self.theme_var = tk.BooleanVar(value=dark)
+        ttk.Checkbutton(
+            tool_bar,
+            text='Dark',
+            style='Switch.TCheckbutton',
+            variable=self.theme_var,
+            command=sv_ttk.toggle_theme,
+        ).pack(side='right', padx=6)
 
     def create_main_layout(self):
         """Main layout: split left and right panels"""
