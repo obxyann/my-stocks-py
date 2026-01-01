@@ -17,6 +17,7 @@ class StockApp(ttk.Frame):
 
         self.set_style()
 
+        # pack to root
         self.pack(fill='both', expand=True)
 
         # create all UI components
