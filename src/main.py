@@ -47,6 +47,11 @@ class StockApp(ttk.Frame):
         ttk.Button(tool_bar, text='Load').pack(side='left', padx=6)
         ttk.Button(tool_bar, text='Export').pack(side='left')
 
+        # input: Stock Code [___]
+        ttk.Label(tool_bar, text='Stock Code').pack(side='left', padx=6)
+        self.search_code = ttk.Entry(tool_bar, width=12)
+        self.search_code.pack(side='left')
+
         # toggle: [1|0] Dark
         ttk.Checkbutton(
             tool_bar,
@@ -94,10 +99,9 @@ class StockApp(ttk.Frame):
         control_bar = ttk.Frame(panel)
         control_bar.pack(side='top', pady=(0, 6), fill='x')
 
-        # input: Stock Code [___]
-        ttk.Label(control_bar, text='Stock Code').pack(side='left', padx=6)
-        self.stock_code = ttk.Entry(control_bar, width=12)
-        self.stock_code.pack(side='left')
+        # label: Stock Code Name
+        self.stock_name = ttk.Label(control_bar, text='Code Name')
+        self.stock_name.pack(side='left', padx=6)
 
         # tabs container
         tabs = ttk.Notebook(panel)
@@ -334,8 +338,33 @@ class StockApp(ttk.Frame):
         for _, row in df.iterrows():
             self.indicator_table.insert('', 'end', values=tuple(row))
 
+    def view_stock(
+        self,
+        code_name: str = None,
+        data: dict[str, pd.DataFrame] = None,
+    ) -> None:
+        """View stock data
 
-def test(app):
+        Args:
+            code_name: str, stock code and name
+            data: dict[str, pd.DataFrame], dictionary containing data DataFrames
+
+        Returns:
+            None
+        """
+        if code_name:
+            self.stock_name['text'] = code_name
+
+        if data:
+            if 'revenue' in data:
+                self.set_revenue_data(data['revenue'])
+            if 'financial' in data:
+                self.set_financial_data(data['financial'])
+            if 'indicator' in data:
+                self.set_indicator_data(data['indicator'])
+
+
+def test(app: StockApp) -> None:
     """Test data panels with dummy data
 
     Args:
@@ -344,9 +373,13 @@ def test(app):
     Returns:
         None
     """
+
     # revenue dummy data
     # fmt: off
-    columns_rev = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy')
+    columns_rev = (
+        'year_month', 'revence', 'revence_mom', 'revence_ly',
+        'revence_yoy', 'revence_ytd', 'revence_ytd_yoy'
+    )
     data_rev = [
         ('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'),
         ('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%'),
@@ -354,11 +387,13 @@ def test(app):
     ]
     # fmt: on
     df_rev = pd.DataFrame(data_rev, columns=columns_rev)
-    app.set_revenue_data(df_rev)
 
     # financial dummy data
     # fmt: off
-    columns_fin = ('Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4')
+    columns_fin = (
+        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4',
+        '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
+    )
     data_fin = [
         ('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'),
         ('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'),
@@ -366,11 +401,13 @@ def test(app):
     ]
     # fmt: on
     df_fin = pd.DataFrame(data_fin, columns=columns_fin)
-    app.set_financial_data(df_fin)
 
     # indicator dummy data
     # fmt: off
-    columns_ind = ('Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4')
+    columns_ind = (
+        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4',
+        '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
+    )
     data_ind = [
         ('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'),
         ('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'),
@@ -379,7 +416,16 @@ def test(app):
     ]
     # fmt: on
     df_ind = pd.DataFrame(data_ind, columns=columns_ind)
-    app.set_indicator_data(df_ind)
+
+    # view stock with dummy data
+    app.view_stock(
+        '1101 台泥',
+        {
+            'revenue': df_rev,
+            'financial': df_fin,
+            'indicator': df_ind,
+        },
+    )
 
 
 def main():
