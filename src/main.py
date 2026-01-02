@@ -259,7 +259,7 @@ class StockApp(ttk.Frame):
         Returns:
             None
         """
-        # update headers if column count matches
+        # check if column count matches
         df_cols = df.columns.tolist()
         table_cols = self.revenue_table['columns']
 
@@ -287,7 +287,7 @@ class StockApp(ttk.Frame):
         Returns:
             None
         """
-        # update headers if column count matches
+        # check if column count matches
         df_cols = df.columns.tolist()
         table_cols = self.financial_table['columns']
 
@@ -315,7 +315,7 @@ class StockApp(ttk.Frame):
         Returns:
             None
         """
-        # update headers if column count matches
+        # check if column count matches
         df_cols = df.columns.tolist()
         table_cols = self.indicator_table['columns']
 
