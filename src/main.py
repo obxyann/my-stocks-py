@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+import pandas as pd
 import sv_ttk
 
 
@@ -155,9 +156,11 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'))  # fmt: skip
-        table.insert('', 'end', values=('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%'))  # fmt: skip
-        table.insert('', 'end', values=('2025/09', '13306676', '8.94%', '13325249', '-0.14%', '109438,297', '3.64%'))  # fmt: skip
+        # table.insert('', 'end', values=('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'))  # fmt: skip
+        # table.insert('', 'end', values=('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%'))  # fmt: skip
+        # table.insert('', 'end', values=('2025/09', '13306676', '8.94%', '13325249', '-0.14%', '109438,297', '3.64%'))  # fmt: skip
+
+        self.revenue_table = table
 
         return panel
 
@@ -189,9 +192,11 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))  # fmt: skip
-        table.insert('', 'end', values=('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'))  # fmt: skip
-        table.insert('', 'end', values=('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'))  # fmt: skip
+        # table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))  # fmt: skip
+        # table.insert('', 'end', values=('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'))  # fmt: skip
+        # table.insert('', 'end', values=('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'))  # fmt: skip
+
+        self.financial_table = table
 
         return panel
 
@@ -223,10 +228,12 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))  # fmt: skip
-        table.insert('', 'end', values=('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'))  # fmt: skip
-        table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))  # fmt: skip
-        table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))  # fmt: skip
+        # table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))  # fmt: skip
+        # table.insert('', 'end', values=('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'))  # fmt: skip
+        # table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))  # fmt: skip
+        # table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))  # fmt: skip
+
+        self.indicator_table = table
 
         return panel
 
@@ -239,6 +246,74 @@ class StockApp(ttk.Frame):
         self.status = ttk.Label(status_bar, text='Ready')
         self.status.pack(side='left', padx=6)
 
+    ############
+    # set data #
+    ############
+
+    def set_indicator_data(self, df):
+        """Set indicator data"""
+        for _, row in df.iterrows():
+            self.indicator_table.insert('', 'end', values=tuple(row))
+
+    def set_revenue_data(self, df):
+        """Set revenue data"""
+        for _, row in df.iterrows():
+            self.revenue_table.insert('', 'end', values=tuple(row))
+
+    def set_financial_data(self, df):
+        """Set financial data"""
+        for _, row in df.iterrows():
+            self.financial_table.insert('', 'end', values=tuple(row))
+
+
+def test(app):
+    """Test data panels with dummy data
+
+    Args:
+        app: StockApp instance
+
+    Returns:
+        None
+    """
+
+    # dummy data
+    # indicator data
+    # fmt: off
+    columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')
+    data = [
+        ('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'),
+        ('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'),
+        ('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'),
+        ('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'),
+    ]
+    # fmt: on
+    df = pd.DataFrame(data, columns=columns)
+    app.set_indicator_data(df)
+
+    # revenue data
+    # fmt: off
+    columns_rev = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy')
+    data_rev = [
+        ('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'),
+        ('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%'),
+        ('2025/09', '13306676', '8.94%', '13325249', '-0.14%', '109438,297', '3.64%'),
+    ]
+    # fmt: on
+    df_rev = pd.DataFrame(data_rev, columns=columns_rev)
+    app.set_revenue_data(df_rev)
+
+    # financial data
+    # fmt: off
+    columns_fin = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')
+    data_fin = [
+        ('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'),
+        ('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'),
+        ('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'),
+    ]
+    # fmt: on
+    df_fin = pd.DataFrame(data_fin, columns=columns_fin)
+    app.set_financial_data(df_fin)
+
 
 def main():
     root = tk.Tk()
@@ -246,6 +321,8 @@ def main():
     root.geometry('800x600')
 
     app = StockApp(root)
+
+    test(app)
 
     root.mainloop()
 
