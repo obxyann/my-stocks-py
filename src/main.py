@@ -172,14 +172,14 @@ class StockApp(ttk.Frame):
         columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
-        table.heading('period1', text='2025.Q3')
-        table.heading('period2', text='2025.Q2')
-        table.heading('period3', text='2025.Q1')
-        table.heading('period4', text='2024.Q4')
-        table.heading('period5', text='2024.Q3')
-        table.heading('period6', text='2024.Q2')
-        table.heading('period7', text='2024.Q1')
-        table.heading('period8', text='2023.Q4')
+        table.heading('period1', text='YYYY.Q4')
+        table.heading('period2', text='YYYY.Q3')
+        table.heading('period3', text='YYYY.Q2')
+        table.heading('period4', text='YYYY.Q1')
+        table.heading('period5', text='YYYY.Q4')
+        table.heading('period6', text='YYYY.Q3')
+        table.heading('period7', text='YYYY.Q2')
+        table.heading('period8', text='YYYY.Q1')
         table.column('item', width=80)
         table.column('period1', width=60, anchor='e')
         table.column('period2', width=60, anchor='e')
@@ -208,14 +208,14 @@ class StockApp(ttk.Frame):
         columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
-        table.heading('period1', text='2025.Q3')
-        table.heading('period2', text='2025.Q2')
-        table.heading('period3', text='2025.Q1')
-        table.heading('period4', text='2024.Q4')
-        table.heading('period5', text='2024.Q3')
-        table.heading('period6', text='2024.Q2')
-        table.heading('period7', text='2024.Q1')
-        table.heading('period8', text='2023.Q4')
+        table.heading('period1', text='YYYY.Q4')
+        table.heading('period2', text='YYYY.Q3')
+        table.heading('period3', text='YYYY.Q2')
+        table.heading('period4', text='YYYY.Q1')
+        table.heading('period5', text='YYYY.Q4')
+        table.heading('period6', text='YYYY.Q3')
+        table.heading('period7', text='YYYY.Q2')
+        table.heading('period8', text='YYYY.Q1')
         table.column('item', width=80)
         table.column('period1', width=60, anchor='e')
         table.column('period2', width=60, anchor='e')
@@ -250,20 +250,89 @@ class StockApp(ttk.Frame):
     # set data #
     ############
 
-    def set_indicator_data(self, df):
-        """Set indicator data"""
-        for _, row in df.iterrows():
-            self.indicator_table.insert('', 'end', values=tuple(row))
-
     def set_revenue_data(self, df):
-        """Set revenue data"""
+        """Set revenue data
+
+        Args:
+            df: pd.DataFrame containing revenue data
+
+        Returns:
+            None
+        """
+        # update headers if column count matches
+        df_cols = df.columns.tolist()
+        table_cols = self.revenue_table['columns']
+
+        if len(df_cols) != len(table_cols):
+            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            return
+
+        # update headers
+        # for i, col_name in enumerate(df_cols):
+        #    self.revenue_table.heading(table_cols[i], text=col_name)
+
+        # clear table
+        self.revenue_table.delete(*self.revenue_table.get_children())
+
+        # insert data
         for _, row in df.iterrows():
             self.revenue_table.insert('', 'end', values=tuple(row))
 
     def set_financial_data(self, df):
-        """Set financial data"""
+        """Set financial data
+
+        Args:
+            df: pd.DataFrame containing financial data
+
+        Returns:
+            None
+        """
+        # update headers if column count matches
+        df_cols = df.columns.tolist()
+        table_cols = self.financial_table['columns']
+
+        if len(df_cols) != len(table_cols):
+            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            return
+
+        # update headers
+        for i, col_name in enumerate(df_cols):
+            self.financial_table.heading(table_cols[i], text=col_name)
+
+        # clear table
+        self.financial_table.delete(*self.financial_table.get_children())
+
+        # insert data
         for _, row in df.iterrows():
             self.financial_table.insert('', 'end', values=tuple(row))
+
+    def set_indicator_data(self, df):
+        """Set indicator data
+
+        Args:
+            df: pd.DataFrame containing indicator data
+
+        Returns:
+            None
+        """
+        # update headers if column count matches
+        df_cols = df.columns.tolist()
+        table_cols = self.indicator_table['columns']
+
+        if len(df_cols) != len(table_cols):
+            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            return
+
+        # update headers
+        for i, col_name in enumerate(df_cols):
+            self.indicator_table.heading(table_cols[i], text=col_name)
+
+        # clear table
+        self.indicator_table.delete(*self.indicator_table.get_children())
+
+        # insert data
+        for _, row in df.iterrows():
+            self.indicator_table.insert('', 'end', values=tuple(row))
 
 
 def test(app):
@@ -275,22 +344,7 @@ def test(app):
     Returns:
         None
     """
-
-    # dummy data
-    # indicator data
-    # fmt: off
-    columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')
-    data = [
-        ('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'),
-        ('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'),
-        ('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'),
-        ('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'),
-    ]
-    # fmt: on
-    df = pd.DataFrame(data, columns=columns)
-    app.set_indicator_data(df)
-
-    # revenue data
+    # revenue dummy data
     # fmt: off
     columns_rev = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy')
     data_rev = [
@@ -302,9 +356,9 @@ def test(app):
     df_rev = pd.DataFrame(data_rev, columns=columns_rev)
     app.set_revenue_data(df_rev)
 
-    # financial data
+    # financial dummy data
     # fmt: off
-    columns_fin = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')
+    columns_fin = ('Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4')
     data_fin = [
         ('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'),
         ('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'),
@@ -313,6 +367,19 @@ def test(app):
     # fmt: on
     df_fin = pd.DataFrame(data_fin, columns=columns_fin)
     app.set_financial_data(df_fin)
+
+    # indicator dummy data
+    # fmt: off
+    columns_ind = ('Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4')
+    data_ind = [
+        ('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'),
+        ('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'),
+        ('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'),
+        ('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'),
+    ]
+    # fmt: on
+    df_ind = pd.DataFrame(data_ind, columns=columns_ind)
+    app.set_indicator_data(df_ind)
 
 
 def main():
