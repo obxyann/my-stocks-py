@@ -67,7 +67,7 @@ class StockApp(ttk.Frame):
 
     def create_stock_list(self, parent):
         """Panel: stock list"""
-        panel = ttk.Frame(parent, width=200)
+        panel = ttk.Frame(parent)  # , width=200)
 
         # table: | Code | Name |
         columns = ('code', 'name')
@@ -76,8 +76,8 @@ class StockApp(ttk.Frame):
         )
         self.stock_list.heading('code', text='Code')
         self.stock_list.heading('name', text='Name')
-        self.stock_list.column('code', width=30)  # , anchor="center")
-        self.stock_list.column('name', width=120)
+        self.stock_list.column('code', width=36)  # , anchor="center")
+        self.stock_list.column('name', width=100)
         self.stock_list.pack(fill='both', expand=True)
 
         # TBD: dummy data
@@ -95,7 +95,7 @@ class StockApp(ttk.Frame):
         control_bar.pack(side='top', pady=(0, 6), fill='x')
 
         # input: Stock Code [___]
-        ttk.Label(control_bar, text='Stock Code').pack(side='left', padx=(6, 4))
+        ttk.Label(control_bar, text='Stock Code').pack(side='left', padx=6)
         self.stock_code = ttk.Entry(control_bar, width=12)
         self.stock_code.pack(side='left')
 
