@@ -373,12 +373,10 @@ def test(app: StockApp) -> None:
     Returns:
         None
     """
-
     # revenue dummy data
     # fmt: off
     columns_rev = (
-        'year_month', 'revence', 'revence_mom', 'revence_ly',
-        'revence_yoy', 'revence_ytd', 'revence_ytd_yoy'
+        'year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy'
     )
     data_rev = [
         ('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'),
@@ -391,8 +389,7 @@ def test(app: StockApp) -> None:
     # financial dummy data
     # fmt: off
     columns_fin = (
-        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4',
-        '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
+        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
     )
     data_fin = [
         ('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'),
@@ -405,8 +402,7 @@ def test(app: StockApp) -> None:
     # indicator dummy data
     # fmt: off
     columns_ind = (
-        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4',
-        '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
+        'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
     )
     data_ind = [
         ('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'),
