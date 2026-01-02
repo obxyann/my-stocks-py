@@ -7,6 +7,7 @@ import sv_ttk
 from database.stock import StockDatabase
 from load_stock import load_stock
 
+
 def initialize_database():
     """Initialize database and import CSV data if needed"""
     try:
@@ -20,6 +21,7 @@ def initialize_database():
     except Exception as error:
         print(f'Database initialization failed: {error}')
         raise
+
 
 class StockApp(ttk.Frame):
     def __init__(self, master):
@@ -148,11 +150,11 @@ class StockApp(ttk.Frame):
         tabs = ttk.Notebook(panel)
         tabs.pack(fill='both', expand=True, padx=(0, 4))
 
-        # tab panels: _Price_Revenues_Financials_Indicators_
+        # tab panels: _Price_Revenues_Financials_Metrics_
         tabs.add(self.create_price_panel(tabs), text='Price')
         tabs.add(self.create_revenue_panel(tabs), text='Revenues')
         tabs.add(self.create_financial_panel(tabs), text='Financials')
-        tabs.add(self.create_indicator_panel(tabs), text='Indicators')
+        tabs.add(self.create_metrics_panel(tabs), text='Metrics')
 
         return panel
 
@@ -266,8 +268,8 @@ class StockApp(ttk.Frame):
 
         return panel
 
-    def create_indicator_panel(self, parent):
-        """Create the indicator data tab panel
+    def create_metrics_panel(self, parent):
+        """Create the metrics data tab panel
 
         Args:
             parent: Parent widget
@@ -306,7 +308,7 @@ class StockApp(ttk.Frame):
         # table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))  # fmt: skip
         # table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))  # fmt: skip
 
-        self.indicator_table = table
+        self.metrics_table = table
 
         return panel
 
@@ -373,15 +375,15 @@ class StockApp(ttk.Frame):
         for _, row in df.iterrows():
             self.financial_table.insert('', 'end', values=tuple(row))
 
-    def set_indicator_data(self, df):
-        """Set indicator data
+    def set_metrics_data(self, df):
+        """Set metrics data
 
         Args:
-            df: pd.DataFrame containing indicator data
+            df: pd.DataFrame containing metrics data
         """
         # check if column count matches
         df_cols = df.columns.tolist()
-        table_cols = self.indicator_table['columns']
+        table_cols = self.metrics_table['columns']
 
         if len(df_cols) != len(table_cols):
             print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
@@ -389,32 +391,35 @@ class StockApp(ttk.Frame):
 
         # update headers
         for i, col_name in enumerate(df_cols):
-            self.indicator_table.heading(table_cols[i], text=col_name)
+            self.metrics_table.heading(table_cols[i], text=col_name)
 
         # clear table
-        self.indicator_table.delete(*self.indicator_table.get_children())
+        self.metrics_table.delete(*self.metrics_table.get_children())
 
         # insert data
         for _, row in df.iterrows():
-            self.indicator_table.insert('', 'end', values=tuple(row))
+            self.metrics_table.insert('', 'end', values=tuple(row))
 
-    def view_stock(self, code_name=None, data=None):
+    def view_stock(self, data):
         """View stock data
 
         Args:
-            code_name (str): stock code and name
-            data (dict[str, pd.DataFrame]): dictionary containing data DataFrames
+            data (dict): dictionary containing metadata and DataFrames
+                       - 'code_name': Stock code and name string
+                       - 'revenue': Revenue data
+                       - 'financial': Financial data
+                       - 'metrics': Financial metrics data
         """
+        code_name = data.get('code_name')
         if code_name:
             self.stock_name['text'] = code_name
 
-        if data:
-            if 'revenue' in data:
-                self.set_revenue_data(data['revenue'])
-            if 'financial' in data:
-                self.set_financial_data(data['financial'])
-            if 'indicator' in data:
-                self.set_indicator_data(data['indicator'])
+        if 'revenue' in data:
+            self.set_revenue_data(data['revenue'])
+        if 'financial' in data:
+            self.set_financial_data(data['financial'])
+        if 'metrics' in data:
+            self.set_metrics_data(data['metrics'])
 
 
 def test(app):
@@ -449,7 +454,7 @@ def test(app):
     # fmt: on
     df_fin = pd.DataFrame(data_fin, columns=columns_fin)
 
-    # indicator dummy data
+    # metrics dummy data
     # fmt: off
     columns_ind = (
         'Item', '2025.Q3', '2025.Q2', '2025.Q1', '2024.Q4', '2024.Q3', '2024.Q2', '2024.Q1', '2023.Q4'
@@ -465,12 +470,12 @@ def test(app):
 
     # view stock with dummy data
     app.view_stock(
-        '1101 台泥',
         {
+            'code_name': '1101 台泥',
             'revenue': df_rev,
             'financial': df_fin,
-            'indicator': df_ind,
-        },
+            'metrics': df_ind,
+        }
     )
 
 
@@ -489,7 +494,7 @@ def main():
 
     stock_data = load_stock('1101', db)
 
-    app.view_stock('1101 台泥', stock_data)
+    app.view_stock(stock_data)
 
     root.mainloop()
 

@@ -17,11 +17,19 @@ def load_stock(stock_code, db):
         db (StockDatabase): Database instance
 
     Returns:
-        dict: Dictionary containing DataFrames
+        dict: Dictionary containing metadata and DataFrames
+            - 'code_name': Stock code and name string
             - 'revenue': Revenue data
             - 'financial': Financial data
-            - 'indicator': Financial metrics data
+            - 'metrics': Financial metrics data
     """
+    # retrieve stock info
+    df_s = db.get_stock_by_code(stock_code)
+    code_name = f'{stock_code}'
+    if not df_s.empty:
+        name = df_s.iloc[0]['name']
+        code_name = f'{stock_code} {name}'
+
     # retrieve data from database
     df_r = db.get_recent_revenue_by_code(stock_code, limit=24)
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
@@ -33,9 +41,10 @@ def load_stock(stock_code, db):
     tbl_m = transform_financial_metrics(df_m)
 
     return {
+        'code_name': code_name,
         'revenue': tbl_r,
         'financial': tbl_f,
-        'indicator': tbl_m,
+        'metrics': tbl_m,
     }
 
 
