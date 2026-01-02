@@ -1379,6 +1379,34 @@ class StockDatabase:
 
         return df
 
+    def get_recent_revenue_by_code(self, stock_code, limit=1):
+        """Get the latest N records of monthly revenue data for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            limit (int): Maximum number of records to retrieve
+
+        Returns:
+            pandas.DataFrame: Recent revenue data
+        """
+        with self.get_connection() as conn:
+            # retrieve data (latest N, then sort by date ascending)
+            df = pd.read_sql_query(
+                """
+                SELECT * FROM (
+                    SELECT *
+                    FROM monthly_revenue
+                    WHERE code = ?
+                    ORDER BY year DESC, month DESC
+                    LIMIT ?
+                ) ORDER BY year ASC, month ASC
+                """,
+                conn,
+                params=(stock_code, limit),
+            )
+
+        return df
+
     ########################
     # Financial Core table #
     ########################
@@ -2021,6 +2049,38 @@ class StockDatabase:
 
         return df
 
+    def get_recent_financial_by_code(self, stock_code, limit=1, year_to_date=False):
+        """Get the latest N records of financial data for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            limit (int): Maximum number of records to retrieve
+            year_to_date (bool): return cumulative Year-to-Date (YTD) data (True) or periodic data (False)
+
+        Returns:
+            pandas.DataFrame: Recent financial data
+        """
+        # pick target table
+        from_table = 'financial_ytd' if year_to_date else 'financial_core'
+
+        with self.get_connection() as conn:
+            # retrieve data (latest N, then sort by period ascending)
+            df = pd.read_sql_query(
+                f"""
+                SELECT * FROM (
+                    SELECT *
+                    FROM {from_table}
+                    WHERE code = ?
+                    ORDER BY year DESC, quarter DESC
+                    LIMIT ?
+                ) ORDER BY year ASC, quarter ASC
+                """,
+                conn,
+                params=(stock_code, limit),
+            )
+
+        return df
+
     ###########################
     # Financial Metrics table #
     ###########################
@@ -2361,6 +2421,34 @@ class StockDatabase:
                 """,
                 conn,
                 params=(stock_code, start_period, end_period),
+            )
+
+        return df
+
+    def get_recent_financial_metrics_by_code(self, stock_code, limit):
+        """Get the latest N records of financial metrics for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            limit (int): Maximum number of records to retrieve
+
+        Returns:
+            pandas.DataFrame: Recent financial metrics data
+        """
+        with self.get_connection() as conn:
+            # retrieve data (latest N, then sort by period ascending)
+            df = pd.read_sql_query(
+                """
+                SELECT * FROM (
+                    SELECT *
+                    FROM financial_metrics
+                    WHERE code = ?
+                    ORDER BY year DESC, quarter DESC
+                    LIMIT ?
+                ) ORDER BY year ASC, quarter ASC
+                """,
+                conn,
+                params=(stock_code, limit),
             )
 
         return df

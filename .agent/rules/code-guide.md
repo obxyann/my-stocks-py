@@ -24,9 +24,10 @@ trigger: always_on
 
 - Language: Always use English
 - Style: Be concise; omit unnecessary words like 'the', 'a', 'an'
-- Function Docstrings: Start with an uppercase letter and end without a period
 - In-line Comments: Start with a lowercase letter and end without a period
-- Type Hinting: Always include type hints for function arguments and return values in Docstrings
+- Docstrings:
+  * Use Google Style Docstrings
+  * Start with an uppercase letter and end without a period
 
 ## Function Design
 - Each function should do one thing

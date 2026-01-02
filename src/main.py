@@ -7,6 +7,11 @@ import sv_ttk
 
 class StockApp(ttk.Frame):
     def __init__(self, master):
+        """Initialize the application
+
+        Args:
+            master: The root window
+        """
         super().__init__(master)
 
         # set ui style
@@ -23,6 +28,11 @@ class StockApp(ttk.Frame):
         self.create_status_bar()
 
     def set_style(self, theme):
+        """Set the UI style and theme
+
+        Args:
+            theme (str): Name of theme to apply
+        """
         # set theme
         sv_ttk.set_theme(theme)
 
@@ -36,10 +46,11 @@ class StockApp(ttk.Frame):
         style.configure('Toolbar.TFrame', pady=4)
 
     def toggle_theme(self):
+        """Toggle between light and dark themes"""
         sv_ttk.toggle_theme()
 
     def create_toolbar(self):
-        """Top toolbar"""
+        """Create the top toolbar"""
         tool_bar = ttk.Frame(self, style='Toolbar.TFrame')
         tool_bar.pack(side='top', pady=6, fill='x')
 
@@ -62,7 +73,7 @@ class StockApp(ttk.Frame):
         ).pack(side='right', padx=6)
 
     def create_main_layout(self):
-        """Main layout: split left and right panels"""
+        """Create main layout with split panels"""
         paned = ttk.PanedWindow(self, orient='horizontal')
         paned.pack(fill='both', expand=True)
 
@@ -71,7 +82,14 @@ class StockApp(ttk.Frame):
         paned.add(self.create_stock_view(paned), weight=4)
 
     def create_stock_list(self, parent):
-        """Panel: stock list"""
+        """Create the stock list panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)  # , width=200)
 
         # table: | Code | Name |
@@ -92,7 +110,14 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_stock_view(self, parent):
-        """Panel: stock view"""
+        """Create the stock view panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)
 
         # control bar
@@ -116,7 +141,14 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_price_panel(self, parent):
-        """Tab panel: price chart"""
+        """Create the price chart tab panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)
 
         # control bar
@@ -136,7 +168,14 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_revenue_panel(self, parent):
-        """Tab panel: revenue"""
+        """Create the revenue data tab panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)
 
         # table: | year_month | revence | revence_mom | revence_ly | revence_yoy | revence_ytd | revence_ytd_yoy |
@@ -169,7 +208,14 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_financial_panel(self, parent):
-        """Tab panel: financial"""
+        """Create the financial data tab panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)
 
         # table: | item | period1 | ... | period8 |
@@ -205,7 +251,14 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_indicator_panel(self, parent):
-        """Tab panel: indicator"""
+        """Create the indicator data tab panel
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created panel
+        """
         panel = ttk.Frame(parent)
 
         # table: | item | period1 | ... | period8 |
@@ -242,7 +295,7 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_status_bar(self):
-        """Status bar"""
+        """Create the status bar at the bottom"""
         status_bar = ttk.Frame(self, style='Toolbar.TFrame')
         status_bar.pack(side='bottom', pady=6, fill='x')
 
@@ -259,9 +312,6 @@ class StockApp(ttk.Frame):
 
         Args:
             df: pd.DataFrame containing revenue data
-
-        Returns:
-            None
         """
         # check if column count matches
         df_cols = df.columns.tolist()
@@ -287,9 +337,6 @@ class StockApp(ttk.Frame):
 
         Args:
             df: pd.DataFrame containing financial data
-
-        Returns:
-            None
         """
         # check if column count matches
         df_cols = df.columns.tolist()
@@ -315,9 +362,6 @@ class StockApp(ttk.Frame):
 
         Args:
             df: pd.DataFrame containing indicator data
-
-        Returns:
-            None
         """
         # check if column count matches
         df_cols = df.columns.tolist()
@@ -338,19 +382,12 @@ class StockApp(ttk.Frame):
         for _, row in df.iterrows():
             self.indicator_table.insert('', 'end', values=tuple(row))
 
-    def view_stock(
-        self,
-        code_name: str = None,
-        data: dict[str, pd.DataFrame] = None,
-    ) -> None:
+    def view_stock(self, code_name=None, data=None):
         """View stock data
 
         Args:
-            code_name: str, stock code and name
-            data: dict[str, pd.DataFrame], dictionary containing data DataFrames
-
-        Returns:
-            None
+            code_name (str): stock code and name
+            data (dict[str, pd.DataFrame]): dictionary containing data DataFrames
         """
         if code_name:
             self.stock_name['text'] = code_name
@@ -364,14 +401,11 @@ class StockApp(ttk.Frame):
                 self.set_indicator_data(data['indicator'])
 
 
-def test(app: StockApp) -> None:
+def test(app):
     """Test data panels with dummy data
 
     Args:
         app: StockApp instance
-
-    Returns:
-        None
     """
     # revenue dummy data
     # fmt: off
@@ -425,6 +459,7 @@ def test(app: StockApp) -> None:
 
 
 def main():
+    """Main entry point of the application"""
     root = tk.Tk()
     root.title('Stock Analysis Tool')
     root.geometry('800x600')
