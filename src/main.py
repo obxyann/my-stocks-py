@@ -135,13 +135,13 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # table: | year_month | revence | revence_mom | revence_ly | revence_yoy | revence_ytd | revence_ytd_yoy |
-        columns = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy') # fmt: skip
+        columns = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
 
         table.heading('year_month', text='年/月')
-        table.heading('revence',  text='營收')
+        table.heading('revence', text='營收')
         table.heading('revence_mom', text='MoM')
-        table.heading('revence_ly',  text='去年同期')
+        table.heading('revence_ly', text='去年同期')
         table.heading('revence_yoy', text='YoY')
         table.heading('revence_ytd', text='累計營收')
         table.heading('revence_ytd_yoy', text='YoY')
@@ -155,9 +155,9 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%')) # fmt: skip
-        table.insert('', 'end', values=('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%')) # fmt: skip
-        table.insert('', 'end', values=('2025/09', '13306676', '8.94%', '13325249', '-0.14%', '109438,297', '3.64%')) # fmt: skip
+        table.insert('', 'end', values=('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'))  # fmt: skip
+        table.insert('', 'end', values=('2025/10', '13882248', '4.33%', '16272067', '-14.69%', '123320,545', '1.20%'))  # fmt: skip
+        table.insert('', 'end', values=('2025/09', '13306676', '8.94%', '13325249', '-0.14%', '109438,297', '3.64%'))  # fmt: skip
 
         return panel
 
@@ -166,7 +166,7 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # table: | item | period1 | ... | period8 |
-        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8') # fmt: skip
+        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
         table.heading('period1', text='2025.Q3')
@@ -189,9 +189,9 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))# fmt: skip
-        table.insert('', 'end', values=('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'))# fmt: skip
-        table.insert('', 'end', values=('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'))# fmt: skip
+        table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))  # fmt: skip
+        table.insert('', 'end', values=('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'))  # fmt: skip
+        table.insert('', 'end', values=('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'))  # fmt: skip
 
         return panel
 
@@ -200,7 +200,7 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # table: | item | period1 | ... | period8 |
-        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8') # fmt: skip
+        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
         table.heading('period1', text='2025.Q3')
@@ -223,10 +223,10 @@ class StockApp(ttk.Frame):
         table.pack(fill='both', expand=True)
 
         # TBD: dummy data
-        table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))# fmt: skip
-        table.insert('', 'end', values=('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'))# fmt: skip
-        table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))# fmt: skip
-        table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))# fmt: skip
+        table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))  # fmt: skip
+        table.insert('', 'end', values=('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'))  # fmt: skip
+        table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))  # fmt: skip
+        table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))  # fmt: skip
 
         return panel
 
