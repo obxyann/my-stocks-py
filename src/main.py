@@ -4,6 +4,22 @@ from tkinter import ttk
 import pandas as pd
 import sv_ttk
 
+from database.stock import StockDatabase
+from load_stock import load_stock
+
+def initialize_database():
+    """Initialize database and import CSV data if needed"""
+    try:
+        # Initialize database
+        db = StockDatabase()
+
+        # TODO: validate...
+
+        return db
+
+    except Exception as error:
+        print(f'Database initialization failed: {error}')
+        raise
 
 class StockApp(ttk.Frame):
     def __init__(self, master):
@@ -464,9 +480,16 @@ def main():
     root.title('Stock Analysis Tool')
     root.geometry('800x600')
 
+    # Initialize database
+    db = initialize_database()
+
     app = StockApp(root)
 
-    test(app)
+    # test(app)
+
+    stock_data = load_stock('1101', db)
+
+    app.view_stock('1101 台泥', stock_data)
 
     root.mainloop()
 
