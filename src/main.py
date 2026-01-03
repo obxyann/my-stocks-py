@@ -121,10 +121,6 @@ class StockApp(ttk.Frame):
         self.stock_list.column('name', width=100)
         self.stock_list.pack(fill='both', expand=True)
 
-        # TBD: dummy data
-        self.stock_list.insert('', 'end', values=('2330', '台積電'))
-        self.stock_list.insert('', 'end', values=('2317', '鴻海'))
-
         return panel
 
     def create_stock_view(self, parent):
@@ -325,6 +321,48 @@ class StockApp(ttk.Frame):
     # set data #
     ############
 
+    def set_stock_list(self, df):
+        """Set stock list data
+
+        Args:
+            df: pd.DataFrame containing stock data
+        """
+        # check if column count matches
+        df_cols = df.columns.tolist()
+        table_cols = self.stock_list['columns']
+
+        if len(df_cols) != len(table_cols):
+            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            return
+
+        # clear table
+        self.stock_list.delete(*self.stock_list.get_children())
+
+        # insert data
+        for _, row in df.iterrows():
+            self.stock_list.insert('', 'end', values=tuple(row))
+
+    def set_stock_view(self, data):
+        """set data of stock view
+
+        Args:
+            data (dict): dictionary containing metadata and DataFrames
+                       - 'code_name': Stock code and name string
+                       - 'revenue': Revenue data
+                       - 'financial': Financial data
+                       - 'metrics': Financial metrics data
+        """
+        code_name = data.get('code_name')
+        if code_name:
+            self.stock_name['text'] = code_name
+
+        if 'revenue' in data:
+            self.set_revenue_data(data['revenue'])
+        if 'financial' in data:
+            self.set_financial_data(data['financial'])
+        if 'metrics' in data:
+            self.set_metrics_data(data['metrics'])
+
     def set_revenue_data(self, df):
         """Set revenue data
 
@@ -400,26 +438,15 @@ class StockApp(ttk.Frame):
         for _, row in df.iterrows():
             self.metrics_table.insert('', 'end', values=tuple(row))
 
-    def view_stock(self, data):
-        """View stock data
+    ###########
+    # actions #
+    ###########
 
-        Args:
-            data (dict): dictionary containing metadata and DataFrames
-                       - 'code_name': Stock code and name string
-                       - 'revenue': Revenue data
-                       - 'financial': Financial data
-                       - 'metrics': Financial metrics data
-        """
-        code_name = data.get('code_name')
-        if code_name:
-            self.stock_name['text'] = code_name
+    def on_view_stock(self):
+        # todo:
+        stock_data = load_stock('1101', self.db)
 
-        if 'revenue' in data:
-            self.set_revenue_data(data['revenue'])
-        if 'financial' in data:
-            self.set_financial_data(data['financial'])
-        if 'metrics' in data:
-            self.set_metrics_data(data['metrics'])
+        self.set_stock_view(stock_data)
 
 
 def test(app):
@@ -428,6 +455,17 @@ def test(app):
     Args:
         app: StockApp instance
     """
+    # stock list dummy data
+    columns_stocks = ('code', 'name')
+    data_stocks = [
+        ('2330', '台積電'),
+        ('2317', '鴻海'),
+    ]
+    df_stocks = pd.DataFrame(data_stocks, columns=columns_stocks)
+
+    # set data to stock list
+    app.set_stock_list(df_stocks)
+
     # revenue dummy data
     # fmt: off
     columns_rev = (
@@ -468,8 +506,8 @@ def test(app):
     # fmt: on
     df_ind = pd.DataFrame(data_ind, columns=columns_ind)
 
-    # view stock with dummy data
-    app.view_stock(
+    # set data to stock view
+    app.set_stock_view(
         {
             'code_name': '1101 台泥',
             'revenue': df_rev,
@@ -485,16 +523,9 @@ def main():
     root.title('Stock Analysis Tool')
     root.geometry('800x600')
 
-    # Initialize database
-    db = initialize_database()
-
     app = StockApp(root)
 
-    # test(app)
-
-    stock_data = load_stock('1101', db)
-
-    app.view_stock(stock_data)
+    test(app)
 
     root.mainloop()
 
