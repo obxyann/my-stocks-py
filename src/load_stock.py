@@ -81,11 +81,11 @@ def transform_revenue(df):
 
     # map columns and format values
     result['revence'] = df['revenue']  # .apply(format_number)
-    result['revence_mom'] = df['revenue_mom'].apply(format_percent)
+    result['revence_mom'] = df['revenue_mom'].apply(format_100)
     result['revence_ly'] = df['revenue_ly']  # .apply(format_number)
-    result['revence_yoy'] = df['revenue_yoy'].apply(format_percent)
+    result['revence_yoy'] = df['revenue_yoy'].apply(format_100)
     result['revence_ytd'] = df['revenue_ytd']  # .apply(format_number)
-    result['revence_ytd_yoy'] = df['revenue_ytd_yoy'].apply(format_percent)
+    result['revence_ytd_yoy'] = df['revenue_ytd_yoy'].apply(format_100)
 
     # sort by year_month descending (latest first)
     result = result.iloc[::-1].reset_index(drop=True)
@@ -258,8 +258,28 @@ def format_percent(value):
         return str(value)
 
 
+def format_100(value):
+    """Format percent value without % sign
+
+    Args:
+        value: Numeric value (decimal, e.g., 0.1234 for 12.34)
+
+    Returns:
+
+        str: Formatted string without % sign
+    """
+    if pd.isna(value):
+        return ''
+    try:
+        return f'{float(value) * 100:.2f}'
+    except (ValueError, TypeError):
+        return str(value)
+
+
 def format_value(value):
     """Format general value for display
+
+    Round to 2 decimal places for floats.
 
     Args:
         value: Any value
@@ -270,6 +290,5 @@ def format_value(value):
     if pd.isna(value):
         return ''
     if isinstance(value, float):
-        # round to 2 decimal places for floats
         return f'{value:.2f}'
     return str(value)

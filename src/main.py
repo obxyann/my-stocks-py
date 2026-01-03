@@ -153,7 +153,7 @@ class StockApp(ttk.Frame):
         control_bar.pack(side='top', pady=(0, 6), fill='x')
 
         # label: Stock Code Name
-        self.stock_name = ttk.Label(control_bar, text='Code Name')
+        self.stock_name = ttk.Label(control_bar, text='---- ----')
         self.stock_name.pack(side='left', padx=6)
 
         # tabs container
@@ -212,11 +212,11 @@ class StockApp(ttk.Frame):
 
         table.heading('year_month', text='年/月')
         table.heading('revence', text='營收')
-        table.heading('revence_mom', text='MoM')
+        table.heading('revence_mom', text='MoM%')
         table.heading('revence_ly', text='去年同期')
-        table.heading('revence_yoy', text='YoY')
+        table.heading('revence_yoy', text='YoY%')
         table.heading('revence_ytd', text='累計營收')
-        table.heading('revence_ytd_yoy', text='YoY')
+        table.heading('revence_ytd_yoy', text='YoY%')
         table.column('year_month', width=36)
         table.column('revence', width=80, anchor='e')
         table.column('revence_mom', width=40, anchor='e')
