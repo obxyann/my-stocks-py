@@ -586,7 +586,7 @@ def main():
     """Main entry point of the application"""
     root = tk.Tk()
     root.title('Stock Analysis Tool')
-    root.geometry('1024x600')
+    root.geometry('960x720')
 
     # initialize database
     db = initialize_database()
