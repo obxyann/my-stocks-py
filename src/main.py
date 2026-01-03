@@ -9,9 +9,9 @@ from load_stock import load_stock
 
 
 def initialize_database():
-    """Initialize database and import CSV data if needed"""
+    """Initialize database"""
     try:
-        # Initialize database
+        # initialize database
         db = StockDatabase()
 
         # TODO: validate...
@@ -42,7 +42,7 @@ class StockApp(ttk.Frame):
         # pack to root, fit to window
         self.pack(fill='both', expand=True)
 
-        # create all UI components
+        # create UI components
         self.create_toolbar()
 
         self.create_main_layout()
@@ -70,6 +70,10 @@ class StockApp(ttk.Frame):
     def toggle_theme(self):
         """Toggle between light and dark themes"""
         sv_ttk.toggle_theme()
+
+    ########################
+    # create UI components #
+    ########################
 
     def create_toolbar(self):
         """Create the top toolbar"""
@@ -321,9 +325,9 @@ class StockApp(ttk.Frame):
         self.status = ttk.Label(status_bar, text='Ready')
         self.status.pack(side='left', padx=6)
 
-    ############
-    # set data #
-    ############
+    #############################
+    # set data to UI components #
+    #############################
 
     def set_stock_list(self, df):
         """Set stock list data
