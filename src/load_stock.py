@@ -25,7 +25,9 @@ def load_stock(stock_code, db):
     """
     # retrieve stock info
     df_s = db.get_stock_by_code(stock_code)
+
     code_name = f'{stock_code}'
+
     if not df_s.empty:
         name = df_s.iloc[0]['name']
         code_name = f'{stock_code} {name}'
@@ -224,6 +226,7 @@ def _pivot_dataframe(df, items):
 
         for i, period in enumerate(periods):
             value = df_sorted.iloc[i][col_name]
+
             result_data[period].append(formatter(value))
 
     return pd.DataFrame(result_data)
@@ -242,6 +245,7 @@ def format_number(value):
         return ''
     try:
         return f'{int(value):,}'
+
     except (ValueError, TypeError):
         return str(value)
 
@@ -259,6 +263,7 @@ def format_percent(value):
         return ''
     try:
         return f'{float(value) * 100:.2f}%'
+
     except (ValueError, TypeError):
         return str(value)
 
@@ -277,6 +282,7 @@ def format_100(value):
         return ''
     try:
         return f'{float(value) * 100:.2f}'
+
     except (ValueError, TypeError):
         return str(value)
 
@@ -296,4 +302,5 @@ def format_value(value):
         return ''
     if isinstance(value, float):
         return f'{value:.2f}'
+
     return str(value)
