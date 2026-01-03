@@ -7,6 +7,9 @@ import sv_ttk
 from database.stock import StockDatabase
 from load_stock import load_stock
 
+# global app
+app = None
+
 
 def initialize_database():
     """Initialize database"""
@@ -589,9 +592,10 @@ def main():
     db = initialize_database()
 
     # initialize app
+    global app
     app = StockApp(root, db)
 
-    test(app)
+    # test(app)
 
     # run app
     root.mainloop()
