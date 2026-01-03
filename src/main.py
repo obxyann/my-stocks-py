@@ -24,18 +24,22 @@ def initialize_database():
 
 
 class StockApp(ttk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, db):
         """Initialize the application
 
         Args:
             master: The root window
+            db: StockDatabase instance
         """
         super().__init__(master)
+
+        # set database
+        self.db = db
 
         # set ui style
         self.set_style('dark')
 
-        # pack to root
+        # pack to root, fit to window
         self.pack(fill='both', expand=True)
 
         # create all UI components
@@ -523,10 +527,15 @@ def main():
     root.title('Stock Analysis Tool')
     root.geometry('800x600')
 
-    app = StockApp(root)
+    # initialize database
+    db = initialize_database()
+
+    # initialize app
+    app = StockApp(root, db)
 
     test(app)
 
+    # run app
     root.mainloop()
 
 
