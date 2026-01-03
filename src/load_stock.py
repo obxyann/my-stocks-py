@@ -152,33 +152,34 @@ def transform_financial_metrics(df):
     if df.empty:
         return pd.DataFrame(columns=['Item'])
 
-    # define items to display (column_name, display_name)
+    # define items to display (column_name, display_name, formatter)
+    # ratios are stored as decimals (e.g., 0.1234 for 12.34%), use format_100
     items = [
-        ('gross_margin', '營業毛利率'),
-        ('opr_margin', '營業利益率'),
-        ('pre_tax_margin', '稅前淨利率'),
-        ('net_margin', '稅後淨利率'),
-        ('roa', '資產報酬率'),
-        ('roe', '股東權益報酬率'),
-        ('annual_roa', '年化 ROA'),
-        ('annual_roe', '年化 ROE'),
-        ('curr_ratio', '流動比率'),
-        ('quick_ratio', '速動比率'),
-        ('debt_ratio', '負債比率'),
-        ('fin_debt_ratio', '金融負債比'),
+        ('gross_margin', '營業毛利率', format_100),
+        ('opr_margin', '營業利益率', format_100),
+        ('pre_tax_margin', '稅前淨利率', format_100),
+        ('net_margin', '稅後淨利率', format_100),
+        ('roa', '資產報酬率', format_100),
+        ('roe', '股東權益報酬率', format_100),
+        ('annual_roa', '年化 ROA', format_100),
+        ('annual_roe', '年化 ROE', format_100),
+        ('curr_ratio', '流動比率', format_100),
+        ('quick_ratio', '速動比率', format_100),
+        ('debt_ratio', '負債比率', format_100),
+        ('fin_debt_ratio', '金融負債比', format_100),
         ('asset_turn_ratio', '資產週轉率'),
         ('days_inventory_outstd', '存貨週轉天數'),
         ('days_sales_outstd', '應收帳款週轉天數'),
         ('days_pay_outstd', '應付帳款週轉天數'),
         ('ccc', '現金循環週期'),
-        ('eps_yoy', 'EPS 年增率'),
-        ('net_income_yoy', '淨利年增率'),
-        ('opr_cash_flow_yoy', '營業現金流年增率'),
-        ('gross_margin_yoy', '毛利率年增率'),
-        ('roe_yoy', 'ROE 年增率'),
+        ('eps_yoy', 'EPS 年增率', format_100),
+        ('net_income_yoy', '淨利年增率', format_100),
+        ('opr_cash_flow_yoy', '營業現金流年增率', format_100),
+        ('gross_margin_yoy', '毛利率年增率', format_100),
+        ('roe_yoy', 'ROE 年增率', format_100),
         ('pe_ratio', '本益比'),
         ('pb_ratio', '淨值比'),
-        ('div_yield', '殖利率'),
+        ('div_yield', '殖利率', format_100),
     ]
 
     return _pivot_dataframe(df, items)
@@ -211,7 +212,11 @@ def _pivot_dataframe(df, items):
         result_data[period] = []
 
     # fill data for each item
-    for col_name, display_name in items:
+    for item in items:
+        col_name = item[0]
+        display_name = item[1]
+        formatter = item[2] if len(item) > 2 else format_value
+
         if col_name not in df_sorted.columns:
             continue
 
@@ -219,7 +224,7 @@ def _pivot_dataframe(df, items):
 
         for i, period in enumerate(periods):
             value = df_sorted.iloc[i][col_name]
-            result_data[period].append(format_value(value))
+            result_data[period].append(formatter(value))
 
     return pd.DataFrame(result_data)
 
