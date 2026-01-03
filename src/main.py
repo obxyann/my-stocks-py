@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 import pandas as pd
 import sv_ttk
@@ -88,6 +88,9 @@ class StockApp(ttk.Frame):
         ttk.Label(tool_bar, text='Stock Code').pack(side='left', padx=6)
         self.search_code = ttk.Entry(tool_bar, width=12)
         self.search_code.pack(side='left')
+        self.search_code.bind(
+            '<Return>', lambda e: self.on_view_stock(self.search_code.get())
+        )
 
         # toggle: [1|0] Dark
         ttk.Checkbutton(
@@ -244,14 +247,14 @@ class StockApp(ttk.Frame):
         columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
-        table.heading('period1', text='YYYY.Q4')
-        table.heading('period2', text='YYYY.Q3')
-        table.heading('period3', text='YYYY.Q2')
-        table.heading('period4', text='YYYY.Q1')
-        table.heading('period5', text='YYYY.Q4')
-        table.heading('period6', text='YYYY.Q3')
-        table.heading('period7', text='YYYY.Q2')
-        table.heading('period8', text='YYYY.Q1')
+        table.heading('period1', text='YYYY.Q-')
+        table.heading('period2', text='YYYY.Q-')
+        table.heading('period3', text='YYYY.Q-')
+        table.heading('period4', text='YYYY.Q-')
+        table.heading('period5', text='YYYY.Q-')
+        table.heading('period6', text='YYYY.Q-')
+        table.heading('period7', text='YYYY.Q-')
+        table.heading('period8', text='YYYY.Q-')
         table.column('item', width=80)
         table.column('period1', width=60, anchor='e')
         table.column('period2', width=60, anchor='e')
@@ -287,14 +290,14 @@ class StockApp(ttk.Frame):
         columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
         table = ttk.Treeview(panel, columns=columns, show='headings')
         table.heading('item', text='Item')
-        table.heading('period1', text='YYYY.Q4')
-        table.heading('period2', text='YYYY.Q3')
-        table.heading('period3', text='YYYY.Q2')
-        table.heading('period4', text='YYYY.Q1')
-        table.heading('period5', text='YYYY.Q4')
-        table.heading('period6', text='YYYY.Q3')
-        table.heading('period7', text='YYYY.Q2')
-        table.heading('period8', text='YYYY.Q1')
+        table.heading('period1', text='YYYY.Q-')
+        table.heading('period2', text='YYYY.Q-')
+        table.heading('period3', text='YYYY.Q-')
+        table.heading('period4', text='YYYY.Q-')
+        table.heading('period5', text='YYYY.Q-')
+        table.heading('period6', text='YYYY.Q-')
+        table.heading('period7', text='YYYY.Q-')
+        table.heading('period8', text='YYYY.Q-')
         table.column('item', width=80)
         table.column('period1', width=60, anchor='e')
         table.column('period2', width=60, anchor='e')
@@ -340,7 +343,9 @@ class StockApp(ttk.Frame):
         table_cols = self.stock_list['columns']
 
         if len(df_cols) != len(table_cols):
-            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            print('Warning: invalid stock list data')
+            print(df.head(3))
+            print('...')
             return
 
         # clear table
@@ -349,6 +354,30 @@ class StockApp(ttk.Frame):
         # insert data
         for _, row in df.iterrows():
             self.stock_list.insert('', 'end', values=tuple(row))
+
+    def clear_stock_view(self):
+        """Clear stock view"""
+        # clear stock_name
+        self.stock_name['text'] = '---- ----'
+
+        # clear revenue_table
+        self.revenue_table.delete(*self.revenue_table.get_children())
+
+        # clear financial_table
+        table_cols = self.financial_table['columns']
+
+        for i in range(1, len(table_cols)):
+            self.financial_table.heading(table_cols[i], text='YYYY.Q-')
+
+        self.financial_table.delete(*self.financial_table.get_children())
+
+        # clear metrics_table
+        table_cols = self.metrics_table['columns']
+
+        for i in range(1, len(table_cols)):
+            self.metrics_table.heading(table_cols[i], text='YYYY.Q-')
+
+        self.metrics_table.delete(*self.metrics_table.get_children())
 
     def set_stock_view(self, data):
         """set data of stock view
@@ -360,6 +389,8 @@ class StockApp(ttk.Frame):
                        - 'financial': Financial data
                        - 'metrics': Financial metrics data
         """
+        self.clear_stock_view()
+
         code_name = data.get('code_name')
         if code_name:
             self.stock_name['text'] = code_name
@@ -382,14 +413,14 @@ class StockApp(ttk.Frame):
         table_cols = self.revenue_table['columns']
 
         if len(df_cols) != len(table_cols):
-            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            print('Warning: invalid revenue data')
+            print(df.head(3))
+            print('...')
             return
 
-        # update headers
-        # for i, col_name in enumerate(df_cols):
-        #    self.revenue_table.heading(table_cols[i], text=col_name)
+        # MEMO: don't need to update headers
 
-        # clear table
+        # clear old data
         self.revenue_table.delete(*self.revenue_table.get_children())
 
         # insert data
@@ -407,14 +438,16 @@ class StockApp(ttk.Frame):
         table_cols = self.financial_table['columns']
 
         if len(df_cols) != len(table_cols):
-            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            print('Warning: invalid financial data')
+            print(df.head(3))
+            print('...')
             return
 
         # update headers
         for i, col_name in enumerate(df_cols):
             self.financial_table.heading(table_cols[i], text=col_name)
 
-        # clear table
+        # clear old data
         self.financial_table.delete(*self.financial_table.get_children())
 
         # insert data
@@ -432,14 +465,16 @@ class StockApp(ttk.Frame):
         table_cols = self.metrics_table['columns']
 
         if len(df_cols) != len(table_cols):
-            print(f'Warning: column count mismatch (df: {len(df_cols)}, table: {len(table_cols)})')  # fmt: skip
+            print('Warning: invalid metrics data')
+            print(df.head(3))
+            print('...')
             return
 
         # update headers
         for i, col_name in enumerate(df_cols):
             self.metrics_table.heading(table_cols[i], text=col_name)
 
-        # clear table
+        # clear old data
         self.metrics_table.delete(*self.metrics_table.get_children())
 
         # insert data
@@ -450,9 +485,28 @@ class StockApp(ttk.Frame):
     # actions #
     ###########
 
-    def on_view_stock(self):
-        # todo:
-        stock_data = load_stock('1101', self.db)
+    def on_view_stock(self, stock_code):
+        """View stock data for the given code
+
+        Args:
+            stock_code (str): The stock code to view
+        """
+        # check if stock exists
+        df = self.db.get_stock_by_code(stock_code)
+
+        if df.empty:
+            messagebox.showinfo('Message', '無此股票')
+            return
+
+        # validate security and business type
+        row = df.iloc[0]
+        if row['security_type'] != 'stk' or row['business_type'] != 'ci':
+            code = row['code']
+            name = row['name']
+            messagebox.showinfo('Message', f'{code} {name} 不是一般工商業股票')
+
+        # load and set data
+        stock_data = load_stock(stock_code, self.db)
 
         self.set_stock_view(stock_data)
 
