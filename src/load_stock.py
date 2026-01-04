@@ -33,7 +33,7 @@ def load_stock(stock_code, db):
         code_name = f'{stock_code} {name}'
 
     # retrieve data from database
-    df_r = db.get_recent_revenue_by_code(stock_code, limit=24)
+    df_r = db.get_recent_revenue_by_code(stock_code, limit=48)
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 

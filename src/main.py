@@ -83,10 +83,6 @@ class StockApp(ttk.Frame):
         tool_bar = ttk.Frame(self, style='Toolbar.TFrame')
         tool_bar.pack(side='top', pady=6, fill='x')
 
-        # buttons: [Load][Export]
-        ttk.Button(tool_bar, text='Load').pack(side='left', padx=6)
-        ttk.Button(tool_bar, text='Export').pack(side='left')
-
         # input: Stock Code [___]
         ttk.Label(tool_bar, text='Stock Code').pack(side='left', padx=6)
         self.search_code = ttk.Entry(tool_bar, width=12)
@@ -123,6 +119,12 @@ class StockApp(ttk.Frame):
             ttk.Frame: Created panel
         """
         panel = ttk.Frame(parent)  # , width=200)
+
+        # buttons: [Load][Export]
+        btn_bar = ttk.Frame(panel)
+        btn_bar.pack(side='bottom', fill='x', pady=6)
+        ttk.Button(btn_bar, text='Load').pack(side='left', padx=6)
+        ttk.Button(btn_bar, text='Save').pack(side='left')
 
         # table: | Code | Name |
         columns = ('code', 'name')
@@ -411,6 +413,9 @@ class StockApp(ttk.Frame):
         Args:
             df: pd.DataFrame containing revenue data
         """
+        if (df.empty):
+            return
+
         # check if column count matches
         df_cols = df.columns.tolist()
         table_cols = self.revenue_table['columns']
@@ -437,6 +442,9 @@ class StockApp(ttk.Frame):
             df: pd.DataFrame containing financial data
         """
         # check if column count matches
+        if (df.empty):
+            return
+
         df_cols = df.columns.tolist()
         table_cols = self.financial_table['columns']
 
@@ -464,6 +472,9 @@ class StockApp(ttk.Frame):
             df: pd.DataFrame containing metrics data
         """
         # check if column count matches
+        if (df.empty):
+            return
+                    
         df_cols = df.columns.tolist()
         table_cols = self.metrics_table['columns']
 
