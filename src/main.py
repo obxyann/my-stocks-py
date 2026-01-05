@@ -6,6 +6,7 @@ import sv_ttk
 
 from database.stock import StockDatabase
 from load_stock import load_stock
+from screening.index import SCREENING_METHODS
 
 # global app
 app = None
@@ -82,6 +83,14 @@ class StockApp(ttk.Frame):
         """Create the top toolbar"""
         tool_bar = ttk.Frame(self, style='Toolbar.TFrame')
         tool_bar.pack(side='top', pady=6, fill='x')
+
+        # combobox: Screening Method [v]
+        methods = list(SCREENING_METHODS.keys())
+        self.method_combo = ttk.Combobox(
+            tool_bar, values=methods, width=12, state='readonly'
+        )
+        self.method_combo.pack(side='left', padx=6)
+        self.method_combo.bind('<<ComboboxSelected>>', self.on_select_method)
 
         # input: Stock Code [___]
         ttk.Label(tool_bar, text='Stock Code').pack(side='left', padx=6)
@@ -413,7 +422,7 @@ class StockApp(ttk.Frame):
         Args:
             df: pd.DataFrame containing revenue data
         """
-        if (df.empty):
+        if df.empty:
             return
 
         # check if column count matches
@@ -442,7 +451,7 @@ class StockApp(ttk.Frame):
             df: pd.DataFrame containing financial data
         """
         # check if column count matches
-        if (df.empty):
+        if df.empty:
             return
 
         df_cols = df.columns.tolist()
@@ -472,9 +481,9 @@ class StockApp(ttk.Frame):
             df: pd.DataFrame containing metrics data
         """
         # check if column count matches
-        if (df.empty):
+        if df.empty:
             return
-                    
+
         df_cols = df.columns.tolist()
         table_cols = self.metrics_table['columns']
 
@@ -498,6 +507,25 @@ class StockApp(ttk.Frame):
     ###########
     # actions #
     ###########
+
+    def on_select_method(self, event=None):
+        """Handle screening method selection
+
+        Args:
+            event: Combobox selection event
+        """
+        selected = self.method_combo.get()
+
+        if selected not in SCREENING_METHODS:
+            return
+
+        # get list function and call it
+        list_func = SCREENING_METHODS[selected]
+
+        df_stocks = list_func(self.db)
+
+        # set data to stock list
+        self.set_stock_list(df_stocks)
 
     def on_view_stock(self, stock_code):
         """View stock data for the given code
