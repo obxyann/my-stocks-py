@@ -4,9 +4,9 @@ This module provides API for loading stock data from database and
 transforming it to the format suitable for UI display
 """
 
-import pandas as pd
+from datetime import datetime
 
-from database.stock import StockDatabase
+import pandas as pd
 
 
 def load_stock(stock_code, db):
@@ -32,22 +32,62 @@ def load_stock(stock_code, db):
         name = df_s.iloc[0]['name']
         code_name = f'{stock_code} {name}'
 
+    # calculate start date for the last 48 months (inclusive)
+    start_date = (datetime.now().replace(day=1) - pd.DateOffset(months=47)).strftime(
+        '%Y-%m-%d'
+    )
+
     # retrieve data from database
-    df_r = db.get_recent_revenue_by_code(stock_code, limit=48)
+    df_p = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
+    df_r = db.get_revenue_by_code(stock_code, start_date=start_date)
+
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
+    tbl_p = transform_price(df_p)
     tbl_r = transform_revenue(df_r)
     tbl_f = transform_financial(df_f)
     tbl_m = transform_financial_metrics(df_m)
 
     return {
         'code_name': code_name,
+        'price': tbl_p,
         'revenue': tbl_r,
         'financial': tbl_f,
         'metrics': tbl_m,
     }
+
+
+def transform_price(df):
+    """Transform price data to UI format
+
+    Source format: columns [code, year, month, price, volume]
+    Target format: columns [year_month, price, volume]
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: Transformed DataFrame for UI display
+    """
+    if df.empty:
+        return pd.DataFrame(columns=['year_month', 'price', 'volume'])
+
+    # create year_month column
+    result = pd.DataFrame()
+    result['year_month'] = (
+        df['year'].astype(str) + '/' + df['month'].astype(str).str.zfill(2)
+    )
+
+    # map columns and format values
+    result['price'] = df['price'].apply(format_value)
+    result['volume'] = df['volume'].apply(format_number)
+
+    # sort by year_month descending (latest first)
+    result = result.iloc[::-1].reset_index(drop=True)
+
+    return result
 
 
 def transform_revenue(df):
