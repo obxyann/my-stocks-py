@@ -7,6 +7,7 @@ trigger: always_on
 - Libraries: pandas
 - Database: SQLite
 - UI: Tkinter ttk
+- Data visualization: seaborn + mplcursors
 
 ## Code Style
 - Follow PEP 8

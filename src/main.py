@@ -156,7 +156,7 @@ class StockApp(ttk.Frame):
         )
         self.stock_list.heading('code', text='Code')
         self.stock_list.heading('name', text='Name')
-        self.stock_list.column('code', width=36)  # , anchor="center")
+        self.stock_list.column('code', width=40)  # , anchor="center")
         self.stock_list.column('name', width=100)
 
         # add scrollbar
