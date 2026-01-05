@@ -145,6 +145,7 @@ class StockApp(ttk.Frame):
         self.stock_list.column('code', width=36)  # , anchor="center")
         self.stock_list.column('name', width=100)
         self.stock_list.pack(fill='both', expand=True)
+        self.stock_list.bind('<<TreeviewSelect>>', self.on_select_stock)
 
         return panel
 
@@ -526,6 +527,24 @@ class StockApp(ttk.Frame):
 
         # set data to stock list
         self.set_stock_list(df_stocks)
+
+    def on_select_stock(self, event):
+        """Handle stock list selection
+
+        Args:
+            event: Treeview selection event
+        """
+        selection = self.stock_list.selection()
+
+        if not selection:
+            return
+
+        item = self.stock_list.item(selection[0])
+        values = item['values']
+
+        if values:
+            code = str(values[0])
+            self.on_view_stock(code)
 
     def on_view_stock(self, stock_code):
         """View stock data for the given code
