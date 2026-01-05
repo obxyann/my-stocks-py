@@ -144,7 +144,15 @@ class StockApp(ttk.Frame):
         self.stock_list.heading('name', text='Name')
         self.stock_list.column('code', width=36)  # , anchor="center")
         self.stock_list.column('name', width=100)
-        self.stock_list.pack(fill='both', expand=True)
+
+        # add scrollbar
+        scrollbar = ttk.Scrollbar(
+            panel, orient='vertical', command=self.stock_list.yview
+        )
+        self.stock_list.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+
+        self.stock_list.pack(side='left', fill='both', expand=True)
         self.stock_list.bind('<<TreeviewSelect>>', self.on_select_stock)
 
         return panel
@@ -236,7 +244,13 @@ class StockApp(ttk.Frame):
         table.column('revence_yoy', width=60, anchor='e')
         table.column('revence_ytd', width=80, anchor='e')
         table.column('revence_ytd_yoy', width=60, anchor='e')
-        table.pack(fill='both', expand=True)
+
+        # add scrollbar
+        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        table.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+
+        table.pack(side='left', fill='both', expand=True)
 
         # TBD: dummy data
         # table.insert('', 'end', values=('2025/11', '13121753', '-5.48%', '16502520', '-20.49%', '136442,298', '-1.39%'))  # fmt: skip
@@ -279,7 +293,13 @@ class StockApp(ttk.Frame):
         table.column('period6', width=80, anchor='e')
         table.column('period7', width=80, anchor='e')
         table.column('period8', width=80, anchor='e')
-        table.pack(fill='both', expand=True)
+
+        # add scrollbar
+        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        table.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+
+        table.pack(side='left', fill='both', expand=True)
 
         # TBD: dummy data
         # table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))  # fmt: skip
@@ -322,7 +342,13 @@ class StockApp(ttk.Frame):
         table.column('period6', width=60, anchor='e')
         table.column('period7', width=60, anchor='e')
         table.column('period8', width=60, anchor='e')
-        table.pack(fill='both', expand=True)
+
+        # add scrollbar
+        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        table.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+
+        table.pack(side='left', fill='both', expand=True)
 
         # TBD: dummy data
         # table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))  # fmt: skip
