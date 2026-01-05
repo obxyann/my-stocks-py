@@ -859,7 +859,7 @@ class StockDatabase:
         return total_imported_records
 
     def get_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
-        """Get daily prices for stock code within date range
+        """Get daily prices for specific stock
 
         Args:
             stock_code (str): Stock code
@@ -885,6 +885,59 @@ class StockDatabase:
                 """,
                 conn,
                 params=(stock_code, start_date, end_date),
+            )
+
+        return df
+
+    def get_monthly_avg_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
+        """Get monthly average prices and volumes for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            start_date (str): Start date (YYYY-MM-DD)
+            end_date (str): End date (YYYY-MM-DD)
+
+        Returns:
+            pandas.DataFrame: Monthly average data with columns 
+                (code, year, month, price, volume)
+        """
+        # convert date string to datetime
+        start = parse_date_string(start_date)
+        # get year, month parts
+        start_year, start_month = start.year, start.month
+
+        # end year, month
+        if end_date:
+            end = parse_date_string(end_date)
+        else:
+            end = datetime.today()
+        end_year, end_month = end.year, end.month
+
+        # convert to comparable period (YYYYMM)
+        start_period = start_year * 100 + start_month
+        end_period = end_year * 100 + end_month
+
+        with self.get_connection() as conn:
+            # retrieve and calculate monthly averages
+            df = pd.read_sql_query(
+                """
+                SELECT
+                    code,
+                    CAST(strftime('%Y', trade_date) AS INTEGER) AS year,
+                    CAST(strftime('%m', trade_date) AS INTEGER) AS month,
+                    AVG(close_price) AS price,
+                    AVG(volume) AS volume
+                FROM daily_prices
+                WHERE code = ?
+                  AND CAST(strftime('%Y%m', trade_date) AS INTEGER) BETWEEN ? AND ?
+                  -- or  
+                  -- AND (CAST(strftime('%Y', trade_date) AS INTEGER) * 100 +
+                  --     CAST(strftime('%m', trade_date) AS INTEGER)) BETWEEN ? AND ?
+                GROUP BY year, month
+                ORDER BY year, month
+                """,
+                conn,
+                params=(stock_code, start_period, end_period),
             )
 
         return df
@@ -1092,17 +1145,17 @@ class StockDatabase:
                             LAG(revenue, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_ly,
+                            ) AS val_revenue_ly,
                             -- revenue_ytd (year-to-date, partition by code, year)
                             SUM(revenue) OVER (
                                 PARTITION BY code, year
                                 ORDER BY month
-                            ) as val_revenue_ytd,
+                            ) AS val_revenue_ytd,
                             -- revenue_lm (prev month, LAG 1 of revenue) only for mom
                             LAG(revenue, 1) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_lm
+                            ) AS val_revenue_lm
                         FROM monthly_revenue
                     ),
                     calc_ytd_ly AS (
@@ -1118,7 +1171,7 @@ class StockDatabase:
                             LAG(val_revenue_ytd, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) as val_revenue_ytd_ly                            
+                            ) AS val_revenue_ytd_ly                            
                         FROM calc_ly_and_ytd
                     ),
                     calc_mom_yoy AS (
@@ -1135,19 +1188,19 @@ class StockDatabase:
                                 WHEN val_revenue_lm IS NOT NULL AND val_revenue_lm != 0
                                 THEN (revenue * 1.0 / val_revenue_lm - 1.0) 
                                 ELSE NULL
-                            END as val_revenue_mom,
+                            END AS val_revenue_mom,
                             -- revenue_yoy
                             CASE
                                 WHEN val_revenue_ly IS NOT NULL AND val_revenue_ly != 0
                                 THEN (revenue * 1.0 / val_revenue_ly - 1.0)
                                 ELSE NULL
-                            END as val_revenue_yoy,
+                            END AS val_revenue_yoy,
                             -- revenue_ytd_yoy
                             CASE
                                 WHEN val_revenue_ytd_ly IS NOT NULL AND val_revenue_ytd_ly != 0
                                 THEN (val_revenue_ytd * 1.0 / val_revenue_ytd_ly - 1.0)
                                 ELSE NULL
-                            END as val_revenue_ytd_yoy
+                            END AS val_revenue_ytd_yoy
                         FROM calc_ytd_ly
                     ),
                     calc_ma AS (
@@ -1175,7 +1228,7 @@ class StockDatabase:
                                     ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
                                 )
                                 ELSE NULL
-                            END as val_revenue_ma3,
+                            END AS val_revenue_ma3,
                             -- revenue_ma12
                             CASE
                                 WHEN COUNT(revenue) OVER (
@@ -1189,7 +1242,7 @@ class StockDatabase:
                                     ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
                                 )
                                 ELSE NULL
-                            END as val_revenue_ma12,
+                            END AS val_revenue_ma12,
                             -- revenue_ytd_yoy_ma3
                             CASE
                                 WHEN COUNT(val_revenue_ytd_yoy) OVER (
@@ -1203,7 +1256,7 @@ class StockDatabase:
                                     ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
                                 )
                                 ELSE NULL
-                            END as val_revenue_ytd_yoy_ma3,
+                            END AS val_revenue_ytd_yoy_ma3,
                             -- revenue_ytd_yoy_ma12
                             CASE
                                 WHEN COUNT(val_revenue_ytd_yoy) OVER (
@@ -1217,10 +1270,10 @@ class StockDatabase:
                                     ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
                                 )
                                 ELSE NULL
-                            END as val_revenue_ytd_yoy_ma12   
+                            END AS val_revenue_ytd_yoy_ma12   
                         FROM calc_mom_yoy                         
                     )
-                    UPDATE monthly_revenue as mr
+                    UPDATE monthly_revenue AS mr
                     SET
                         revenue_ly = calc.val_revenue_ly,
                         revenue_ytd = calc.val_revenue_ytd,
