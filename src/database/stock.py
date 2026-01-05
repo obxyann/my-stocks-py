@@ -889,16 +889,18 @@ class StockDatabase:
 
         return df
 
-    def get_monthly_avg_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
+    def get_monthly_avg_prices_by_code(
+        self, stock_code, start_date='2013-01-01', end_date=None
+    ):
         """Get monthly average prices and volumes for specific stock
 
         Args:
             stock_code (str): Stock code
-            start_date (str): Start date (YYYY-MM-DD)
-            end_date (str): End date (YYYY-MM-DD)
+            start_date (str): Start date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
+            end_date (str): End date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
 
         Returns:
-            pandas.DataFrame: Monthly average data with columns 
+            pandas.DataFrame: Monthly average data with columns
                 (code, year, month, price, volume)
         """
         # convert date string to datetime
@@ -1394,8 +1396,8 @@ class StockDatabase:
 
         Args:
             stock_code (str): Stock code
-            start_date (str): Start date (YYYY-MM-DD)
-            end_date (str): End date (YYYY-MM-DD)
+            start_date (str): Start date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
+            end_date (str): End date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
 
         Returns:
             pandas.DataFrame: Revenue data
@@ -2058,8 +2060,8 @@ class StockDatabase:
 
         Args:
             stock_code (str): Stock code
-            start_date (str): Start date (YYYY-MM-DD)
-            end_date (str): End date (YYYY-MM-DD)
+            start_date (str): Start date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
+            end_date (str): End date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
             year_to_date (bool): return cumulative Year-to-Date (YTD) data (True) or periodic data (False)
 
         Returns:
@@ -2438,8 +2440,8 @@ class StockDatabase:
 
         Args:
             stock_code (str): Stock code
-            start_date (str): Start date (YYYY-MM-DD)
-            end_date (str): End date (YYYY-MM-DD)
+            start_date (str): Start date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
+            end_date (str): End date in 'YYYY-MM-DD' ('-DD' is ignored and optional)
 
         Returns:
             pandas.DataFrame: Financial metrics data
