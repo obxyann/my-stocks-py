@@ -81,8 +81,8 @@ def transform_price(df):
     )
 
     # map columns and format values
-    result['price'] = df['price'].apply(format_value)
-    result['volume'] = df['volume'].apply(format_number)
+    result['price'] = df['price']  # .apply(format_value)
+    result['volume'] = df['volume']  # .apply(format_number)
 
     # sort by year_month descending (latest first)
     result = result.iloc[::-1].reset_index(drop=True)
