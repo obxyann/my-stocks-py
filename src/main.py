@@ -27,6 +27,20 @@ def initialize_database():
         raise
 
 
+class AutoScrollbar(ttk.Scrollbar):
+    """A scrollbar that hides itself if it's not needed.
+    Only works if you use the pack geometry manager.
+    """
+
+    def set(self, lo, hi):
+        if float(lo) <= 0.0 and float(hi) >= 1.0:
+            self.pack_forget()
+        else:
+            if not self.winfo_ismapped():
+                self.pack(side='right', fill='y')
+        ttk.Scrollbar.set(self, lo, hi)
+
+
 class StockApp(ttk.Frame):
     def __init__(self, master, db):
         """Initialize the application
@@ -146,11 +160,10 @@ class StockApp(ttk.Frame):
         self.stock_list.column('name', width=100)
 
         # add scrollbar
-        scrollbar = ttk.Scrollbar(
+        scrollbar = AutoScrollbar(
             panel, orient='vertical', command=self.stock_list.yview
         )
         self.stock_list.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side='right', fill='y')
 
         self.stock_list.pack(side='left', fill='both', expand=True)
         self.stock_list.bind('<<TreeviewSelect>>', self.on_select_stock)
@@ -246,9 +259,8 @@ class StockApp(ttk.Frame):
         table.column('revence_ytd_yoy', width=60, anchor='e')
 
         # add scrollbar
-        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        scrollbar = AutoScrollbar(panel, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side='right', fill='y')
 
         table.pack(side='left', fill='both', expand=True)
 
@@ -295,9 +307,8 @@ class StockApp(ttk.Frame):
         table.column('period8', width=80, anchor='e')
 
         # add scrollbar
-        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        scrollbar = AutoScrollbar(panel, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side='right', fill='y')
 
         table.pack(side='left', fill='both', expand=True)
 
@@ -344,9 +355,8 @@ class StockApp(ttk.Frame):
         table.column('period8', width=60, anchor='e')
 
         # add scrollbar
-        scrollbar = ttk.Scrollbar(panel, orient='vertical', command=table.yview)
+        scrollbar = AutoScrollbar(panel, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side='right', fill='y')
 
         table.pack(side='left', fill='both', expand=True)
 
