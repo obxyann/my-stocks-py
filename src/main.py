@@ -60,15 +60,15 @@ class StockApp(ttk.Frame):
         # set ui style
         self.set_style('dark')
 
-        # pack to root, fit to window
+        # pack itself to root, fit to window
         self.pack(fill='both', expand=True)
 
-        # create UI components
-        self.create_toolbar()
+        # create UI frames
+        self.create_toolbar().pack(side='top', pady=6, fill='x')
 
-        self.create_main_layout()
+        self.create_main_layout().pack(fill='both', expand=True)
 
-        self.create_status_bar()
+        self.create_status_bar().pack(side='bottom', pady=6, fill='x')
 
     def set_style(self, theme):
         """Set the UI style and theme
@@ -92,26 +92,31 @@ class StockApp(ttk.Frame):
         """Toggle between light and dark themes"""
         sv_ttk.toggle_theme()
 
-    ########################
-    # create UI components #
-    ########################
+    ####################
+    # create UI frames #
+    ####################
 
     def create_toolbar(self):
-        """Create the top toolbar"""
-        tool_bar = ttk.Frame(self, style='Toolbar.TFrame')
-        tool_bar.pack(side='top', pady=6, fill='x')
+        """Create the toolbar
+
+        Returns:
+            ttk.Frame: Created toolbar
+        """
+        # container for widgets
+        toolbar = ttk.Frame(self, style='Toolbar.TFrame')
 
         # combobox: Screening Method [v]
         methods = list(SCREENING_METHODS.keys())
+
         self.method_combo = ttk.Combobox(
-            tool_bar, values=methods, width=12, state='readonly'
+            toolbar, values=methods, width=12, state='readonly'
         )
         self.method_combo.pack(side='left', padx=6)
         self.method_combo.bind('<<ComboboxSelected>>', self.on_select_method)
 
         # input: Stock Code [___]
-        ttk.Label(tool_bar, text='Stock Code').pack(side='left', padx=6)
-        self.search_code = ttk.Entry(tool_bar, width=12)
+        ttk.Label(toolbar, text='Stock Code').pack(side='left', padx=6)
+        self.search_code = ttk.Entry(toolbar, width=12)
         self.search_code.pack(side='left')
         self.search_code.bind(
             '<Return>', lambda e: self.on_view_stock(self.search_code.get())
@@ -119,21 +124,29 @@ class StockApp(ttk.Frame):
 
         # toggle: [1|0] Dark
         ttk.Checkbutton(
-            tool_bar,
+            toolbar,
             text='Dark',
             style='Switch.TCheckbutton',
             variable=self.dark_var,
             command=self.toggle_theme,
         ).pack(side='right', padx=6)
 
+        return toolbar
+
     def create_main_layout(self):
-        """Create main layout with split panels"""
+        """Create main layout with split panels
+
+        Returns:
+            ttk.Frame: Created paned window
+        """
+        # container for panels
         paned = ttk.PanedWindow(self, orient='horizontal')
-        paned.pack(fill='both', expand=True)
 
         # panels: [stock list | stock view]
         paned.add(self.create_stock_list(paned), weight=1)
         paned.add(self.create_stock_view(paned), weight=4)
+
+        return paned
 
     def create_stock_list(self, parent):
         """Create the stock list panel
@@ -144,6 +157,7 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)  # , width=200)
 
         # buttons: [Load][Export]
@@ -154,6 +168,7 @@ class StockApp(ttk.Frame):
 
         # table: | Code | Name |
         columns = ('code', 'name')
+
         self.stock_list = ttk.Treeview(
             panel, columns=columns, show='headings', height=15
         )
@@ -162,7 +177,7 @@ class StockApp(ttk.Frame):
         self.stock_list.column('code', width=40)  # , anchor="center")
         self.stock_list.column('name', width=100)
 
-        # add scrollbar
+        # scrollbar: for table
         scrollbar = AutoScrollbar(
             panel, orient='vertical', command=self.stock_list.yview
         )
@@ -182,6 +197,7 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)
 
         # control bar
@@ -213,6 +229,7 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)
 
         # control bar
@@ -232,7 +249,7 @@ class StockApp(ttk.Frame):
         return panel
 
     def create_revenue_panel(self, parent):
-        """Create the revenue data tab panel
+        """Create the revenue tab panel
 
         Args:
             parent: Parent widget
@@ -240,21 +257,25 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)
 
         # create chart at top
-        self._create_revenue_chart(panel)
+        self.create_revenue_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
 
         # create table below chart
-        self._create_revenue_table(panel)
+        self.create_revenue_table(panel).pack(side='top', fill='both', expand=True)
 
         return panel
 
-    def _create_revenue_chart(self, parent):
-        """Create revenue chart with seaborn
+    def create_revenue_chart(self, parent):
+        """Create revenue chart
 
         Args:
             parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created chart
         """
         # create figure with dark background matching app theme
         self.revenue_fig, self.revenue_ax = plt.subplots(figsize=(8, 2.5))
@@ -267,7 +288,6 @@ class StockApp(ttk.Frame):
 
         # create canvas and pack
         self.revenue_canvas = FigureCanvasTkAgg(self.revenue_fig, master=parent)
-        self.revenue_canvas.get_tk_widget().pack(side='top', fill='x', padx=4, pady=4)
 
         # set initial empty state
         self.revenue_ax.set_xlabel('')
@@ -276,20 +296,32 @@ class StockApp(ttk.Frame):
         self.revenue_fig.tight_layout()
         self.revenue_canvas.draw()
 
-    def _create_revenue_table(self, parent):
-        """Create revenue data table
+        return self.revenue_canvas.get_tk_widget()
+
+    def create_revenue_table(self, parent):
+        """Create revenue table
 
         Args:
             parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created table
         """
-        # container for table and scrollbar
+        # container for widgets
         table_frame = ttk.Frame(parent)
-        table_frame.pack(side='top', fill='both', expand=True)
 
-        # table: | year_month | revence | ...
-        columns = ('year_month', 'revence', 'revence_mom', 'revence_ly', 'revence_yoy', 'revence_ytd', 'revence_ytd_yoy')  # fmt: skip
+        # table: | year_month | revence | ... | revence ytd yoy |
+        columns = (
+            'year_month',
+            'revence',
+            'revence_mom',
+            'revence_ly',
+            'revence_yoy',
+            'revence_ytd',
+            'revence_ytd_yoy',
+        )
+
         table = ttk.Treeview(table_frame, columns=columns, show='headings')
-
         table.heading('year_month', text='年/月')
         table.heading('revence', text='營收')
         table.heading('revence_mom', text='MoM%')
@@ -305,7 +337,7 @@ class StockApp(ttk.Frame):
         table.column('revence_ytd', width=80, anchor='e')
         table.column('revence_ytd_yoy', width=60, anchor='e')
 
-        # add scrollbar
+        # scrollbar: for table
         scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
 
@@ -315,9 +347,8 @@ class StockApp(ttk.Frame):
 
         return table_frame
 
-
     def create_financial_panel(self, parent):
-        """Create the financial data tab panel
+        """Create the financial tab panel
 
         Args:
             parent: Parent widget
@@ -325,11 +356,57 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)
 
+        # create chart at top
+        self.create_financial_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
+
+        # create table below chart
+        self.create_financial_table(panel).pack(side='top', fill='both', expand=True)
+
+        return panel
+
+    def create_financial_chart(self, parent):
+        """Create financial chart
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created chart
+        """
+        # TODO:
+        chart = ttk.Frame(parent)
+
+        return chart
+
+    def create_financial_table(self, parent):
+        """Create financial table
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created table
+        """
+        # container for widgets
+        table_frame = ttk.Frame(parent)
+
         # table: | item | period1 | ... | period8 |
-        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
-        table = ttk.Treeview(panel, columns=columns, show='headings')
+        columns = (
+            'item',
+            'period1',
+            'period2',
+            'period3',
+            'period4',
+            'period5',
+            'period6',
+            'period7',
+            'period8',
+        )
+
+        table = ttk.Treeview(table_frame, columns=columns, show='headings')
         table.heading('item', text='Item')
         table.heading('period1', text='YYYY.Q-')
         table.heading('period2', text='YYYY.Q-')
@@ -349,23 +426,18 @@ class StockApp(ttk.Frame):
         table.column('period7', width=80, anchor='e')
         table.column('period8', width=80, anchor='e')
 
-        # add scrollbar
-        scrollbar = AutoScrollbar(panel, orient='vertical', command=table.yview)
+        # scrollbar: for table
+        scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
 
         table.pack(side='left', fill='both', expand=True)
 
-        # TBD: dummy data
-        # table.insert('', 'end', values=('營業收入', '39067', '35354', '34956', '49018', '41075', '38969', '25545', '28348'))  # fmt: skip
-        # table.insert('', 'end', values=('營業成本', '30223', '30008', '29063', '37602', '31106', '31513', '21657', '22043'))  # fmt: skip
-        # table.insert('', 'end', values=('營業毛利', '8844', '5347', '5894', '11416', '9969', '7456', '3887', '6305'))  # fmt: skip
-
         self.financial_table = table
 
-        return panel
+        return table_frame
 
     def create_metrics_panel(self, parent):
-        """Create the metrics data tab panel
+        """Create the metrics tab panel
 
         Args:
             parent: Parent widget
@@ -373,11 +445,57 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created panel
         """
+        # container for widgets
         panel = ttk.Frame(parent)
 
+        # create chart at top
+        self.create_metrics_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
+
+        # create table below chart
+        self.create_metrics_table(panel).pack(side='top', fill='both', expand=True)
+
+        return panel
+
+    def create_metrics_chart(self, parent):
+        """Create metrics chart
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created chart
+        """
+        # TODO:
+        chart = ttk.Frame(parent)
+
+        return chart
+
+    def create_metrics_table(self, parent):
+        """Create metrics table
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created table
+        """
+        # container for widgets
+        table_frame = ttk.Frame(parent)
+
         # table: | item | period1 | ... | period8 |
-        columns = ('item', 'period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7', 'period8')  # fmt: skip
-        table = ttk.Treeview(panel, columns=columns, show='headings')
+        columns = (
+            'item',
+            'period1',
+            'period2',
+            'period3',
+            'period4',
+            'period5',
+            'period6',
+            'period7',
+            'period8',
+        )
+
+        table = ttk.Treeview(table_frame, columns=columns, show='headings')
         table.heading('item', text='Item')
         table.heading('period1', text='YYYY.Q-')
         table.heading('period2', text='YYYY.Q-')
@@ -397,30 +515,30 @@ class StockApp(ttk.Frame):
         table.column('period7', width=60, anchor='e')
         table.column('period8', width=60, anchor='e')
 
-        # add scrollbar
-        scrollbar = AutoScrollbar(panel, orient='vertical', command=table.yview)
+        # scrollbar: for table
+        scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
 
         table.pack(side='left', fill='both', expand=True)
 
-        # TBD: dummy data
-        # table.insert('', 'end', values=('營業毛利率', '22.64', '15.12', '16.86', '23.29', '24.27', '19.13', '15.22 ', '2.24'))  # fmt: skip
-        # table.insert('', 'end', values=('營業利益率', '13.16', '3.15', '6.58', '10.88', '15.26', '11.1', '4.7', '12.11'))  # fmt: skip
-        # table.insert('', 'end', values=('稅前淨利率', '-25.9 ', '.34', '5.41', '15.32', '15.84', '14.02', '13.12', '13.46'))  # fmt: skip
-        # table.insert('', 'end', values=('稅後淨利率', '-30.17', '2.07', '2.2', '10.73', '11.25', '9.01', '8.77', '8.82'))  # fmt: skip
-
         self.metrics_table = table
 
-        return panel
+        return table_frame
 
     def create_status_bar(self):
-        """Create the status bar at the bottom"""
+        """Create the status bar
+
+        Returns:
+            ttk.Frame: Created status bar
+        """
+        # container for widgets
         status_bar = ttk.Frame(self, style='Toolbar.TFrame')
-        status_bar.pack(side='bottom', pady=6, fill='x')
 
         # label: 'message'
         self.status = ttk.Label(status_bar, text='Ready')
         self.status.pack(side='left', padx=6)
+
+        return status_bar
 
     #############################
     # set data to UI components #
