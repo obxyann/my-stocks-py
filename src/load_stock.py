@@ -112,10 +112,10 @@ def transform_revenue(df):
                 'revence_yoy',
                 'revence_ytd',
                 'revence_ytd_yoy',
-                'revenue_3ma',
-                'revenue_12ma',
-                'revenue_ytd_yoy_3ma',
-                'revenue_ytd_yoy_12ma'
+                'revenue_ma3',
+                'revenue_ma12',
+                'revenue_ytd_yoy_ma3',
+                'revenue_ytd_yoy_ma12',
             ]
         )
 
@@ -132,10 +132,10 @@ def transform_revenue(df):
     result['revence_yoy'] = df['revenue_yoy'].apply(format_100)
     result['revence_ytd'] = df['revenue_ytd']  # .apply(format_number)
     result['revence_ytd_yoy'] = df['revenue_ytd_yoy'].apply(format_100)
-    result['revenue_3ma'] = df['revenue_3ma']  # .apply(format_number) 
-    result['revenue_12ma'] = df['revenue_12ma']  # .apply(format_number)
-    result['revenue_ytd_yoy_3ma'] = df['revenue_ytd_yoy_3ma']  # .apply(format_number)
-    result['revenue_ytd_yoy_12ma'] = df['revenue_ytd_yoy_12ma']  # .apply(format_number)
+    result['revenue_ma3'] = df['revenue_ma3']  # .apply(format_number)
+    result['revenue_ma12'] = df['revenue_ma12']  # .apply(format_number)
+    result['revenue_ytd_yoy_ma3'] = df['revenue_ytd_yoy_ma3']  # .apply(format_number)
+    result['revenue_ytd_yoy_ma12'] = df['revenue_ytd_yoy_ma12']  # .apply(format_number)
 
     # sort by year_month descending (latest first)
     result = result.iloc[::-1].reset_index(drop=True)
