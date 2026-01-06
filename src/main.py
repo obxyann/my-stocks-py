@@ -277,26 +277,40 @@ class StockApp(ttk.Frame):
         Returns:
             ttk.Frame: Created chart
         """
-        # create figure with dark background matching app theme
-        self.revenue_fig, self.revenue_ax = plt.subplots(figsize=(8, 2.5))
+        # container
+        chart_frame = ttk.Frame(parent)
 
-        # set style
-        sns.set_style('darkgrid')
+        # create matplotlib figure
+        # figsize=(width, height) in inches. (10, 3.5) allows good aspect ratio
+        self.revenue_fig = plt.Figure(figsize=(10, 3.5), dpi=100)
 
-        # create secondary y-axis for price
+        # create axes
+        self.revenue_ax = self.revenue_fig.add_subplot(111)
         self.revenue_ax2 = self.revenue_ax.twinx()
 
-        # create canvas and pack
-        self.revenue_canvas = FigureCanvasTkAgg(self.revenue_fig, master=parent)
+        # set style
+        self.revenue_fig.patch.set_facecolor('#1c1c1c')
+        self.revenue_ax.set_facecolor('#1c1c1c')
 
-        # set initial empty state
-        self.revenue_ax.set_xlabel('')
-        self.revenue_ax.set_ylabel('Revenue')
-        self.revenue_ax2.set_ylabel('Price')
+        self.revenue_ax.tick_params(colors='#cccccc')
+        self.revenue_ax2.tick_params(colors='#cccccc')
+        self.revenue_ax.spines['bottom'].set_color('#555555')
+        self.revenue_ax.spines['left'].set_color('#555555')
+        self.revenue_ax.spines['top'].set_visible(False)
+        self.revenue_ax.spines['right'].set_visible(False)
+        self.revenue_ax2.spines['bottom'].set_visible(False)
+        self.revenue_ax2.spines['left'].set_visible(False)
+        self.revenue_ax2.spines['top'].set_visible(False)
+        self.revenue_ax2.spines['right'].set_color('#555555')
+
+        # embed figure in tkinter
+        self.revenue_canvas = FigureCanvasTkAgg(self.revenue_fig, master=chart_frame)
+        self.revenue_canvas.get_tk_widget().pack(fill='both', expand=True)
+        
+        # adjust layout
         self.revenue_fig.tight_layout()
-        self.revenue_canvas.draw()
-
-        return self.revenue_canvas.get_tk_widget()
+        
+        return chart_frame
 
     def create_revenue_table(self, parent):
         """Create revenue table
@@ -620,91 +634,144 @@ class StockApp(ttk.Frame):
         """Set data to revenue chart
 
         Args:
-            df_revenue: DataFrame with columns [year_month, revence, revenue_3ma]
+            df_revenue: DataFrame with columns [year_month, revence, revenue_ma3]
             df_price: DataFrame with columns [year_month, price] (optional)
         """
-        # clear axes
+        # clear previous plot
         self.revenue_ax.clear()
         self.revenue_ax2.clear()
 
+        # check data
         if df_revenue.empty:
             self.revenue_canvas.draw()
             return
 
-        # prepare data - reverse to chronological order (oldest first)
-        df_rev = df_revenue.iloc[::-1].reset_index(drop=True)
+        # prepare data
+        # NOTE: df_revenue is descending (latest first), reverse it for chronological display
+        df_rev = df_revenue.copy()
+        if 'year_month' in df_rev.columns:
+            df_rev = df_rev.iloc[::-1].reset_index(drop=True)
 
-        x_labels = df_rev['year_month'].tolist()
-        x_positions = range(len(x_labels))
+        x_labels = (
+            df_rev['year_month'].tolist() if 'year_month' in df_rev.columns else []
+        )
+        x_pos = range(len(x_labels))
 
         # plot revenue bars
-        revenue_values = pd.to_numeric(df_rev['revence'], errors='coerce')
-        self.revenue_ax.bar(
-            x_positions,
-            revenue_values,
-            color='steelblue',
-            alpha=0.7,
-            label='Revenue',
-            zorder=2,
-        )
+        if 'revence' in df_rev.columns:
+            # convert revenue to numeric (remove commas if present)
+            revenue_values = pd.to_numeric(
+                df_rev['revence'].astype(str).str.replace(',', ''), errors='coerce'
+            )
+            sns.barplot(
+                x=list(x_pos),
+                y=revenue_values,
+                ax=self.revenue_ax,
+                color='#4a9eff',
+                alpha=0.7,
+                label='Rev',
+            )
 
-        # plot revenue_ma3 line if available
-        if 'revenue_3ma' in df_rev.columns:
-            ma3_values = pd.to_numeric(df_rev['revenue_3ma'], errors='coerce')
+        # plot revenue MA3 line
+        if 'revenue_ma3' in df_rev.columns:
+            ma3_values = pd.to_numeric(
+                df_rev['revenue_ma3'].astype(str).str.replace(',', ''), errors='coerce'
+            )
             self.revenue_ax.plot(
-                x_positions,
+                list(x_pos),
                 ma3_values,
-                color='orange',
+                color='#ff6b6b',
                 linewidth=2,
-                marker='',
+                marker='o',
+                markersize=3,
                 label='MA3',
-                zorder=3,
             )
 
-        # plot price line on secondary axis if available
+        # plot monthly price on secondary y-axis
         if df_price is not None and not df_price.empty:
-            # reverse price data to chronological order
-            df_p = df_price.iloc[::-1].reset_index(drop=True)
+            df_p = df_price.copy()
+            if 'year_month' in df_p.columns:
+                df_p = df_p.iloc[::-1].reset_index(drop=True)
 
-            # merge price with revenue data by year_month
-            price_dict = dict(zip(df_p['year_month'], df_p['price']))
-            price_values = [price_dict.get(ym, None) for ym in x_labels]
+            # merge with revenue data to align x-axis
+            if 'year_month' in df_p.columns and 'price' in df_p.columns:
+                # create mapping from year_month to position
+                ym_to_pos = {ym: i for i, ym in enumerate(x_labels)}
+                price_x = []
+                price_y = []
+                for _, row in df_p.iterrows():
+                    ym = row['year_month']
+                    if ym in ym_to_pos:
+                        price_x.append(ym_to_pos[ym])
+                        price_y.append(row['price'])
 
-            self.revenue_ax2.plot(
-                x_positions,
-                price_values,
-                color='lightgreen',
-                linewidth=2,
-                marker='',
-                label='Price',
-                zorder=4,
-            )
-            self.revenue_ax2.set_ylabel('Price', color='lightgreen')
-            self.revenue_ax2.tick_params(axis='y', labelcolor='lightgreen')
+                if price_x:
+                    self.revenue_ax2.plot(
+                        price_x,
+                        price_y,
+                        color='#ffd93d',
+                        linewidth=2,
+                        marker='s',
+                        markersize=3,
+                        label='Price',
+                    )
 
-        # set x-axis labels with interval to avoid crowding
-        tick_interval = max(1, len(x_labels) // 12)
-        tick_positions = list(range(0, len(x_labels), tick_interval))
-        tick_labels = [x_labels[i] for i in tick_positions]
+        # format x-axis ticks
+        # calculate tick interval to prevent overlap
+        num_ticks = len(df_rev)
+        if num_ticks > 24:
+            tick_interval = 4
+        elif num_ticks > 12:
+            tick_interval = 3
+        elif num_ticks > 6:
+            tick_interval = 2
+        else:
+            tick_interval = 1
+
+        # create custom tick labels: 'YYYY' for first month of year, 'M' otherwise
+        tick_positions = []
+        tick_labels = []
+        prev_year = None
+
+        for i, ym in enumerate(df_rev['year_month']):
+            if i % tick_interval != 0:
+                continue
+            tick_positions.append(i)
+
+            # parse year_month (format: YYYY/MM or YYYY-MM)
+            parts = ym.replace('-', '/').split('/')
+            if len(parts) >= 2:
+                year = parts[0]
+                month = str(int(parts[1]))  # remove leading zero
+
+                if prev_year != year:
+                    tick_labels.append(year)
+                    prev_year = year
+                else:
+                    tick_labels.append(month)
+            else:
+                tick_labels.append(ym)
 
         self.revenue_ax.set_xticks(tick_positions)
-        self.revenue_ax.set_xticklabels(
-            tick_labels, rotation=45, ha='right', fontsize=8
-        )
+        self.revenue_ax.set_xticklabels(tick_labels, rotation=0)
 
-        # set labels
-        self.revenue_ax.set_ylabel('Revenue', color='steelblue')
-        self.revenue_ax.tick_params(axis='y', labelcolor='steelblue')
-
-        # add legend
+        # legends
         lines1, labels1 = self.revenue_ax.get_legend_handles_labels()
         lines2, labels2 = self.revenue_ax2.get_legend_handles_labels()
-        self.revenue_ax.legend(
-            lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=8
-        )
+        if lines1 or lines2:
+            self.revenue_ax.legend(
+                lines1 + lines2,
+                labels1 + labels2,
+                loc='upper left',
+                fontsize=8,
+                facecolor='#2c2c2c',
+                edgecolor='#555555',
+                labelcolor='#cccccc',
+            )
 
-        # adjust layout
+        # adjust layout and refresh
         self.revenue_fig.tight_layout()
+
         self.revenue_canvas.draw()
 
     def set_revenue_table_data(self, df):
