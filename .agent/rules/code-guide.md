@@ -60,6 +60,7 @@ trigger: always_on
 - Raise exceptions with meaningful messages
 
 ## Project Structure
+- When modifying code, do not delete the original commented-out code
 - Do not introduce new files or modules unless explicitly requested
 - Respect existing module responsibilities
 - Database basic logic must stay in `database/stock.py`

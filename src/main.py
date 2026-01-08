@@ -337,6 +337,11 @@ class StockApp(ttk.Frame):
 
         # self.revenue_ax2.set_ylabel('')
         self.revenue_ax2.set_ylabel('Price', color='#E91E63')
+        self.revenue_ax2.yaxis.set_label_position('right')
+
+        # offset text color
+        self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
+        self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
 
     def create_revenue_table(self, parent):
         """Create revenue table
@@ -685,8 +690,21 @@ class StockApp(ttk.Frame):
                 df_plot, df_price[['year_month', 'price']], on='year_month', how='left'
             )
 
+        # 3. x-axis indices (categorical 0, 1, 2...)
+        num_ticks = len(df_plot)
+        x_indices = range(num_ticks)
+
         # plot revenue bars (on main y-axis)
         if 'revence' in df_plot.columns:
+            self.revenue_ax.bar(
+                x_indices,
+                df_plot['revence'],
+                color='#2196F3',
+                alpha=0.6,
+                label='Revenue',
+                width=0.7,
+            )
+            """
             sns.barplot(
                 data=df_plot,
                 x='year_month',
@@ -696,9 +714,18 @@ class StockApp(ttk.Frame):
                 alpha=0.6,
                 label='Revenue',
             )
+            """
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:
+            self.revenue_ax.plot(
+                x_indices,
+                df_plot['revenue_ma3'],
+                color='#FFC107',
+                linewidth=2,
+                label='MA3',
+            )
+            """
             sns.lineplot(
                 data=df_plot,
                 x='year_month',
@@ -709,13 +736,10 @@ class StockApp(ttk.Frame):
                 label='MA3',
                 sort=False,
             )
+            """
 
         # plot monthly price line (on secondary y-axis)
         if 'price' in df_plot.columns:
-            """
-            # note: bar chart x-axis is categorical (indices 0, 1, 2...)
-            x_indices = range(len(df_plot))
-
             self.revenue_ax2.plot(
                 x_indices,
                 df_plot['price'],
@@ -738,9 +762,9 @@ class StockApp(ttk.Frame):
                 # markerfacecolor='#FFFFFF',
                 # markeredgewidth=0,
             )
+            """
 
         # format x-axis ticks
-        num_ticks = len(df_plot)
         step = max(1, num_ticks // 6)
 
         tick_positions = range(0, num_ticks, step)
@@ -749,15 +773,21 @@ class StockApp(ttk.Frame):
         self.revenue_ax.set_xticks(tick_positions, labels=tick_labels)
 
         # remove padding on left and right
-        self.revenue_ax.set_xlim(0.5, num_ticks - 0.5)
+        self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
 
-        # NOTE: need to set again these axis styling after call clear()
+        # NOTE: need to set these styles again  after clear
+        # self.set_revenue_chart_style()
+        # or
         self.revenue_ax.set_xlabel('')
         # self.revenue_ax.set_ylabel('')
         self.revenue_ax.set_ylabel('Revenue', color='#2196F3')
 
         # self.revenue_ax2.set_ylabel('')
         self.revenue_ax2.set_ylabel('Price', color='#E91E63')
+        self.revenue_ax2.yaxis.set_label_position('right')
+        
+        self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
+        self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
 
         # combined legend
         h1, l1 = self.revenue_ax.get_legend_handles_labels()
