@@ -312,23 +312,24 @@ class StockApp(ttk.Frame):
         self.revenue_ax.tick_params(colors='#cccccc')
         self.revenue_ax2.tick_params(colors='#cccccc')
 
-        # label on ticks
-        # self.revenue_ax.tick_params(axis='x', labelrotation=90)
         self.revenue_ax.tick_params(axis='y', labelcolor='#2196F3')
         self.revenue_ax2.tick_params(axis='y', labelcolor='#E91E63')
 
         # spines of axes
         self.revenue_ax.spines['top'].set_visible(False)
         self.revenue_ax.spines['right'].set_visible(False)
+
         self.revenue_ax.spines['bottom'].set_color('#555555')
         self.revenue_ax.spines['left'].set_color('#555555')
 
         self.revenue_ax2.spines['top'].set_visible(False)
-        self.revenue_ax2.spines['right'].set_color('#555555')
         self.revenue_ax2.spines['bottom'].set_visible(False)
         self.revenue_ax2.spines['left'].set_visible(False)
 
-        # NOTE: below will be reset when axes cleared
+        self.revenue_ax2.spines['right'].set_color('#555555')
+
+        # NOTE: below styles are reset by ax.clear() and must be reapplied in
+        #       set_revenue_chart_data()
 
         # label beside axes
         self.revenue_ax.set_xlabel('')
@@ -337,9 +338,10 @@ class StockApp(ttk.Frame):
 
         # self.revenue_ax2.set_ylabel('')
         self.revenue_ax2.set_ylabel('Price', color='#E91E63')
+
         self.revenue_ax2.yaxis.set_label_position('right')
 
-        # offset text color
+        # offset text of axes
         self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
         self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
 
@@ -775,7 +777,7 @@ class StockApp(ttk.Frame):
         # remove padding on left and right
         self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
 
-        # NOTE: need to set these styles again  after clear
+        # NOTE: Reapply styling that were reset by ax.clear()
         # self.set_revenue_chart_style()
         # or
         self.revenue_ax.set_xlabel('')
@@ -784,8 +786,9 @@ class StockApp(ttk.Frame):
 
         # self.revenue_ax2.set_ylabel('')
         self.revenue_ax2.set_ylabel('Price', color='#E91E63')
+
         self.revenue_ax2.yaxis.set_label_position('right')
-        
+
         self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
         self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
 
