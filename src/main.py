@@ -790,14 +790,14 @@ class StockApp(ttk.Frame):
         self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
         # legends
-        h, l = self.revenue_ax.get_legend_handles_labels()
+        h1, l1 = self.revenue_ax.get_legend_handles_labels()
         h2, l2 = self.revenue_ax2.get_legend_handles_labels()
 
         # revenue legend on the left (draw on ax2 to be on top of all lines)
-        if h:
+        if h1:
             leg = self.revenue_ax2.legend(
-                h,
-                l,
+                h1,
+                l1,
                 loc='upper left',
                 frameon=True,
                 labelcolor='#FFFFFF',
