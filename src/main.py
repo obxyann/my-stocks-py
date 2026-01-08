@@ -311,32 +311,32 @@ class StockApp(ttk.Frame):
     def set_chart_style(self, fig, ax1, ax2=None):
         """Set chart style"""
         # background
-        fig.patch.set_facecolor('#1c1c1c')
-        ax1.set_facecolor('#1c1c1c')
+        fig.patch.set_facecolor('#1C1C1C')
+        ax1.set_facecolor('#1C1C1C')
 
         # grid
-        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#ffffff')
+        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
 
         # tick of axes
-        ax1.tick_params(colors='#cccccc')
-        ax1.tick_params(axis='y', labelcolor='#2196F3')
+        ax1.tick_params(colors='#FFFFFF')
+        ax1.tick_params(axis='y', labelcolor='#599FDC')
 
         # spines of axes
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
 
-        ax1.spines['bottom'].set_color('#555555')
-        ax1.spines['left'].set_color('#555555')
+        ax1.spines['bottom'].set_color('#535353')
+        ax1.spines['left'].set_color('#535353')
 
         if ax2 is not None:
-            ax2.tick_params(colors='#cccccc')
-            ax2.tick_params(axis='y', labelcolor='#E91E63')
+            ax2.tick_params(colors='#FFFFFF')
+            ax2.tick_params(axis='y', labelcolor='#E66D5F')
 
             ax2.spines['top'].set_visible(False)
             ax2.spines['bottom'].set_visible(False)
             ax2.spines['left'].set_visible(False)
 
-            ax2.spines['right'].set_color('#555555')
+            ax2.spines['right'].set_color('#535353')
 
     def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
         """Set axes styles
@@ -344,14 +344,14 @@ class StockApp(ttk.Frame):
         NOTE: Axes styles will be reset by ax.clear()
         """
         # label beside axes
-        ax1.set_ylabel(label1, color='#2196F3')
+        ax1.set_ylabel(label1, color='#599FDC')
 
         # offset text of axes
-        ax1.yaxis.get_offset_text().set_color('#2196F3')
+        ax1.yaxis.get_offset_text().set_color('#599FDC')
 
         if ax2 is not None:
-            ax2.set_ylabel(label2, color='#E91E63')
-            ax2.yaxis.get_offset_text().set_color('#E91E63')
+            ax2.set_ylabel(label2, color='#E66D5F')
+            ax2.yaxis.get_offset_text().set_color('#E66D5F')
             ax2.yaxis.set_label_position('right')
 
     def create_revenue_table(self, parent):
@@ -710,7 +710,7 @@ class StockApp(ttk.Frame):
             self.revenue_ax.bar(
                 x_indices,
                 df_plot['revence'],
-                color='#2196F3',
+                color='#599FDC',
                 alpha=0.6,
                 label='Revenue',
                 width=0.6,
@@ -721,7 +721,7 @@ class StockApp(ttk.Frame):
                 x='year_month',
                 y='revence',
                 ax=self.revenue_ax,
-                color='#2196F3',
+                color='#599FDC',
                 alpha=0.6,
                 label='Revenue',
             )
@@ -732,7 +732,7 @@ class StockApp(ttk.Frame):
             self.revenue_ax.plot(
                 x_indices,
                 df_plot['revenue_ma3'],
-                color='#FFC107',
+                color='#FBC470',
                 linewidth=2,
                 label='MA3',
             )
@@ -742,7 +742,7 @@ class StockApp(ttk.Frame):
                 x='year_month',
                 y='revenue_ma3',
                 ax=self.revenue_ax,
-                color='#FFC107',
+                color='#FBC470',
                 linewidth=2,
                 label='MA3',
                 sort=False,
@@ -754,7 +754,7 @@ class StockApp(ttk.Frame):
             self.revenue_ax2.plot(
                 x_indices,
                 df_plot['price'],
-                color='#E91E63',
+                color='#E66D5F',
                 linewidth=2,
                 label='Price',
             )
@@ -764,7 +764,7 @@ class StockApp(ttk.Frame):
                 x='year_month',
                 y='price',
                 ax=self.revenue_ax2,
-                color='#E91E63',
+                color='#E66D5F',
                 linewidth=2,
                 label='Price',
                 sort=False,
@@ -800,10 +800,10 @@ class StockApp(ttk.Frame):
                 l1,
                 loc='upper left',
                 frameon=True,
-                labelcolor='#1c1c1c',
+                labelcolor='#FFFFFF',
             )
-            leg.get_frame().set_facecolor('#cccccc')
-            leg.get_frame().set_edgecolor('#cccccc')
+            leg.get_frame().set_facecolor('#1C1C1C')
+            leg.get_frame().set_edgecolor('#363636')
             leg.get_frame().set_alpha(0.6)
             leg.set_zorder(100)
 
@@ -817,10 +817,10 @@ class StockApp(ttk.Frame):
                 l2,
                 loc='upper right',
                 frameon=True,
-                labelcolor='#1c1c1c',
+                labelcolor='#FFFFFF',
             )
-            leg2.get_frame().set_facecolor('#cccccc')
-            leg2.get_frame().set_edgecolor('#cccccc')
+            leg2.get_frame().set_facecolor('#1C1C1C')
+            leg2.get_frame().set_edgecolor('#363636')
             leg2.get_frame().set_alpha(0.6)
             leg2.set_zorder(100)
 
