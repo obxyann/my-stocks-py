@@ -796,13 +796,18 @@ class StockApp(ttk.Frame):
         h1, l1 = self.revenue_ax.get_legend_handles_labels()
         h2, l2 = self.revenue_ax2.get_legend_handles_labels()
 
-        self.revenue_ax.legend(
+        # combined legend on the top-most axes (ax2) to avoid being covered
+        leg = self.revenue_ax2.legend(
             h1 + h2,
             l1 + l2,
             loc='upper left',
-            frameon=False,
+            frameon=True,
             labelcolor='#cccccc',
         )
+        leg.get_frame().set_facecolor('#555555')
+        leg.get_frame().set_edgecolor('#555555')
+        leg.get_frame().set_alpha(0.7)
+        leg.set_zorder(100)
 
         # adjust layout and refresh
         self.revenue_fig.tight_layout()
