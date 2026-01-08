@@ -789,9 +789,15 @@ class StockApp(ttk.Frame):
         # NOTE: Reapply styling that were reset by ax.clear()
         self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
-        if 'revence' in df_plot.columns or 'revenue_ma3' in df_plot.columns:
-            # revenue legend on the left
-            leg = self.revenue_ax.legend(
+        # legends
+        h1, l1 = self.revenue_ax.get_legend_handles_labels()
+        h2, l2 = self.revenue_ax2.get_legend_handles_labels()
+
+        # revenue legend on the left (draw on ax2 to be on top of all lines)
+        if h1:
+            leg = self.revenue_ax2.legend(
+                h1,
+                l1,
                 loc='upper left',
                 frameon=True,
                 labelcolor='#1c1c1c',
@@ -801,9 +807,14 @@ class StockApp(ttk.Frame):
             leg.get_frame().set_alpha(0.6)
             leg.set_zorder(100)
 
-        if 'price' in df_plot.columns:
-            # price legend on the right
+            # must add back as artist to show multiple legends on same ax
+            self.revenue_ax2.add_artist(leg)
+
+        # price legend on the right
+        if h2:
             leg2 = self.revenue_ax2.legend(
+                h2,
+                l2,
                 loc='upper right',
                 frameon=True,
                 labelcolor='#1c1c1c',
