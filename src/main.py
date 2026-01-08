@@ -300,7 +300,33 @@ class StockApp(ttk.Frame):
 
         return chart_frame
 
+    def set_theme(self):
+        """Set theme"""
+        self.rc = {
+            # figure & axes background
+            'figure.facecolor': '#1c1c1c',
+            'axes.facecolor': '#1c1c1c',
+            # grid
+            'axes.grid': True,
+            'grid.linestyle': ':',
+            'grid.alpha': 0.2,
+            'grid.color': '#ffffff',
+            # ticks (default color, later override per-axis if needed)
+            'xtick.color': '#cccccc',
+            'ytick.color': '#cccccc',
+            # spines default color
+            'axes.edgecolor': '#555555',
+            # text
+            'text.color': '#cccccc',
+            'axes.labelcolor': '#cccccc',
+            'axes.titlecolor': '#cccccc',
+        }
+
+        # set seaborn theme to dark
+        sns.set_theme(style='dark', rc=self.rc)
+
     def set_revenue_chart_style(self):
+        """Set revenue chart style"""
         # background
         self.revenue_fig.patch.set_facecolor('#1c1c1c')
         self.revenue_ax.set_facecolor('#1c1c1c')
@@ -698,14 +724,15 @@ class StockApp(ttk.Frame):
 
         # plot revenue bars (on main y-axis)
         if 'revence' in df_plot.columns:
-            """ self.revenue_ax.bar(
+            self.revenue_ax.bar(
                 x_indices,
                 df_plot['revence'],
                 color='#2196F3',
                 alpha=0.6,
                 label='Revenue',
                 width=0.7,
-            ) """
+            )
+            """
             sns.barplot(
                 data=df_plot,
                 x='year_month',
@@ -715,16 +742,18 @@ class StockApp(ttk.Frame):
                 alpha=0.6,
                 label='Revenue',
             )
+            """
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:
-            """ self.revenue_ax.plot(
+            self.revenue_ax.plot(
                 x_indices,
                 df_plot['revenue_ma3'],
                 color='#FFC107',
                 linewidth=2,
                 label='MA3',
-            ) """
+            )
+            """
             sns.lineplot(
                 data=df_plot,
                 x='year_month',
@@ -735,17 +764,18 @@ class StockApp(ttk.Frame):
                 label='MA3',
                 sort=False,
             )
+            """
 
         # plot monthly price line (on secondary y-axis)
         if 'price' in df_plot.columns:
-            """ 
             self.revenue_ax2.plot(
                 x_indices,
                 df_plot['price'],
                 color='#E91E63',
                 linewidth=2,
                 label='Price',
-            ) """
+            )
+            """
             sns.lineplot(
                 data=df_plot,
                 x='year_month',
@@ -760,6 +790,7 @@ class StockApp(ttk.Frame):
                 # markerfacecolor='#FFFFFF',
                 # markeredgewidth=0,
             )
+            """
 
         # format x-axis ticks
         step = max(1, num_ticks // 6)
@@ -773,7 +804,7 @@ class StockApp(ttk.Frame):
         self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
-        # self.set_revenue_chart_style()
+        self.set_revenue_chart_style()
         # or
         self.revenue_ax.set_xlabel('')
         # self.revenue_ax.set_ylabel('')
@@ -787,7 +818,6 @@ class StockApp(ttk.Frame):
         self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
         self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
 
-        """      
         # combined legend
         h1, l1 = self.revenue_ax.get_legend_handles_labels()
         h2, l2 = self.revenue_ax2.get_legend_handles_labels()
@@ -798,12 +828,12 @@ class StockApp(ttk.Frame):
             l1 + l2,
             loc='upper left',
             frameon=True,
-            labelcolor='#cccccc',
+            labelcolor='#1c1c1c',
         )
-        leg.get_frame().set_facecolor('#555555')
-        leg.get_frame().set_edgecolor('#555555')
-        leg.get_frame().set_alpha(0.7)
-        leg.set_zorder(100) """
+        leg.get_frame().set_facecolor('#cccccc')
+        leg.get_frame().set_edgecolor('#cccccc')
+        leg.get_frame().set_alpha(0.6)
+        leg.set_zorder(100)
 
         # adjust layout and refresh
         self.revenue_fig.tight_layout()
