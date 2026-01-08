@@ -7,7 +7,7 @@ trigger: always_on
 - Libraries: pandas
 - Database: SQLite
 - UI: Tkinter ttk
-- Data visualization: seaborn + mplcursors
+- Data visualization: seaborn
 
 ## Code Style
 - Follow PEP 8
@@ -47,9 +47,11 @@ trigger: always_on
 - Security: Use parameterized queries to prevent SQL injection
 
 ## Data Processing (Pandas Usage)
-- Avoid chained assignment
+- Prevent SettingWithCopy Pitfalls:
+   * Avoid chained assignment
+   * Do not modify a sliced DataFrame in-place; use .loc on the original DataFrame or call .copy() explicitly
+- Do not modify input DataFrame in-place unless clearly documented 
 - Prefer vectorized operations over loops
-- Do not modify input DataFrame in-place unless clearly documented
 - Column names must follow database naming conventions
 
 ## About Error Handling
