@@ -733,6 +733,10 @@ class StockApp(ttk.Frame):
                 linewidth=2,
                 label='Price',
                 sort=False,
+                # marker='o',
+                # markersize=2,
+                # markerfacecolor='#FFFFFF',
+                # markeredgewidth=0,
             )
 
         # format x-axis ticks
@@ -743,6 +747,9 @@ class StockApp(ttk.Frame):
         tick_labels = df_plot['year_month'].iloc[::step]
 
         self.revenue_ax.set_xticks(tick_positions, labels=tick_labels)
+
+        # remove padding on left and right
+        self.revenue_ax.set_xlim(0.5, num_ticks - 0.5)
 
         # NOTE: need to set again these axis styling after call clear()
         self.revenue_ax.set_xlabel('')
