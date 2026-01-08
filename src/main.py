@@ -300,66 +300,49 @@ class StockApp(ttk.Frame):
 
         return chart_frame
 
-    def set_theme(self):
-        """Set theme"""
-        self.rc = {
-            # figure & axes background
-            'figure.facecolor': '#1c1c1c',
-            'axes.facecolor': '#1c1c1c',
-            # grid
-            'axes.grid': True,
-            'grid.linestyle': ':',
-            'grid.alpha': 0.2,
-            'grid.color': '#ffffff',
-            # ticks (default color, later override per-axis if needed)
-            'xtick.color': '#cccccc',
-            'ytick.color': '#cccccc',
-            # spines default color
-            'axes.edgecolor': '#555555',
-            # text
-            'text.color': '#cccccc',
-            'axes.labelcolor': '#cccccc',
-            'axes.titlecolor': '#cccccc',
-        }
-
-        # set seaborn theme to dark
-        sns.set_theme(style='dark', rc=self.rc)
-
     def set_revenue_chart_style(self):
         """Set revenue chart style"""
-        # background
-        self.revenue_fig.patch.set_facecolor('#1c1c1c')
-        self.revenue_ax.set_facecolor('#1c1c1c')
-
-        # grid
-        self.revenue_ax.grid(True, axis='y', linestyle=':', alpha=0.2, color='#ffffff')
-
-        # tick of axes
-        self.revenue_ax.tick_params(colors='#cccccc')
-        self.revenue_ax2.tick_params(colors='#cccccc')
-
-        self.revenue_ax.tick_params(axis='y', labelcolor='#2196F3')
-        self.revenue_ax2.tick_params(axis='y', labelcolor='#E91E63')
-
-        # spines of axes
-        self.revenue_ax.spines['top'].set_visible(False)
-        self.revenue_ax.spines['right'].set_visible(False)
-
-        self.revenue_ax.spines['bottom'].set_color('#555555')
-        self.revenue_ax.spines['left'].set_color('#555555')
-
-        self.revenue_ax2.spines['top'].set_visible(False)
-        self.revenue_ax2.spines['bottom'].set_visible(False)
-        self.revenue_ax2.spines['left'].set_visible(False)
-
-        self.revenue_ax2.spines['right'].set_color('#555555')
+        self.set_chart_style(self.revenue_fig, self.revenue_ax, self.revenue_ax2)
 
         # NOTE: below styles are reset by ax.clear() and must be reapplied in
         #       set_revenue_chart_data()
         self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
+    def set_chart_style(self, fig, ax1, ax2=None):
+        """Set chart style"""
+        # background
+        fig.patch.set_facecolor('#1c1c1c')
+        ax1.set_facecolor('#1c1c1c')
+
+        # grid
+        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#ffffff')
+
+        # tick of axes
+        ax1.tick_params(colors='#cccccc')
+        ax1.tick_params(axis='y', labelcolor='#2196F3')
+
+        # spines of axes
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+
+        ax1.spines['bottom'].set_color('#555555')
+        ax1.spines['left'].set_color('#555555')
+
+        if ax2 is not None:
+            ax2.tick_params(colors='#cccccc')
+            ax2.tick_params(axis='y', labelcolor='#E91E63')
+
+            ax2.spines['top'].set_visible(False)
+            ax2.spines['bottom'].set_visible(False)
+            ax2.spines['left'].set_visible(False)
+
+            ax2.spines['right'].set_color('#555555')
+
     def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
-        """Set axes styles which are reset by ax.clear()"""
+        """Set axes styles
+
+        NOTE: Axes styles will be reset by ax.clear()
+        """
         # label beside axes
         ax1.set_ylabel(label1, color='#2196F3')
 
@@ -702,7 +685,7 @@ class StockApp(ttk.Frame):
 
         # check data
         if df_revenue.empty or 'year_month' not in df_revenue.columns:
-            self.revenue_canvas.draw()
+            self.revenue_canvas.draw_idle()
             return
 
         # prepare data
@@ -730,7 +713,7 @@ class StockApp(ttk.Frame):
                 color='#2196F3',
                 alpha=0.6,
                 label='Revenue',
-                width=0.7,
+                width=0.6,
             )
             """
             sns.barplot(
@@ -825,7 +808,7 @@ class StockApp(ttk.Frame):
 
         # adjust layout and refresh
         self.revenue_fig.tight_layout()
-        self.revenue_canvas.draw()
+        self.revenue_canvas.draw_idle()
 
     def set_revenue_table_data(self, df):
         """Set revenue data
