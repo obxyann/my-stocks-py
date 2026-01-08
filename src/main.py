@@ -356,20 +356,20 @@ class StockApp(ttk.Frame):
 
         # NOTE: below styles are reset by ax.clear() and must be reapplied in
         #       set_revenue_chart_data()
+        self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
+    def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
+        """Set axes styles which are reset by ax.clear()"""
         # label beside axes
-        self.revenue_ax.set_xlabel('')
-        # self.revenue_ax.set_ylabel('')
-        self.revenue_ax.set_ylabel('Revenue', color='#2196F3')
-
-        # self.revenue_ax2.set_ylabel('')
-        self.revenue_ax2.set_ylabel('Price', color='#E91E63')
-
-        self.revenue_ax2.yaxis.set_label_position('right')
+        ax1.set_ylabel(label1, color='#2196F3')
 
         # offset text of axes
-        self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
-        self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
+        ax1.yaxis.get_offset_text().set_color('#2196F3')
+
+        if ax2 is not None:
+            ax2.set_ylabel(label2, color='#E91E63')
+            ax2.yaxis.get_offset_text().set_color('#E91E63')
+            ax2.yaxis.set_label_position('right')
 
     def create_revenue_table(self, parent):
         """Create revenue table
@@ -804,19 +804,7 @@ class StockApp(ttk.Frame):
         self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
-        self.set_revenue_chart_style()
-        # or
-        self.revenue_ax.set_xlabel('')
-        # self.revenue_ax.set_ylabel('')
-        self.revenue_ax.set_ylabel('Revenue', color='#2196F3')
-
-        # self.revenue_ax2.set_ylabel('')
-        self.revenue_ax2.set_ylabel('Price', color='#E91E63')
-
-        self.revenue_ax2.yaxis.set_label_position('right')
-
-        self.revenue_ax.yaxis.get_offset_text().set_color('#2196F3')
-        self.revenue_ax2.yaxis.get_offset_text().set_color('#E91E63')
+        self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
         # combined legend
         h1, l1 = self.revenue_ax.get_legend_handles_labels()
