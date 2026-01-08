@@ -789,22 +789,29 @@ class StockApp(ttk.Frame):
         # NOTE: Reapply styling that were reset by ax.clear()
         self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
 
-        # combined legend
-        h1, l1 = self.revenue_ax.get_legend_handles_labels()
-        h2, l2 = self.revenue_ax2.get_legend_handles_labels()
+        if 'revence' in df_plot.columns or 'revenue_ma3' in df_plot.columns:
+            # revenue legend on the left
+            leg = self.revenue_ax.legend(
+                loc='upper left',
+                frameon=True,
+                labelcolor='#1c1c1c',
+            )
+            leg.get_frame().set_facecolor('#cccccc')
+            leg.get_frame().set_edgecolor('#cccccc')
+            leg.get_frame().set_alpha(0.6)
+            leg.set_zorder(100)
 
-        # combined legend on the top-most axes (ax2) to avoid being covered
-        leg = self.revenue_ax2.legend(
-            h1 + h2,
-            l1 + l2,
-            loc='upper left',
-            frameon=True,
-            labelcolor='#1c1c1c',
-        )
-        leg.get_frame().set_facecolor('#cccccc')
-        leg.get_frame().set_edgecolor('#cccccc')
-        leg.get_frame().set_alpha(0.6)
-        leg.set_zorder(100)
+        if 'price' in df_plot.columns:
+            # price legend on the right
+            leg2 = self.revenue_ax2.legend(
+                loc='upper right',
+                frameon=True,
+                labelcolor='#1c1c1c',
+            )
+            leg2.get_frame().set_facecolor('#cccccc')
+            leg2.get_frame().set_edgecolor('#cccccc')
+            leg2.get_frame().set_alpha(0.6)
+            leg2.set_zorder(100)
 
         # adjust layout and refresh
         self.revenue_fig.tight_layout()
