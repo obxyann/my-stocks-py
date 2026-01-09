@@ -81,7 +81,7 @@ class StockApp(ttk.Frame):
         """Set the UI style and theme
 
         Args:
-            theme (str): Name of theme to apply, 'dark' or 'light'
+            theme (str): Name of theme to apply, 'dark', 'light'
                          None: Use current dark_mode_var value
         """
         if theme is None:
