@@ -868,7 +868,7 @@ class StockApp(ttk.Frame):
             leg1.set_zorder(100)
 
             # must add back as artist to show multiple legends on same ax
-            self.revenue_ax2.add_artist(leg)
+            self.revenue_ax2.add_artist(leg1)
 
         # price legend on the right
         if h2:
