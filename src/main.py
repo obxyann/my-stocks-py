@@ -32,6 +32,7 @@ def initialize_database():
 
 class AutoScrollbar(ttk.Scrollbar):
     """A scrollbar that hides itself if it's not needed.
+
     Only works if you use the pack geometry manager.
     """
 
@@ -58,7 +59,9 @@ class StockApp(ttk.Frame):
         self.db = db
 
         # set ui style
-        self.set_style('dark')
+        self.dark_mode_var = tk.BooleanVar(value=True)
+
+        self.set_style()
 
         # pack itself to root, fit to window
         self.pack(fill='both', expand=True)
@@ -70,27 +73,37 @@ class StockApp(ttk.Frame):
 
         self.create_status_bar().pack(side='bottom', pady=6, fill='x')
 
-    def set_style(self, theme):
+    ###################
+    # create UI style #
+    ###################
+
+    def set_style(self, theme=None):
         """Set the UI style and theme
 
         Args:
-            theme (str): Name of theme to apply
+            theme (str): Name of theme to apply, 'dark' or 'light'
+                         None: Use current dark_mode_var value
         """
+        if theme is None:
+            theme = 'dark' if self.dark_mode_var.get() else 'light'
+        elif theme == 'dark':
+            self.dark_mode_var.set(True)
+        elif theme == 'light':
+            self.dark_mode_var.set(False)
+        else:
+            raise ValueError(f'Invalid theme: {theme}')
+
         # set theme
         sv_ttk.set_theme(theme)
-
-        dark = sv_ttk.get_theme() == 'dark'
-
-        self.dark_var = tk.BooleanVar(value=dark)
 
         # configure ttk styles
         style = ttk.Style()
 
         style.configure('Toolbar.TFrame', pady=4)
 
-    def toggle_theme(self):
-        """Toggle between light and dark themes"""
-        sv_ttk.toggle_theme()
+    def set_plot_style(self):
+        """Set the plot style"""
+        sns.set_theme()
 
     ####################
     # create UI frames #
@@ -127,8 +140,8 @@ class StockApp(ttk.Frame):
             toolbar,
             text='Dark',
             style='Switch.TCheckbutton',
-            variable=self.dark_var,
-            command=self.toggle_theme,
+            variable=self.dark_mode_var,
+            command=self.set_style,
         ).pack(side='right', padx=6)
 
         return toolbar
@@ -261,7 +274,7 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # create chart at top
-        self.create_revenue_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
+        self.create_revenue_chart(panel).pack(side='top', fill='x')
 
         # create table below chart
         self.create_revenue_table(panel).pack(side='top', fill='both', expand=True)
@@ -281,8 +294,8 @@ class StockApp(ttk.Frame):
         chart_frame = ttk.Frame(parent)
 
         # create matplotlib figure
-        # figsize=(width, height) in inches. (10, 3.5) allows good aspect ratio
-        self.revenue_fig = plt.Figure(figsize=(10, 3.5), dpi=100)
+        # figsize=(width, height) is in inches, inches * dpi = pixels
+        self.revenue_fig = plt.Figure(figsize=(7.5, 2.5), dpi=100)
 
         # create axes
         self.revenue_ax = self.revenue_fig.add_subplot(111)
@@ -416,7 +429,7 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # create chart at top
-        self.create_financial_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
+        self.create_financial_chart(panel).pack(side='top', fill='x')
 
         # create table below chart
         self.create_financial_table(panel).pack(side='top', fill='both', expand=True)
@@ -505,7 +518,7 @@ class StockApp(ttk.Frame):
         panel = ttk.Frame(parent)
 
         # create chart at top
-        self.create_metrics_chart(panel).pack(side='top', fill='x', padx=4, pady=4)
+        self.create_metrics_chart(panel).pack(side='top', fill='x')
 
         # create table below chart
         self.create_metrics_table(panel).pack(side='top', fill='both', expand=True)
@@ -653,10 +666,10 @@ class StockApp(ttk.Frame):
 
         Args:
             data (dict): dictionary containing metadata and DataFrames
-                       - 'code_name': Stock code and name string
-                       - 'revenue': Revenue data
-                       - 'financial': Financial data
-                       - 'metrics': Financial metrics data
+                         - 'code_name': Stock code and name string
+                         - 'revenue': Revenue data
+                         - 'financial': Financial data
+                         - 'metrics': Financial metrics data
         """
         self.clear_stock_view()
 
