@@ -714,7 +714,35 @@ class StockApp(ttk.Frame):
                 df_plot, df_price[['year_month', 'price']], on='year_month', how='left'
             )
 
-        # 3. x-axis indices (categorical 0, 1, 2...)
+        # 3. ensure numeric and clean separators
+        # for col in ['revence', 'revenue_ma3', 'price']:
+        #     if col in df_plot.columns:
+        #         if df_plot[col].dtype == object:
+        #             df_plot[col] = df_plot[col].astype(str).str.replace(',', '')
+        #         df_plot[col] = pd.to_numeric(df_plot[col], errors='coerce')
+
+        # 4. determine scale and unit based on max revenue
+        if 'revence' in df_plot.columns and not df_plot.empty:
+            max_rev = df_plot['revence'].max()
+        else:
+            max_rev = 0
+
+        scale = 1
+        unit = 'K'
+        if max_rev > 9999999:
+            scale = 1000000
+            unit = 'B'
+        elif max_rev > 9999:
+            scale = 1000
+            unit = 'M'
+
+        # apply scale to revenue data
+        if 'revence' in df_plot.columns:
+            df_plot['revence'] = df_plot['revence'] / scale
+        if 'revenue_ma3' in df_plot.columns:
+            df_plot['revenue_ma3'] = df_plot['revenue_ma3'] / scale
+
+        # 5. x-axis indices (categorical 0, 1, 2...)
         num_ticks = len(df_plot)
         x_indices = range(num_ticks)
 
@@ -800,7 +828,12 @@ class StockApp(ttk.Frame):
         self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
-        self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
+        self.set_axes_style(
+            self.revenue_ax, self.revenue_ax2, 'Revenue (' + unit + ')', 'Price'
+        )
+
+        # ensure scientific notation is off and don't use offset text
+        self.revenue_ax.ticklabel_format(style='plain', axis='y', useOffset=False)
 
         # legends
         h1, l1 = self.revenue_ax.get_legend_handles_labels()
