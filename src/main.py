@@ -756,7 +756,7 @@ class StockApp(ttk.Frame):
                 x_indices,
                 df_plot['revence'],
                 color='#599FDC',
-                alpha=0.6,
+                alpha=0.8,
                 label='Revenue',
                 width=0.6,
             )
@@ -778,6 +778,7 @@ class StockApp(ttk.Frame):
                 x_indices,
                 df_plot['revenue_ma3'],
                 color='#FBC470',
+                alpha=0.7,
                 linewidth=2,
                 label='MA3',
             )
@@ -788,6 +789,7 @@ class StockApp(ttk.Frame):
                 y='revenue_ma3',
                 ax=self.revenue_ax1,
                 color='#FBC470',
+                alpha=0.6,
                 linewidth=2,
                 label='MA3',
                 sort=False,
@@ -800,6 +802,7 @@ class StockApp(ttk.Frame):
                 x_indices,
                 df_plot['revenue_ma12'],
                 color='#66BB6A',
+                alpha=0.7,
                 linewidth=2,
                 label='MA12',
             )
