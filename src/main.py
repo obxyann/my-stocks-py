@@ -298,8 +298,8 @@ class StockApp(ttk.Frame):
         self.revenue_fig = plt.Figure(figsize=(7.5, 2.5), dpi=100)
 
         # create axes
-        self.revenue_ax = self.revenue_fig.add_subplot(111)
-        self.revenue_ax2 = self.revenue_ax.twinx()
+        self.revenue_ax1 = self.revenue_fig.add_subplot(111)
+        self.revenue_ax2 = self.revenue_ax1.twinx()
 
         # set style
         self.set_revenue_chart_style()
@@ -315,11 +315,11 @@ class StockApp(ttk.Frame):
 
     def set_revenue_chart_style(self):
         """Set revenue chart style"""
-        self.set_chart_style(self.revenue_fig, self.revenue_ax, self.revenue_ax2)
+        self.set_chart_style(self.revenue_fig, self.revenue_ax1, self.revenue_ax2)
 
         # NOTE: below styles are reset by ax.clear() and must be reapplied in
         #       set_revenue_chart_data()
-        self.set_axes_style(self.revenue_ax, self.revenue_ax2, 'Revenue', 'Price')
+        self.set_axes_style(self.revenue_ax1, self.revenue_ax2, 'Revenue', 'Price')
 
     def set_chart_style(self, fig, ax1, ax2=None):
         """Set chart style"""
@@ -689,11 +689,11 @@ class StockApp(ttk.Frame):
         """Set data to revenue chart
 
         Args:
-            df_revenue: DataFrame with columns [year_month, revence, revenue_ma3]
+            df_revenue: DataFrame with columns [year_month, revence, revenue_ma3, revenue_ma12]
             df_price: DataFrame with columns [year_month, price] (optional)
         """
         # clear existing plots
-        self.revenue_ax.clear()
+        self.revenue_ax1.clear()
         self.revenue_ax2.clear()
 
         # check data
@@ -714,12 +714,14 @@ class StockApp(ttk.Frame):
                 df_plot, df_price[['year_month', 'price']], on='year_month', how='left'
             )
 
+        """ TBD: don't need to do this
         # 3. ensure numeric and clean separators
-        # for col in ['revence', 'revenue_ma3', 'price']:
-        #     if col in df_plot.columns:
-        #         if df_plot[col].dtype == object:
-        #             df_plot[col] = df_plot[col].astype(str).str.replace(',', '')
-        #         df_plot[col] = pd.to_numeric(df_plot[col], errors='coerce')
+        for col in ['revence', 'revenue_ma3', 'price']:
+            if col in df_plot.columns:
+                if df_plot[col].dtype == object:
+                    df_plot[col] = df_plot[col].astype(str).str.replace(',', '')
+                df_plot[col] = pd.to_numeric(df_plot[col], errors='coerce')
+        """
 
         # 4. determine scale and unit based on max revenue
         if 'revence' in df_plot.columns and not df_plot.empty:
@@ -741,6 +743,8 @@ class StockApp(ttk.Frame):
             df_plot['revence'] = df_plot['revence'] / scale
         if 'revenue_ma3' in df_plot.columns:
             df_plot['revenue_ma3'] = df_plot['revenue_ma3'] / scale
+        if 'revenue_ma12' in df_plot.columns:
+            df_plot['revenue_ma12'] = df_plot['revenue_ma12'] / scale
 
         # 5. x-axis indices (categorical 0, 1, 2...)
         num_ticks = len(df_plot)
@@ -748,7 +752,7 @@ class StockApp(ttk.Frame):
 
         # plot revenue bars (on main y-axis)
         if 'revence' in df_plot.columns:
-            self.revenue_ax.bar(
+            self.revenue_ax1.bar(
                 x_indices,
                 df_plot['revence'],
                 color='#599FDC',
@@ -761,7 +765,7 @@ class StockApp(ttk.Frame):
                 data=df_plot,
                 x='year_month',
                 y='revence',
-                ax=self.revenue_ax,
+                ax=self.revenue_ax1,
                 color='#599FDC',
                 alpha=0.6,
                 label='Revenue',
@@ -770,7 +774,7 @@ class StockApp(ttk.Frame):
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:
-            self.revenue_ax.plot(
+            self.revenue_ax1.plot(
                 x_indices,
                 df_plot['revenue_ma3'],
                 color='#FBC470',
@@ -782,13 +786,23 @@ class StockApp(ttk.Frame):
                 data=df_plot,
                 x='year_month',
                 y='revenue_ma3',
-                ax=self.revenue_ax,
+                ax=self.revenue_ax1,
                 color='#FBC470',
                 linewidth=2,
                 label='MA3',
                 sort=False,
             )
             """
+
+        # plot revenue MA12 line (on main y-axis)
+        if 'revenue_ma12' in df_plot.columns:
+            self.revenue_ax1.plot(
+                x_indices,
+                df_plot['revenue_ma12'],
+                color='#66BB6A',
+                linewidth=2,
+                label='MA12',
+            )
 
         # plot monthly price line (on secondary y-axis)
         if 'price' in df_plot.columns:
@@ -822,36 +836,36 @@ class StockApp(ttk.Frame):
         tick_positions = range(0, num_ticks, step)
         tick_labels = df_plot['year_month'].iloc[::step]
 
-        self.revenue_ax.set_xticks(tick_positions, labels=tick_labels)
+        self.revenue_ax1.set_xticks(tick_positions, labels=tick_labels)
 
         # remove padding on left and right
-        self.revenue_ax.set_xlim(-0.5, num_ticks - 0.5)
+        self.revenue_ax1.set_xlim(-0.5, num_ticks - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
         self.set_axes_style(
-            self.revenue_ax, self.revenue_ax2, 'Revenue (' + unit + ')', 'Price'
+            self.revenue_ax1, self.revenue_ax2, 'Revenue (' + unit + ')', 'Price'
         )
 
         # ensure scientific notation is off and don't use offset text
-        self.revenue_ax.ticklabel_format(style='plain', axis='y', useOffset=False)
+        self.revenue_ax1.ticklabel_format(style='plain', axis='y', useOffset=False)
 
         # legends
-        h1, l1 = self.revenue_ax.get_legend_handles_labels()
+        h1, l1 = self.revenue_ax1.get_legend_handles_labels()
         h2, l2 = self.revenue_ax2.get_legend_handles_labels()
 
         # revenue legend on the left (draw on ax2 to be on top of all lines)
         if h1:
-            leg = self.revenue_ax2.legend(
+            leg1 = self.revenue_ax2.legend(
                 h1,
                 l1,
                 loc='upper left',
                 frameon=True,
                 labelcolor='#FFFFFF',
             )
-            leg.get_frame().set_facecolor('#1C1C1C')
-            leg.get_frame().set_edgecolor('#363636')
-            leg.get_frame().set_alpha(0.6)
-            leg.set_zorder(100)
+            leg1.get_frame().set_facecolor('#1C1C1C')
+            leg1.get_frame().set_edgecolor('#363636')
+            leg1.get_frame().set_alpha(0.6)
+            leg1.set_zorder(100)
 
             # must add back as artist to show multiple legends on same ax
             self.revenue_ax2.add_artist(leg)
