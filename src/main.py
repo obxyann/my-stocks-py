@@ -337,12 +337,10 @@ class StockApp(ttk.Frame):
 
     def set_price_chart_style(self):
         """Set price chart style"""
-        self.set_chart_style(self.price_fig, self.price_ax)
-
         # define custom market colors
         mc = mpf.make_marketcolors(
-            up='#E66D5F',
-            down='#66BB6A',
+            up='#CB4B16',
+            down='#0C8F4E',
             inherit=True,  # red for up, green for down
         )
 
@@ -357,6 +355,8 @@ class StockApp(ttk.Frame):
             gridstyle=':',
             rc={'xtick.color': '#FFFFFF', 'ytick.color': '#FFFFFF'},
         )
+
+        self.set_chart_style(self.price_fig, self.price_ax)
 
         self.set_axes_style(self.price_ax, label1='Price')
 
