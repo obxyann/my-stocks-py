@@ -330,10 +330,119 @@ class StockApp(ttk.Frame):
         self.price_canvas = FigureCanvasTkAgg(self.price_fig, master=chart_frame)
         self.price_canvas.get_tk_widget().pack(fill='both', expand=True)
 
+        # setup events
+        self.setup_price_chart_events(self.price_canvas, self.price_ax)
+
         # adjust layout
         self.price_fig.tight_layout()
 
         return chart_frame
+
+    def setup_price_chart_events(self, canvas, ax):
+        """Setup pan and zoom events"""
+        canvas.mpl_connect('button_press_event', self.on_drag_start)
+        canvas.mpl_connect('button_release_event', self.on_drag_end)
+        canvas.mpl_connect('motion_notify_event', self.on_drag_move)
+        canvas.mpl_connect('scroll_event', self.on_scroll)
+
+        self.drag_start = None
+        self.drag_xlim = None
+        self.drag_ylim = None
+        self.zoom_scale = 1.1
+
+    def on_drag_start(self, event):
+        """Handle mouse drag start (Pan)"""
+        if event.inaxes != self.price_ax:
+            return
+        if event.button != 1:  # left click only
+            return
+
+        self.drag_start = (event.x, event.y)
+
+        self.drag_xlim = self.price_ax.get_xlim()
+        self.drag_ylim = self.price_ax.get_ylim()
+
+    def on_drag_move(self, event):
+        """Handle mouse drag move (Pan)"""
+        if event.inaxes != self.price_ax:
+            return
+        if self.drag_start is None:  # drag start not set
+            return
+
+        dx = event.x - self.drag_start[0]
+        dy = event.y - self.drag_start[1]
+
+        # convert pixel delta to data delta
+        x_range = self.drag_xlim[1] - self.drag_xlim[0]
+        y_range = self.drag_ylim[1] - self.drag_ylim[0]
+
+        bbox = self.price_ax.bbox
+
+        scale_x = x_range / bbox.width
+        scale_y = y_range / bbox.height
+
+        # calculate new limits
+        # NOTE: dragging right (dx > 0) means we want to see left data -> subtract dx
+        new_xlim = (
+            self.drag_xlim[0] - dx * scale_x,
+            self.drag_xlim[1] - dx * scale_x,
+        )
+        new_ylim = (
+            self.drag_ylim[0] - dy * scale_y,
+            self.drag_ylim[1] - dy * scale_y,
+        )
+
+        self.price_ax.set_xlim(new_xlim)
+        self.price_ax.set_ylim(new_ylim)
+
+        self.price_canvas.draw_idle()
+
+    def on_drag_end(self, event):
+        """Handle mouse drag end"""
+        self.drag_start = None
+
+    def on_scroll(self, event):
+        """Handle mouse scroll (Zoom X and Y)"""
+        if event.inaxes != self.price_ax:
+            return
+
+        if event.button == 'up':
+            scale_factor = 1 / self.zoom_scale
+        elif event.button == 'down':
+            scale_factor = self.zoom_scale
+        else:
+            return
+
+        self.zoom_axes(self.price_ax, event.xdata, event.ydata, scale_factor)
+
+        self.price_canvas.draw_idle()
+
+    def zoom_axes(self, ax, cx, cy, scale):
+        """Zoom axes around center point
+
+        Args:
+            ax: Axes to zoom
+            cx: Center X (data coord)
+            cy: Center Y (data coord)
+            scale: Zoom scale factor
+        """
+        # zoom X
+        xlim = ax.get_xlim()
+        x_width = xlim[1] - xlim[0]
+        new_x_width = x_width * scale
+        rel_x = (cx - xlim[0]) / x_width
+        new_xlim = [cx - new_x_width * rel_x, cx + new_x_width * (1 - rel_x)]
+
+        ax.set_xlim(new_xlim)
+
+        # zoom Y
+        ylim = ax.get_ylim()
+        y_width = ylim[1] - ylim[0]
+        new_y_width = y_width * scale
+        rel_y = (cy - ylim[0]) / y_width
+        new_ylim = [cy - new_y_width * rel_y, cy + new_y_width * (1 - rel_y)]
+
+        ax.set_ylim(new_ylim)
 
     def set_price_chart_style(self):
         """Set price chart style"""
@@ -757,8 +866,8 @@ class StockApp(ttk.Frame):
             self.price_canvas.draw_idle()
             return
 
-        # TBD: limit to last 100 rows
-        df = df.iloc[-100:]
+        # NOTE: use full dataframe to allow panning/zooming
+        # df = df.iloc[-100:]
 
         # plot using mpf
         # NOTE: ax=self.price_ax allows plotting on existing axes
@@ -772,8 +881,22 @@ class StockApp(ttk.Frame):
             mav=(10, 20, 60),
         )
 
-        # remove padding on left and right
-        self.price_ax.set_xlim(-0.5, len(df) - 0.5)
+        # set initial view to last 100 candles and auto-scale Y
+        if len(df) > 100:
+            # last 100 candles
+            # Note: x-axis is integer index 0..len-1
+            total_len = len(df)
+            self.price_ax.set_xlim(total_len - 100 - 0.5, total_len - 0.5)
+
+            # calculate y limits with padding based on visible data
+            visible_df = df.iloc[-100:]
+            min_price = visible_df['Low'].min()
+            max_price = visible_df['High'].max()
+            padding = (max_price - min_price) * 0.05
+
+            self.price_ax.set_ylim(min_price - padding, max_price + padding)
+        else:
+            self.price_ax.set_xlim(-0.5, len(df) - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
         self.set_axes_style(self.price_ax, label1='Price')
