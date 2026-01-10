@@ -864,6 +864,8 @@ class StockApp(ttk.Frame):
                 loc='upper left',
                 frameon=True,
                 labelcolor='#FFFFFF',
+                bbox_to_anchor=(0, 1.2),
+                ncol=3,
             )
             leg1.get_frame().set_facecolor('#1C1C1C')
             leg1.get_frame().set_edgecolor('#363636')
@@ -881,6 +883,7 @@ class StockApp(ttk.Frame):
                 loc='upper right',
                 frameon=True,
                 labelcolor='#FFFFFF',
+                bbox_to_anchor=(1, 1.2),
             )
             leg2.get_frame().set_facecolor('#1C1C1C')
             leg2.get_frame().set_edgecolor('#363636')
