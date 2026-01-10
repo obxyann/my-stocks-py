@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+import mplfinance as mpf
 import pandas as pd
 import sv_ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -255,10 +256,68 @@ class StockApp(ttk.Frame):
         period.current(0)
         period.pack(side='left')
 
-        # TODO:
-        ttk.Label(panel, text='TODO: price chart area').pack()
+        # create chart
+        self.create_price_chart(panel).pack(side='top', fill='both', expand=True)
 
         return panel
+
+    def create_price_chart(self, parent):
+        """Create price chart using mplfinance
+
+        Args:
+            parent: Parent widget
+
+        Returns:
+            ttk.Frame: Created chart frame
+        """
+        # container
+        chart_frame = ttk.Frame(parent)
+
+        # create matplotlib figure
+        self.price_fig = Figure(figsize=(7.5, 4), dpi=100)
+        self.price_ax = self.price_fig.add_subplot(111)
+
+        # set style
+        self.set_price_chart_style()
+
+        # embed figure in tkinter
+        self.price_canvas = FigureCanvasTkAgg(self.price_fig, master=chart_frame)
+        self.price_canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        # adjust layout
+        self.price_fig.tight_layout()
+
+        return chart_frame
+
+    def set_price_chart_style(self):
+        """Set price chart style"""
+        self.price_fig.patch.set_facecolor('#1C1C1C')
+        self.price_ax.set_facecolor('#1C1C1C')
+        self.price_ax.tick_params(colors='#FFFFFF')
+
+        self.price_ax.spines['top'].set_visible(False)
+        self.price_ax.spines['right'].set_visible(False)
+        self.price_ax.spines['bottom'].set_color('#535353')
+        self.price_ax.spines['left'].set_color('#535353')
+
+        # define custom market colors
+        mc = mpf.make_marketcolors(
+            up='#E66D5F',
+            down='#66BB6A',
+            inherit=True,  # red for up, green for down
+        )
+
+        # define custom style and store it
+        self.mpf_style = mpf.make_mpf_style(
+            base_mpf_style='nightclouds',
+            marketcolors=mc,
+            facecolor='#1C1C1C',
+            edgecolor='#1C1C1C',
+            figcolor='#1C1C1C',
+            gridcolor='#363636',
+            gridstyle=':',
+            rc={'xtick.color': '#FFFFFF', 'ytick.color': '#FFFFFF'},
+        )
 
     def create_revenue_panel(self, parent):
         """Create the revenue tab panel
@@ -640,8 +699,11 @@ class StockApp(ttk.Frame):
         # clear stock_name
         self.stock_name['text'] = '---- ----'
 
+        # clear price chart
+        self.set_price_chart_data(None)
+
         # clear revenue chart and table
-        self.set_revenue_chart_data(pd.DataFrame())
+        self.set_revenue_chart_data(None)
         self.revenue_table.delete(*self.revenue_table.get_children())
 
         # clear financial_table
@@ -676,13 +738,50 @@ class StockApp(ttk.Frame):
         if code_name:
             self.stock_name['text'] = code_name
 
+        if 'ohlc_price' in data:
+            self.set_price_chart_data(data['ohlc_price'])
         if 'revenue' in data:
-            self.set_revenue_chart_data(data['revenue'], data['price'])
+            self.set_revenue_chart_data(data['revenue'], data['avg_price'])
             self.set_revenue_table_data(data['revenue'])
         if 'financial' in data:
             self.set_financial_data(data['financial'])
         if 'metrics' in data:
             self.set_metrics_data(data['metrics'])
+
+    def set_price_chart_data(self, df):
+        """Set data to price chart
+
+        Args:
+            df: DataFrame with DatetimeIndex and [Open, High, Low, Close, Volume]
+        """
+        # clear existing plot
+        self.price_ax.clear()
+
+        # check data
+        if df is None or df.empty:
+            self.price_canvas.draw_idle()
+            return
+
+        visible_df = df.iloc[-100:]
+
+        # plot using mpf
+        # NOTE: ax=self.price_ax allows plotting on existing axes
+        mpf.plot(
+            visible_df,
+            type='candle',
+            style=self.mpf_style,
+            ax=self.price_ax,
+            volume=False,  # default no volume for now, or add another ax if needed
+            show_nontrading=False,
+            mav=(10, 20, 60),
+        )
+
+        # remove padding on left and right
+        self.price_ax.set_xlim(-0.5, len(visible_df) - 0.5)
+
+        # adjust layout and refresh
+        self.price_fig.tight_layout()
+        self.price_canvas.draw_idle()
 
     def set_revenue_chart_data(self, df_revenue, df_price=None):
         """Set data to revenue chart
@@ -696,7 +795,7 @@ class StockApp(ttk.Frame):
         self.revenue_ax2.clear()
 
         # check data
-        if df_revenue.empty or 'year_month' not in df_revenue.columns:
+        if df_revenue is None or df_revenue.empty:
             self.revenue_canvas.draw_idle()
             return
 

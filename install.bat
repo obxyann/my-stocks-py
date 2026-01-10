@@ -71,10 +71,10 @@ if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\sv_ttk\" (
 ) else (
 	echo [v] Package 'sv-ttk' already installed
 )
-if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\seaborn\" (
-        pip install seaborn && echo [+] Package 'seaborn' is now installed
+if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\mplfinance\" (
+        pip install mplfinance && echo [+] Package 'mplfinance' is now installed
 ) else (
-	echo [v] Package 'seaborn' already installed
+	echo [v] Package 'mplfinance' already installed
 )
 if not exist "C:\Python\Virtual_Env\stocks\Lib\site-packages\mplcursors\" (
         pip install mplcursors && echo [+] Package 'mplcursors' is now installed

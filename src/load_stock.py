@@ -38,29 +38,67 @@ def load_stock(stock_code, db):
     )
 
     # retrieve data from database
-    df_p = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
+    df_o = db.get_prices_by_code(stock_code, start_date=start_date)
+    df_a = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
     df_r = db.get_revenue_by_code(stock_code, start_date=start_date)
-
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
-    tbl_p = transform_price(df_p)
-    tbl_r = transform_revenue(df_r)
+    tbl_o = transform_ohlc_price(df_o)
+    tbl_a = transform_monthly_avg_price(df_a)
+    tbl_r = transform_monthly_revenue(df_r)
     tbl_f = transform_financial(df_f)
     tbl_m = transform_financial_metrics(df_m)
 
     return {
         'code_name': code_name,
-        'price': tbl_p,
+        'ohlc_price': tbl_o,
+        'avg_price': tbl_a,
         'revenue': tbl_r,
         'financial': tbl_f,
         'metrics': tbl_m,
     }
 
 
-def transform_price(df):
-    """Transform price data to UI format
+def transform_ohlc_price(df):
+    """Transform OHLC price data for mplfinance
+
+    Source format: columns [code, trade_date, open_price, high_price, ...]
+    Target format: columns [Open, High, Low, Close, Volume]
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: Transformed DataFrame with DatetimeIndex
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # rename columns to match mplfinance requirements
+    result = df.rename(
+        columns={
+            'trade_date': 'Date',
+            'open_price': 'Open',
+            'high_price': 'High',
+            'low_price': 'Low',
+            'close_price': 'Close',
+            'volume': 'Volume',
+        }
+    )
+
+    # convert to datetime
+    result['Date'] = pd.to_datetime(result['Date'])
+
+    # set Date as index
+    result = result.set_index('Date')
+
+    return result
+
+
+def transform_monthly_avg_price(df):
+    """Transform monthly avg price data to UI format
 
     Source format: columns [code, year, month, price, volume]
     Target format: columns [year_month, price, volume]
@@ -90,8 +128,8 @@ def transform_price(df):
     return result
 
 
-def transform_revenue(df):
-    """Transform revenue data to UI format
+def transform_monthly_revenue(df):
+    """Transform monthly revenue data to UI format
 
     Source format: columns [code, year, month, revenue, ...]
     Target format: columns [year_month, revence, revence_mom, revence_ly, revence_yoy, revence_ytd, revence_ytd_yoy]
