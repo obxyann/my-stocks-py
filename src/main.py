@@ -105,6 +105,52 @@ class StockApp(ttk.Frame):
         """Set the plot style"""
         # TODO: wait to implement
 
+    def set_chart_style(self, fig, ax1, ax2=None):
+        """Set chart style"""
+        # background
+        fig.patch.set_facecolor('#1C1C1C')
+        ax1.set_facecolor('#1C1C1C')
+
+        # grid
+        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
+
+        # tick of axes
+        ax1.tick_params(colors='#FFFFFF')
+        ax1.tick_params(axis='y', labelcolor='#599FDC')
+
+        # spines of axes
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+
+        ax1.spines['bottom'].set_color('#535353')
+        ax1.spines['left'].set_color('#535353')
+
+        if ax2 is not None:
+            ax2.tick_params(colors='#FFFFFF')
+            ax2.tick_params(axis='y', labelcolor='#E66D5F')
+
+            ax2.spines['top'].set_visible(False)
+            ax2.spines['bottom'].set_visible(False)
+            ax2.spines['left'].set_visible(False)
+
+            ax2.spines['right'].set_color('#535353')
+
+    def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
+        """Set axes styles
+
+        NOTE: Axes styles will be reset by ax.clear()
+        """
+        # label beside axes
+        ax1.set_ylabel(label1, color='#599FDC')
+
+        # offset text of axes
+        ax1.yaxis.get_offset_text().set_color('#599FDC')
+
+        if ax2 is not None:
+            ax2.set_ylabel(label2, color='#E66D5F')
+            ax2.yaxis.get_offset_text().set_color('#E66D5F')
+            ax2.yaxis.set_label_position('right')
+
     ####################
     # create UI frames #
     ####################
@@ -291,14 +337,7 @@ class StockApp(ttk.Frame):
 
     def set_price_chart_style(self):
         """Set price chart style"""
-        self.price_fig.patch.set_facecolor('#1C1C1C')
-        self.price_ax.set_facecolor('#1C1C1C')
-        self.price_ax.tick_params(colors='#FFFFFF')
-
-        self.price_ax.spines['top'].set_visible(False)
-        self.price_ax.spines['right'].set_visible(False)
-        self.price_ax.spines['bottom'].set_color('#535353')
-        self.price_ax.spines['left'].set_color('#535353')
+        self.set_chart_style(self.price_fig, self.price_ax)
 
         # define custom market colors
         mc = mpf.make_marketcolors(
@@ -318,6 +357,8 @@ class StockApp(ttk.Frame):
             gridstyle=':',
             rc={'xtick.color': '#FFFFFF', 'ytick.color': '#FFFFFF'},
         )
+
+        self.set_axes_style(self.price_ax, label1='Price')
 
     def create_revenue_panel(self, parent):
         """Create the revenue tab panel
@@ -378,52 +419,6 @@ class StockApp(ttk.Frame):
         # NOTE: below styles are reset by ax.clear() and must be reapplied in
         #       set_revenue_chart_data()
         self.set_axes_style(self.revenue_ax1, self.revenue_ax2, 'Revenue', 'Price')
-
-    def set_chart_style(self, fig, ax1, ax2=None):
-        """Set chart style"""
-        # background
-        fig.patch.set_facecolor('#1C1C1C')
-        ax1.set_facecolor('#1C1C1C')
-
-        # grid
-        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
-
-        # tick of axes
-        ax1.tick_params(colors='#FFFFFF')
-        ax1.tick_params(axis='y', labelcolor='#599FDC')
-
-        # spines of axes
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-
-        ax1.spines['bottom'].set_color('#535353')
-        ax1.spines['left'].set_color('#535353')
-
-        if ax2 is not None:
-            ax2.tick_params(colors='#FFFFFF')
-            ax2.tick_params(axis='y', labelcolor='#E66D5F')
-
-            ax2.spines['top'].set_visible(False)
-            ax2.spines['bottom'].set_visible(False)
-            ax2.spines['left'].set_visible(False)
-
-            ax2.spines['right'].set_color('#535353')
-
-    def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
-        """Set axes styles
-
-        NOTE: Axes styles will be reset by ax.clear()
-        """
-        # label beside axes
-        ax1.set_ylabel(label1, color='#599FDC')
-
-        # offset text of axes
-        ax1.yaxis.get_offset_text().set_color('#599FDC')
-
-        if ax2 is not None:
-            ax2.set_ylabel(label2, color='#E66D5F')
-            ax2.yaxis.get_offset_text().set_color('#E66D5F')
-            ax2.yaxis.set_label_position('right')
 
     def create_revenue_table(self, parent):
         """Create revenue table
@@ -762,12 +757,13 @@ class StockApp(ttk.Frame):
             self.price_canvas.draw_idle()
             return
 
-        visible_df = df.iloc[-100:]
+        # TBD: limit to last 100 rows
+        df = df.iloc[-100:]
 
         # plot using mpf
         # NOTE: ax=self.price_ax allows plotting on existing axes
         mpf.plot(
-            visible_df,
+            df,
             type='candle',
             style=self.mpf_style,
             ax=self.price_ax,
@@ -777,7 +773,10 @@ class StockApp(ttk.Frame):
         )
 
         # remove padding on left and right
-        self.price_ax.set_xlim(-0.5, len(visible_df) - 0.5)
+        self.price_ax.set_xlim(-0.5, len(df) - 0.5)
+
+        # NOTE: Reapply styling that were reset by ax.clear()
+        self.set_axes_style(self.price_ax, label1='Price')
 
         # adjust layout and refresh
         self.price_fig.tight_layout()
