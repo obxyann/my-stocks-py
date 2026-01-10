@@ -1,11 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import sv_ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from database.stock import StockDatabase
 from load_stock import load_stock
@@ -295,7 +295,7 @@ class StockApp(ttk.Frame):
 
         # create matplotlib figure
         # figsize=(width, height) is in inches, inches * dpi = pixels
-        self.revenue_fig = plt.Figure(figsize=(7.5, 2.5), dpi=100)
+        self.revenue_fig = Figure(figsize=(7.5, 2.5), dpi=100)
 
         # create axes
         self.revenue_ax1 = self.revenue_fig.add_subplot(111)
