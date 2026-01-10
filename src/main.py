@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 import pandas as pd
-import seaborn as sns
 import sv_ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -103,7 +102,7 @@ class StockApp(ttk.Frame):
 
     def set_plot_style(self):
         """Set the plot style"""
-        sns.set_theme()
+        # TODO: wait to implement
 
     ####################
     # create UI frames #
@@ -760,17 +759,6 @@ class StockApp(ttk.Frame):
                 label='Revenue',
                 width=0.6,
             )
-            """
-            sns.barplot(
-                data=df_plot,
-                x='year_month',
-                y='revence',
-                ax=self.revenue_ax1,
-                color='#599FDC',
-                alpha=0.6,
-                label='Revenue',
-            )
-            """
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:
@@ -782,19 +770,6 @@ class StockApp(ttk.Frame):
                 linewidth=2,
                 label='MA3',
             )
-            """
-            sns.lineplot(
-                data=df_plot,
-                x='year_month',
-                y='revenue_ma3',
-                ax=self.revenue_ax1,
-                color='#FBC470',
-                alpha=0.6,
-                linewidth=2,
-                label='MA3',
-                sort=False,
-            )
-            """
 
         # plot revenue MA12 line (on main y-axis)
         if 'revenue_ma12' in df_plot.columns:
@@ -816,22 +791,6 @@ class StockApp(ttk.Frame):
                 linewidth=2,
                 label='Price',
             )
-            """
-            sns.lineplot(
-                data=df_plot,
-                x='year_month',
-                y='price',
-                ax=self.revenue_ax2,
-                color='#E66D5F',
-                linewidth=2,
-                label='Price',
-                sort=False,
-                # marker='o',
-                # markersize=2,
-                # markerfacecolor='#FFFFFF',
-                # markeredgewidth=0,
-            )
-            """
 
         # format x-axis ticks
         step = max(1, num_ticks // 6)
