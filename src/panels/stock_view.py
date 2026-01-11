@@ -17,13 +17,13 @@ class StockViewPanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        # this is how to set styles
+        # for setting styles
         self.style_helper = style_helper
 
         # create control bar at top
-        self._create_control_bar().pack(side='top', pady=(0, 6), fill='x')
+        self._create_control_bar().pack(fill='x', pady=(0, 6))
 
-        # create panels
+        # create tab panels below control bar
         self._create_tab_panels().pack(fill='both', expand=True, padx=(0, 4))
 
     def _create_control_bar(self):
@@ -33,21 +33,21 @@ class StockViewPanel(ttk.Frame):
             ttk.Frame: Created bar
         """
         # container for widgets
-        control_bar = ttk.Frame(self)
+        bar = ttk.Frame(self)
 
         # label: Stock Code Name
-        self.stock_name = ttk.Label(control_bar, text='---- ----')
+        self.stock_name = ttk.Label(bar, text='---- ----')
         self.stock_name.pack(side='left', padx=6)
 
-        return control_bar
+        return bar
 
     def _create_tab_panels(self):
         """Create tab panels
 
         Returns:
-            ttk.Frame: Created tab panels frame
+            ttk.Notebook: Created tab panels
         """
-        # tabs container
+        # container for panels
         tabs = ttk.Notebook(self)
 
         # create panels
@@ -65,28 +65,28 @@ class StockViewPanel(ttk.Frame):
         return tabs
 
     def set_data(self, data):
-        """Set data of stock view
+        """Set data to stock view
 
         Args:
-            data (dict): dictionary containing metadata and DataFrames
-                         - 'code_name': Stock code and name string
-                         - 'ohlc_price': OHLC price data
-                         - 'revenue': Revenue data
-                         - 'avg_price': Average price data
-                         - 'financial': Financial data
-                         - 'metrics': Financial metrics data
+            data (dict): dictionary containing metadata
+                         - 'code_name': Stock code and name, string
+                         - 'ohlc_price': OHLC price data, DataFrame
+                         - 'revenue': Revenue data, DataFrame
+                         - 'avg_price': Average price data, DataFrame
+                         - 'financial': Financial data, DataFrame
+                         - 'metrics': Financial metrics data, DataFrame
         """
         self.clear()
 
-        code_name = data.get('code_name')
-        if code_name:
-            self.stock_name['text'] = code_name
+        # set stock name
+        if 'code_name' in data:
+            self.stock_name['text'] = data['code_name']
 
+        # set panels
         if 'ohlc_price' in data:
             self.price_panel.set_data(data['ohlc_price'])
         if 'revenue' in data:
-            self.revenue_panel.set_chart_data(data['revenue'], data.get('avg_price'))
-            self.revenue_panel.set_table_data(data['revenue'])
+            self.revenue_panel.set_data(data['revenue'], data.get('avg_price'))
         if 'financial' in data:
             self.financial_panel.set_data(data['financial'])
         if 'metrics' in data:
@@ -97,8 +97,8 @@ class StockViewPanel(ttk.Frame):
         # clear stock_name
         self.stock_name['text'] = '---- ----'
 
-        # clear all panels
-        self.price_panel.set_data(None)
+        # clear panels
+        self.price_panel.clear()
         self.revenue_panel.clear()
         self.financial_panel.clear()
         self.metrics_panel.clear()

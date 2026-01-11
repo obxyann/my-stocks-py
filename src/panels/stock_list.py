@@ -17,10 +17,10 @@ class StockListPanel(ttk.Frame):
         # callback on action
         self.on_select_callback = on_select_callback
 
-        # create button bar at bottom
+        # create button bar at bottom (must be placed first)
         self._create_button_bar().pack(side='bottom', fill='x', pady=6)
 
-        # create table at top
+        # create table at top (so we can fill remaining space)
         self._create_table().pack(side='top', fill='both', expand=True)
 
     def _create_button_bar(self):
@@ -30,16 +30,16 @@ class StockListPanel(ttk.Frame):
             ttk.Frame: Created bar
         """
         # container for widgets
-        btn_bar = ttk.Frame(self)
+        bar = ttk.Frame(self)
 
         # buttons: [Load][Export]
-        ttk.Button(btn_bar, text='Load').pack(side='left', padx=6)
-        ttk.Button(btn_bar, text='Save').pack(side='left')
+        ttk.Button(bar, text='Load').pack(side='left', padx=6)
+        ttk.Button(bar, text='Save').pack(side='left')
 
-        return btn_bar
+        return bar
 
     def _create_table(self):
-        """Create list box
+        """Create table
 
         Returns:
             ttk.Frame: Created table
@@ -90,12 +90,15 @@ class StockListPanel(ttk.Frame):
             self.on_select_callback(code)
 
     def set_data(self, df):
-        """Set stock list data
+        """Set data to stock list
 
         Args:
             df: pd.DataFrame containing stock data
         """
-        if df.empty:
+        # clear old data
+        self.table.delete(*self.table.get_children())
+
+        if df is None or df.empty:
             return
 
         # check if column count matches
@@ -107,9 +110,6 @@ class StockListPanel(ttk.Frame):
             print(df.head(3))
             print('...')
             return
-
-        # clear old data
-        self.table.delete(*self.table.get_children())
 
         # insert data
         for _, row in df.iterrows():

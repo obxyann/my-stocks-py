@@ -16,7 +16,7 @@ class PricePanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        # this is how to set styles
+        ## for setting styles
         self.style_helper = style_helper
 
         # drag/zoom state
@@ -26,10 +26,10 @@ class PricePanel(ttk.Frame):
         self.zoom_scale = 1.1
 
         # create control bar at top
-        self._create_control_bar().pack(side='top', pady=4, fill='x')
+        self._create_control_bar().pack(fill='x', pady=4)
 
         # create chart below control bar
-        self._create_chart().pack(side='top', fill='both', expand=True)
+        self._create_chart().pack(fill='both', expand=True)
 
     def _create_control_bar(self):
         """Create control bar
@@ -38,23 +38,24 @@ class PricePanel(ttk.Frame):
             ttk.Frame: Created bar
         """
         # container for widgets
-        control_bar = ttk.Frame(self)
+        bar = ttk.Frame(self)
 
         # combobox: Period [D|v]
         options = ['D', 'M', 'Y']
 
-        ttk.Label(control_bar, text='Period').pack(side='left', padx=(6, 4))
-        period = ttk.Combobox(control_bar, values=options, width=2, state='readonly')
+        ttk.Label(bar, text='Period').pack(side='left', padx=(6, 4))
+
+        period = ttk.Combobox(bar, values=options, width=2, state='readonly')
         period.current(0)
         period.pack(side='left')
 
-        return control_bar
+        return bar
 
     def _create_chart(self):
-        """Create price chart using mplfinance
+        """Create chart
 
         Returns:
-            ttk.Frame: Created chart frame
+            ttk.Frame: Created chart
         """
         # container for chart
         chart_frame = ttk.Frame(self)
@@ -68,6 +69,7 @@ class PricePanel(ttk.Frame):
 
         # embed figure in tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=chart_frame)
+
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
 
         # setup events
@@ -79,7 +81,7 @@ class PricePanel(ttk.Frame):
         return chart_frame
 
     def _set_chart_style(self):
-        """Set price chart style"""
+        """Set chart style"""
         # define custom market colors
         mc = mpf.make_marketcolors(
             up='#CB4B16',
@@ -101,6 +103,8 @@ class PricePanel(ttk.Frame):
 
         self.style_helper.set_chart_style(self.fig, self.ax)
 
+        # NOTE: below styles are reset by ax.clear() and must be reapplied in
+        #       set_chart_data()
         self.style_helper.set_axes_style(self.ax, label1='Price')
 
     def _setup_events(self):
@@ -203,11 +207,11 @@ class PricePanel(ttk.Frame):
 
         self.ax.set_ylim(new_ylim)
 
-    def set_data(self, df):
-        """Set data to price chart
+    def _set_chart_data(self, df):
+        """Set data to chart
 
         Args:
-            df: DataFrame with DatetimeIndex and [Open, High, Low, Close, Volume]
+            df: pd.DataFrame with DatetimeIndex and [Open, High, Low, Close, Volume]
         """
         # clear existing plot
         self.ax.clear()
@@ -249,6 +253,20 @@ class PricePanel(ttk.Frame):
         # NOTE: Reapply styling that were reset by ax.clear()
         self.style_helper.set_axes_style(self.ax, label1='Price')
 
-        # adjust layout and refresh
+        # adjust layout
         self.fig.tight_layout()
+
         self.canvas.draw_idle()
+
+    def set_data(self, df):
+        """Set data to panel
+
+        Args:
+            df: pd.DataFrame containing price (OHLC) and volume data
+        """
+        self._set_chart_data(df)
+
+    def clear(self):
+        """Clear data on panel"""
+        # clear chart
+        self._set_chart_data(None)

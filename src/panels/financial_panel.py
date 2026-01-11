@@ -14,17 +14,17 @@ class FinancialPanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        # this is how to set styles
+        # for setting styles
         self.style_helper = style_helper
 
         # create chart at top
-        self._create_chart().pack(side='top', fill='x')
+        self._create_chart().pack(fill='x')
 
         # create table below chart
-        self._create_table().pack(side='top', fill='both', expand=True)
+        self._create_table().pack(fill='both', expand=True)
 
     def _create_chart(self):
-        """Create financial chart
+        """Create chart
 
         Returns:
             ttk.Frame: Created chart
@@ -35,7 +35,7 @@ class FinancialPanel(ttk.Frame):
         return chart_frame
 
     def _create_table(self):
-        """Create financial table
+        """Create table
 
         Returns:
             ttk.Frame: Created table
@@ -89,13 +89,22 @@ class FinancialPanel(ttk.Frame):
 
         return table_frame
 
-    def set_data(self, df):
-        """Set financial data
+    def _set_table_data(self, df):
+        """Set data to table
 
         Args:
             df: pd.DataFrame containing financial data
         """
-        if df.empty:
+        # reset headers of table
+        table_cols = self.table['columns']
+
+        for i in range(1, len(table_cols)):
+            self.table.heading(table_cols[i], text='YYYY.Q-')
+
+        # clear old data
+        self.table.delete(*self.table.get_children())
+
+        if df is None or df.empty:
             return
 
         # check if column count matches
@@ -112,20 +121,19 @@ class FinancialPanel(ttk.Frame):
         for i, col_name in enumerate(df_cols):
             self.table.heading(table_cols[i], text=col_name)
 
-        # clear old data
-        self.table.delete(*self.table.get_children())
-
         # insert data
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row))
 
+    def set_data(self, df):
+        """Set data to panel
+
+        Args:
+            df: pd.DataFrame containing financial data
+        """
+        self._set_table_data(df)
+
     def clear(self):
         """Clear data on panel"""
-        # reset headers
-        table_cols = self.table['columns']
-
-        for i in range(1, len(table_cols)):
-            self.table.heading(table_cols[i], text='YYYY.Q-')
-
         # clear table
-        self.table.delete(*self.table.get_children())
+        self._set_table_data(None)

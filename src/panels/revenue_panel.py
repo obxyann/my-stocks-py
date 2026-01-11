@@ -18,17 +18,17 @@ class RevenuePanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        # this is how to set styles
+        # for setting styles
         self.style_helper = style_helper
 
         # create chart at top
-        self._create_chart().pack(side='top', fill='x')
+        self._create_chart().pack(fill='x')
 
         # create table below chart
-        self._create_table().pack(side='top', fill='both', expand=True)
+        self._create_table().pack(fill='both', expand=True)
 
     def _create_chart(self):
-        """Create revenue chart
+        """Create chart
 
         Returns:
             ttk.Frame: Created chart
@@ -58,7 +58,7 @@ class RevenuePanel(ttk.Frame):
         return chart_frame
 
     def _set_chart_style(self):
-        """Set revenue chart style"""
+        """Set chart style"""
         self.style_helper.set_chart_style(self.fig, self.ax1, self.ax2)
 
         # NOTE: below styles are reset by ax.clear() and must be reapplied in
@@ -66,7 +66,7 @@ class RevenuePanel(ttk.Frame):
         self.style_helper.set_axes_style(self.ax1, self.ax2, 'Revenue', 'Price')
 
     def _create_table(self):
-        """Create revenue table
+        """Create table
 
         Returns:
             ttk.Frame: Created table
@@ -114,8 +114,8 @@ class RevenuePanel(ttk.Frame):
 
         return table_frame
 
-    def set_chart_data(self, df_revenue, df_price=None):
-        """Set revenue and price data to chart
+    def _set_chart_data(self, df_revenue, df_price=None):
+        """Set data to chart
 
         Args:
             df_revenue: pd.DataFrame containing revenue data
@@ -269,17 +269,21 @@ class RevenuePanel(ttk.Frame):
             leg2.get_frame().set_alpha(0.6)
             leg2.set_zorder(100)
 
-        # adjust layout and refresh
+        # adjust layout
         self.fig.tight_layout()
+
         self.canvas.draw_idle()
 
-    def set_table_data(self, df):
-        """Set revenue data
+    def _set_table_data(self, df):
+        """Set data to table
 
         Args:
             df: pd.DataFrame containing revenue data (may have extra columns for chart)
         """
-        if df.empty:
+        # clear old data
+        self.table.delete(*self.table.get_children())
+
+        if df is None or df.empty:
             return
 
         # check if dataframe has at least the required columns
@@ -292,18 +296,25 @@ class RevenuePanel(ttk.Frame):
             print('...')
             return
 
-        # clear old data
-        self.table.delete(*self.table.get_children())
-
         # insert data (only use first N columns matching table columns)
         num_cols = len(table_cols)
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row.iloc[:num_cols]))
 
+    def set_data(self, df_revenue, df_price=None):
+        """Set data to panel
+
+        Args:
+            df_revenue: pd.DataFrame containing revenue data
+            df_price: pd.DataFrame containing price data (optional)
+        """
+        self._set_chart_data(df_revenue, df_price)
+        self._set_table_data(df_revenue)
+
     def clear(self):
         """Clear data on panel"""
         # clear chart
-        self.set_chart_data(None)
+        self._set_chart_data(None)
 
         # clear table
-        self.table.delete(*self.table.get_children())
+        self._set_table_data(None)
