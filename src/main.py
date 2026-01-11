@@ -145,35 +145,42 @@ class StockApp(ttk.Frame):
             ttk.Frame: Created toolbar
         """
         # container for widgets
-        toolbar = ttk.Frame(self, style='Toolbar.TFrame')
+        bar = ttk.Frame(self, style='Toolbar.TFrame')
 
         # combobox: Screening Method [v]
         methods = list(SCREENING_METHODS.keys())
 
         self.method_combo = ttk.Combobox(
-            toolbar, values=methods, width=12, state='readonly'
+            bar, values=methods, width=12, state='readonly'
         )
         self.method_combo.pack(side='left', padx=6)
-        self.method_combo.bind('<<ComboboxSelected>>', self.on_select_method)
+        self.method_combo.bind(
+            '<<ComboboxSelected>>',
+            lambda e: self.on_select_method(self.method_combo.get()),
+        )
 
         # input: Stock Code [___]
-        ttk.Label(toolbar, text='Stock Code').pack(side='left', padx=6)
-        self.search_code = ttk.Entry(toolbar, width=12)
+        ttk.Label(bar, text='Stock Code').pack(side='left', padx=6)
+
+        self.search_code = ttk.Entry(bar, width=12)
         self.search_code.pack(side='left')
+        # fmt: off
         self.search_code.bind(
-            '<Return>', lambda e: self.on_view_stock(self.search_code.get())
+            '<Return>',
+            lambda e: self.on_view_stock(self.search_code.get())
         )
+        # fmt: on
 
         # toggle: [1|0] Dark
         ttk.Checkbutton(
-            toolbar,
+            bar,
             text='Dark',
             style='Switch.TCheckbutton',
             variable=self.dark_mode_var,
             command=self.set_style,
         ).pack(side='right', padx=6)
 
-        return toolbar
+        return bar
 
     def create_main_layout(self):
         """Create main layout with split panels
@@ -200,31 +207,30 @@ class StockApp(ttk.Frame):
             ttk.Frame: Created status bar
         """
         # container for widgets
-        status_bar = ttk.Frame(self, style='Toolbar.TFrame')
+        bar = ttk.Frame(self, style='Toolbar.TFrame')
 
         # label: 'message'
-        self.status = ttk.Label(status_bar, text='Ready')
+        self.status = ttk.Label(bar, text='Ready')
         self.status.pack(side='left', padx=6)
 
-        return status_bar
+        return bar
 
     ###########
     # actions #
     ###########
 
-    def on_select_method(self, event=None):
+    def on_select_method(self, method):
         """Handle screening method selection
 
         Args:
-            event: Combobox selection event
+            method (str): Selected method
         """
-        selected = self.method_combo.get()
-
-        if selected not in SCREENING_METHODS:
+        if method not in SCREENING_METHODS:
+            print(f'Invalid method: {method}')
             return
 
         # get list function and call it
-        list_func = SCREENING_METHODS[selected]
+        list_func = SCREENING_METHODS[method]
 
         df_stocks = list_func(self.db)
 
