@@ -531,8 +531,8 @@ balance_columns_rename = {
     '當期所得稅資產': '本期所得稅資產',
     '待出售資產': '待出售資產',  # no change
     '待出售資產－淨額': '待出售資產',
-    # 'Unnamed: 12': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
-    'Unnamed: 13': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
+    'Unnamed: 12': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
+    # 'Unnamed: 13': '待分配予業主之資產',  # NOTE: in MOPS's t163sb05 and open data's t187ap07_O_fh.csv this is empty string
     '待分配予業主之資產（或處分群組）': '待分配予業主之資產',
     '待分配予業主之資產－淨額': '待分配予業主之資產',
     '貼現及放款－淨額': '貼現及放款',
