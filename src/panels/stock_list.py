@@ -101,11 +101,11 @@ class StockListPanel(ttk.Frame):
         if df is None or df.empty:
             return
 
-        # check if column count matches
+        # check if dataframe has at least the required columns
         df_cols = df.columns.tolist()
         table_cols = self.table['columns']
 
-        if len(df_cols) != len(table_cols):
+        if len(df_cols) < len(table_cols):
             print('Warning: invalid stock list data')
             print(df.head(3))
             print('...')
