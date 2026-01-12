@@ -4,11 +4,13 @@ import pandas as pd
 
 
 def list_industrial(db, input_df=None):
-    """Get list of general industrial and commercial stocks
+    """Get general industrial and commercial stocks
 
     Args:
         db (StockDatabase): Database instance
         input_df (pd.DataFrame): Optional input list to filter
+            If provided, filter only stocks in this list and accumulate scores.
+            If None, return all industrial stocks in market.
 
     Returns:
         pd.DataFrame: DataFrame with columns ('code', 'name', 'score')
@@ -17,10 +19,12 @@ def list_industrial(db, input_df=None):
     industrial_df = db.get_industrial_stocks()
 
     if industrial_df.empty:
-        print('No industrial stocks found')
+        print('Warning: No industrial stocks found')
 
-        # return pd.DataFrame(columns=['code', 'name', 'score'])
-        # or
+        if input_df is None:
+            return pd.DataFrame(columns=['code', 'name', 'score'])
+
+        # TODO: handle case when input_df is not None
         return input_df.copy()
 
     # ensure consistent columns

@@ -9,6 +9,8 @@ def list_method_a(db, input_df=None):
     Args:
         db (StockDatabase): Database instance
         input_df (pd.DataFrame): Optional input list to filter
+            If provided, filter only stocks in this list and accumulate scores.
+            If None, use get_industrial_stocks as default.
 
     Returns:
         pd.DataFrame: DataFrame with columns ('code', 'name', 'score')
