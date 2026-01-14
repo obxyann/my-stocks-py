@@ -24,16 +24,16 @@ def initialize_database():
         return db
 
     except Exception as error:
-        print(f'Database initialization failed: {error}')
+        print(f'Error: Database initialization failed: {error}')
         raise
 
 
 class StockApp(ttk.Frame):
     def __init__(self, master, db):
-        """Initialize the application
+        """Initialize application
 
         Args:
-            master: The root window
+            master: Root window
             db: StockDatabase instance
         """
         super().__init__(master)
@@ -44,24 +44,24 @@ class StockApp(ttk.Frame):
         # set ui style
         self.dark_mode_var = tk.BooleanVar(value=True)
 
-        self.set_style()
+        self.set_theme()
 
         # pack itself to root, fit to window
         self.pack(fill='both', expand=True)
 
         # create UI frames
-        self.create_toolbar().pack(side='top', pady=6, fill='x')
+        self._create_toolbar().pack(side='top', pady=6, fill='x')
 
-        self.create_main_layout().pack(fill='both', expand=True)
+        self._create_main_layout().pack(fill='both', expand=True)
 
-        self.create_status_bar().pack(side='bottom', pady=6, fill='x')
+        self._create_status_bar().pack(side='bottom', pady=6, fill='x')
 
     ###################
     # create UI style #
     ###################
 
-    def set_style(self, theme=None):
-        """Set the UI style and theme
+    def set_theme(self, theme=None):
+        """Set and configure UI theme
 
         Args:
             theme (str): Name of theme to apply, 'dark', 'light'
@@ -76,7 +76,7 @@ class StockApp(ttk.Frame):
         else:
             raise ValueError(f'Invalid theme: {theme}')
 
-        # set theme
+        # set main theme
         sv_ttk.set_theme(theme)
 
         # configure ttk styles
@@ -84,8 +84,7 @@ class StockApp(ttk.Frame):
 
         style.configure('Toolbar.TFrame', pady=4)
 
-    def set_plot_style(self):
-        """Set the plot style"""
+        # set plot theme
         # TODO: wait to implement
 
     def set_chart_style(self, fig, ax1, ax2=None):
@@ -138,8 +137,8 @@ class StockApp(ttk.Frame):
     # create UI frames #
     ####################
 
-    def create_toolbar(self):
-        """Create the toolbar
+    def _create_toolbar(self):
+        """Create toolbar
 
         Returns:
             ttk.Frame: Created toolbar
@@ -177,12 +176,12 @@ class StockApp(ttk.Frame):
             text='Dark',
             style='Switch.TCheckbutton',
             variable=self.dark_mode_var,
-            command=self.set_style,
+            command=self.set_theme,
         ).pack(side='right', padx=6)
 
         return bar
 
-    def create_main_layout(self):
+    def _create_main_layout(self):
         """Create main layout with split panels
 
         Returns:
@@ -200,8 +199,8 @@ class StockApp(ttk.Frame):
 
         return paned
 
-    def create_status_bar(self):
-        """Create the status bar
+    def _create_status_bar(self):
+        """Create status bar
 
         Returns:
             ttk.Frame: Created status bar
@@ -226,7 +225,7 @@ class StockApp(ttk.Frame):
             method (str): Selected method
         """
         if method not in SCREENING_METHODS:
-            print(f'Invalid method: {method}')
+            print(f'Warning: Invalid method: {method}')
             return
 
         # get list function and call it

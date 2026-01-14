@@ -291,7 +291,7 @@ class RevenuePanel(ttk.Frame):
         table_cols = self.table['columns']
 
         if len(df_cols) < len(table_cols):
-            print('Warning: invalid revenue data')
+            print('Warning: Invalid revenue data')
             print(df.head(3))
             print('...')
             return

@@ -112,7 +112,7 @@ class MetricsPanel(ttk.Frame):
         table_cols = self.table['columns']
 
         if len(df_cols) != len(table_cols):
-            print('Warning: invalid metrics data')
+            print('Warning: Invalid metrics data')
             print(df.head(3))
             print('...')
             return

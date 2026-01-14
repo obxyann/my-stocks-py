@@ -112,7 +112,7 @@ class FinancialPanel(ttk.Frame):
         table_cols = self.table['columns']
 
         if len(df_cols) != len(table_cols):
-            print('Warning: invalid financial data')
+            print('Warning: Invalid financial data')
             print(df.head(3))
             print('...')
             return
