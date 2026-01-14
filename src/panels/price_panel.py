@@ -231,6 +231,7 @@ class PricePanel(ttk.Frame):
             volume=False,  # default no volume for now, or add another ax if needed
             show_nontrading=False,
             mav=(10, 20, 60),
+            warn_too_much_data=len(df) + 1, # disable waring
         )
 
         # set initial view to last 100 candles and auto-scale Y
