@@ -10,4 +10,5 @@ if not exist "C:\Python\Virtual_Env\stocks\Scripts\activate.bat" (
 	exit /b
 )
 call C:\Python\Virtual_Env\stocks\Scripts\activate.bat
-python src\main.py
+python src\db_manager.py download
+pause
