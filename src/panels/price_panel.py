@@ -93,19 +93,17 @@ class PricePanel(ttk.Frame):
         self.mpf_style = mpf.make_mpf_style(
             base_mpf_style='nightclouds',
             marketcolors=mc,
-            facecolor='#1C1C1C',
-            edgecolor='#1C1C1C',
-            figcolor='#1C1C1C',
-            gridcolor='#363636',
-            gridstyle=':',
-            rc={'xtick.color': '#FFFFFF', 'ytick.color': '#FFFFFF'},
         )
 
         self.style_helper.set_chart_style(self.fig, self.ax)
 
-        # NOTE: below styles are reset by ax.clear() and must be reapplied in
-        #       set_chart_data()
+        self._set_axes_style()
+
+    def _set_axes_style(self):
+        """Set axes style"""
         self.style_helper.set_axes_style(self.ax, label1='Price')
+
+        self.ax.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
 
     def _setup_events(self):
         """Setup pan and zoom events"""
@@ -229,9 +227,8 @@ class PricePanel(ttk.Frame):
             style=self.mpf_style,
             ax=self.ax,
             volume=False,  # default no volume for now, or add another ax if needed
-            show_nontrading=False,
             mav=(10, 20, 60),
-            warn_too_much_data=len(df) + 1, # disable waring
+            warn_too_much_data=len(df) + 1,  # disable waring
         )
 
         # set initial view to last 100 candles and auto-scale Y
@@ -252,7 +249,7 @@ class PricePanel(ttk.Frame):
             self.ax.set_xlim(-0.5, len(df) - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
-        self.style_helper.set_axes_style(self.ax, label1='Price')
+        self._set_axes_style()
 
         # adjust layout
         self.fig.tight_layout()

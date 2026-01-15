@@ -61,9 +61,11 @@ class RevenuePanel(ttk.Frame):
         """Set chart style"""
         self.style_helper.set_chart_style(self.fig, self.ax1, self.ax2)
 
-        # NOTE: below styles are reset by ax.clear() and must be reapplied in
-        #       set_chart_data()
-        self.style_helper.set_axes_style(self.ax1, self.ax2, 'Revenue', 'Price')
+        self._set_axes_style('Revenue', 'Price')
+
+    def _set_axes_style(self, label1, label2='Price'):
+        """Set axes style"""
+        self.style_helper.set_axes_style(self.ax1, self.ax2, label1, label2)
 
     def _create_table(self):
         """Create table
@@ -224,9 +226,7 @@ class RevenuePanel(ttk.Frame):
         self.ax1.set_xlim(-0.5, num_ticks - 0.5)
 
         # NOTE: Reapply styling that were reset by ax.clear()
-        self.style_helper.set_axes_style(
-            self.ax1, self.ax2, 'Revenue (' + unit + ')', 'Price'
-        )
+        self._set_axes_style('Revenue (' + unit + ')')
 
         # ensure scientific notation is off and don't use offset text
         self.ax1.ticklabel_format(style='plain', axis='y', useOffset=False)

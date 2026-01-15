@@ -89,12 +89,14 @@ class StockApp(ttk.Frame):
 
     def set_chart_style(self, fig, ax1, ax2=None):
         """Set chart style"""
-        # background
+        # background of figure
         fig.patch.set_facecolor('#1C1C1C')
-        ax1.set_facecolor('#1C1C1C')
 
-        # grid
-        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
+        # NOTE: below axes styles will not be reset by ax.clear()
+        #       so we can just set these styles once here
+
+        # background of axes
+        ax1.set_facecolor('#1C1C1C')
 
         # tick of axes
         ax1.tick_params(colors='#FFFFFF')
@@ -117,11 +119,18 @@ class StockApp(ttk.Frame):
 
             ax2.spines['right'].set_color('#535353')
 
+        self.set_axes_style(ax1, ax2)
+
     def set_axes_style(self, ax1, ax2=None, label1='', label2=''):
         """Set axes styles
 
-        NOTE: Axes styles will be reset by ax.clear()
+        NOTE: Axes styles on artists will be reset by ax.clear() and must be reapplied
         """
+        # below axes styles will be reset by ax.clear()
+
+        # grid
+        ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
+
         # label beside axes
         ax1.set_ylabel(label1, color='#599FDC')
 
@@ -129,9 +138,13 @@ class StockApp(ttk.Frame):
         ax1.yaxis.get_offset_text().set_color('#599FDC')
 
         if ax2 is not None:
+            # label
             ax2.set_ylabel(label2, color='#E66D5F')
-            ax2.yaxis.get_offset_text().set_color('#E66D5F')
+
             ax2.yaxis.set_label_position('right')
+
+            # offset text
+            ax2.yaxis.get_offset_text().set_color('#E66D5F')
 
     ####################
     # create UI frames #
