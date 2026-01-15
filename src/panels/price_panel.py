@@ -20,6 +20,7 @@ class PricePanel(ttk.Frame):
         self.style_helper = style_helper
 
         # drag/zoom state
+        self.drag_mode = None  # 'pan', 'scale_x' or 'scale_y'
         self.drag_start = None
         self.drag_xlim = None
         self.drag_ylim = None
@@ -114,54 +115,110 @@ class PricePanel(ttk.Frame):
         self.canvas.mpl_connect('scroll_event', self._on_scroll)
 
     def _on_drag_start(self, event):
-        """Handle mouse drag start (Pan)"""
-        if event.inaxes != self.ax:
-            return
+        """Handle mouse drag start"""
         if event.button != 1:  # left click only
             return
 
-        self.drag_start = (event.x, event.y)
+        # Check for Pan (inside axes)
+        if event.inaxes == self.ax:
+            self.drag_mode = 'pan'
+            self.drag_start = (event.x, event.y)
+            self.drag_xlim = self.ax.get_xlim()
+            self.drag_ylim = self.ax.get_ylim()
+            return
 
-        self.drag_xlim = self.ax.get_xlim()
-        self.drag_ylim = self.ax.get_ylim()
+        # Check for Scale Y (left of axes)
+        bbox = self.ax.bbox
+        if (event.x < bbox.xmin) and (bbox.ymin <= event.y <= bbox.ymax):
+            self.drag_mode = 'scale_y'
+            self.drag_start = (event.x, event.y)
+            self.drag_ylim = self.ax.get_ylim()
+            return
+
+        # Check for Scale X (below axes)
+        if (bbox.xmin <= event.x <= bbox.xmax) and (event.y < bbox.ymin):
+            self.drag_mode = 'scale_x'
+            self.drag_start = (event.x, event.y)
+            self.drag_xlim = self.ax.get_xlim()
 
     def _on_drag_move(self, event):
-        """Handle mouse drag move (Pan)"""
-        if event.inaxes != self.ax:
-            return
+        """Handle mouse drag move"""
         if self.drag_start is None:  # drag start not set
             return
 
-        dx = event.x - self.drag_start[0]
-        dy = event.y - self.drag_start[1]
+        if self.drag_mode == 'pan':
+            if event.inaxes != self.ax:
+                return
 
-        # convert pixel delta to data delta
-        x_range = self.drag_xlim[1] - self.drag_xlim[0]
-        y_range = self.drag_ylim[1] - self.drag_ylim[0]
+            dx = event.x - self.drag_start[0]
+            dy = event.y - self.drag_start[1]
 
-        bbox = self.ax.bbox
+            # convert pixel delta to data delta
+            x_range = self.drag_xlim[1] - self.drag_xlim[0]
+            y_range = self.drag_ylim[1] - self.drag_ylim[0]
 
-        scale_x = x_range / bbox.width
-        scale_y = y_range / bbox.height
+            bbox = self.ax.bbox
 
-        # calculate new limits
-        # NOTE: dragging right (dx > 0) means we want to see left data -> subtract dx
-        new_xlim = (
-            self.drag_xlim[0] - dx * scale_x,
-            self.drag_xlim[1] - dx * scale_x,
-        )
-        new_ylim = (
-            self.drag_ylim[0] - dy * scale_y,
-            self.drag_ylim[1] - dy * scale_y,
-        )
+            scale_x = x_range / bbox.width
+            scale_y = y_range / bbox.height
 
-        self.ax.set_xlim(new_xlim)
-        self.ax.set_ylim(new_ylim)
+            # calculate new limits
+            # NOTE: dragging right (dx > 0) means we want to see left data -> subtract dx
+            new_xlim = (
+                self.drag_xlim[0] - dx * scale_x,
+                self.drag_xlim[1] - dx * scale_x,
+            )
+            new_ylim = (
+                self.drag_ylim[0] - dy * scale_y,
+                self.drag_ylim[1] - dy * scale_y,
+            )
 
-        self.canvas.draw_idle()
+            self.ax.set_xlim(new_xlim)
+            self.ax.set_ylim(new_ylim)
+
+            self.canvas.draw_idle()
+
+        elif self.drag_mode == 'scale_y':
+            dy = event.y - self.drag_start[1]
+            bbox = self.ax.bbox
+
+            # sensitivity: 4x zoom for full height drag
+            # drag up (dy > 0) -> zoom in (range shrinks)
+            scale_factor = 4 ** (dy / bbox.height)
+
+            y_min, y_max = self.drag_ylim
+            y_mid = (y_min + y_max) / 2
+            y_range = y_max - y_min
+
+            new_range = y_range / scale_factor
+            new_ylim = (y_mid - new_range / 2, y_mid + new_range / 2)
+
+            self.ax.set_ylim(new_ylim)
+
+            self.canvas.draw_idle()
+
+        elif self.drag_mode == 'scale_x':
+            dx = event.x - self.drag_start[0]
+            bbox = self.ax.bbox
+
+            # sensitivity: 4x zoom for full width drag
+            # drag right (dx > 0) -> zoom in (range shrinks)
+            scale_factor = 4 ** (dx / bbox.width)
+
+            x_min, x_max = self.drag_xlim
+            x_mid = (x_min + x_max) / 2
+            x_range = x_max - x_min
+
+            new_range = x_range / scale_factor
+            new_xlim = (x_mid - new_range / 2, x_mid + new_range / 2)
+
+            self.ax.set_xlim(new_xlim)
+
+            self.canvas.draw_idle()
 
     def _on_drag_end(self, event):
         """Handle mouse drag end"""
+        self.drag_mode = None
         self.drag_start = None
 
     def _on_scroll(self, event):
