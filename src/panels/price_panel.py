@@ -70,6 +70,7 @@ class PricePanel(ttk.Frame):
         # embed figure in tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=chart_frame)
 
+        self.canvas.get_tk_widget().configure(background='#1C1C1C')
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
 
         # setup events
