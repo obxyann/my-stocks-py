@@ -16,9 +16,10 @@ class StockDateLocator(ticker.Locator):
         self.ax = ax
         self.min_px_dist = min_px_dist
 
-        # Calculate step for extrapolation
+        # calculate step for extrapolation
         if len(dates) > 1:
             diffs = pd.Series(dates).diff()
+            # determine the most frequent interval, default to 1 day
             self.step = (
                 diffs.mode().iloc[0] if not diffs.mode().empty else pd.Timedelta(days=1)
             )
@@ -58,6 +59,7 @@ class StockDateLocator(ticker.Locator):
         forced_ticks = []
         for i in range(i_min, i_max + 1):
             is_start = False
+
             curr_date = self.get_date(i)
             prev_date = self.get_date(i - 1)
 
@@ -76,32 +78,34 @@ class StockDateLocator(ticker.Locator):
             if dist < self.min_px_dist:
                 continue
 
-            # 2. check if this is a Month Start (high priority)
+            # 2. check if this is a month start (high priority)
             is_month_start = False
+
             curr_date = self.get_date(i)
             prev_date = self.get_date(i - 1)
+
             if curr_date.month != prev_date.month:
                 is_month_start = True
 
-            # if it is a Month Start, we place it (since we passed the distance check)
+            # if it is a month start, we place it (since we passed the distance check)
             if is_month_start:
                 ticks.append(i)
                 last_tick = i
                 continue
 
-            # if it is NOT a Month Start (Normal Day), we check if placing it would
-            # crowd out a future Month Start
+            # if it is NOT a month start (normal day), we check if placing it would
+            # crowd out a future month start
             idx_in_forced = bisect.bisect_right(forced_ticks, i)
             if idx_in_forced < len(forced_ticks):
                 next_forced = forced_ticks[idx_in_forced]
                 dist_to_next = (next_forced - i) * px_per_idx
 
-                # if placing 'i' now makes the next Month Start impossible (too close),
-                # we prefer to SKIP 'i' and wait for the Month Start.
+                # if placing 'i' now makes the next month start impossible (too close),
+                # we prefer to SKIP 'i' and wait for the month start.
                 if dist_to_next < self.min_px_dist:
                     continue
 
-            # otherwise, place the Normal Day tick
+            # otherwise, place the normal day tick
             ticks.append(i)
             last_tick = i
 
@@ -114,7 +118,7 @@ class StockDateFormatter(ticker.Formatter):
     def __init__(self, dates):
         self.dates = dates
 
-        # Calculate step for extrapolation
+        # calculate step for extrapolation
         if len(dates) > 1:
             diffs = pd.Series(dates).diff()
             self.step = (
