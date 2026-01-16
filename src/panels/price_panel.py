@@ -1,8 +1,124 @@
+import bisect
 from tkinter import ttk
 
+import matplotlib.ticker as ticker
 import mplfinance as mpf
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+
+
+class StockDateLocator(ticker.Locator):
+    """Custom locator to ensure month starts are always visible"""
+
+    def __init__(self, dates, ax, min_px_dist=60):
+        self.dates = dates
+        self.ax = ax
+        self.min_px_dist = min_px_dist
+
+    def __call__(self):
+        """Return the locations of the ticks"""
+        dmin, dmax = self.axis.get_view_interval()
+
+        return self.tick_values(dmin, dmax)
+
+    def tick_values(self, vmin, vmax):
+        if not len(self.dates):
+            return []
+
+        # visible range indices
+        i_min = max(0, int(vmin))
+        i_max = min(len(self.dates) - 1, int(vmax))
+
+        if i_min > i_max:
+            return []
+
+        # screen metrics
+        bbox = self.ax.get_window_extent()
+        if bbox.width == 0 or (vmax - vmin) <= 0:
+            return []
+
+        px_per_idx = bbox.width / (vmax - vmin)
+
+        # pre-calculate forced ticks (Month Starts) in the range
+        forced_ticks = []
+        for i in range(i_min, i_max + 1):
+            is_start = False
+            if i == 0:
+                is_start = True
+            else:
+                curr_date = self.dates[i]
+                prev_date = self.dates[i - 1]
+                if curr_date.month != prev_date.month:
+                    is_start = True
+            if is_start:
+                forced_ticks.append(i)
+
+        ticks = []
+        last_tick = -100000
+
+        for i in range(i_min, i_max + 1):
+            # 1. enforce minimum distance (first principle)
+            dist = (i - last_tick) * px_per_idx
+            if dist < self.min_px_dist:
+                continue
+
+            # 2. check if this is a Month Start (high priority)
+            is_month_start = False
+            if i == 0 or self.dates[i].month != self.dates[i - 1].month:
+                is_month_start = True
+
+            # if it is a Month Start, we place it (since we passed the distance check)
+            if is_month_start:
+                ticks.append(i)
+                last_tick = i
+                continue
+
+            # if it is NOT a Month Start (Normal Day), we check if placing it would
+            # crowd out a future Month Start
+            idx_in_forced = bisect.bisect_right(forced_ticks, i)
+            if idx_in_forced < len(forced_ticks):
+                next_forced = forced_ticks[idx_in_forced]
+                dist_to_next = (next_forced - i) * px_per_idx
+
+                # if placing 'i' now makes the next Month Start impossible (too close),
+                # we prefer to SKIP 'i' and wait for the Month Start.
+                if dist_to_next < self.min_px_dist:
+                    continue
+
+            # otherwise, place the Normal Day tick
+            ticks.append(i)
+            last_tick = i
+
+        return ticks
+
+
+class StockDateFormatter(ticker.Formatter):
+    """Custom formatter for stock dates"""
+
+    def __init__(self, dates):
+        self.dates = dates
+
+    def __call__(self, x, pos=None):
+        idx = int(round(x))
+        if idx < 0 or idx >= len(self.dates):
+            return ''
+
+        date = self.dates[idx]
+
+        # determine if it's a month start
+        is_start = False
+        if idx == 0:
+            is_start = True
+        elif idx > 0:
+            if date.month != self.dates[idx - 1].month:
+                is_start = True
+
+        if is_start:
+            # example: 2025-12
+            return f'{date.strftime("%Y/%m")}'
+        else:
+            # example: 4
+            return str(date.day)
 
 
 class PricePanel(ttk.Frame):
@@ -106,6 +222,8 @@ class PricePanel(ttk.Frame):
         self.style_helper.set_axes_style(self.ax, label1='Price')
 
         self.ax.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
+
+        self.ax.tick_params(axis='x', rotation=0)
 
     def _setup_events(self):
         """Setup pan and zoom events"""
@@ -288,6 +406,11 @@ class PricePanel(ttk.Frame):
             mav=(10, 20, 60),
             warn_too_much_data=len(df) + 1,  # disable waring
         )
+
+        # set custom locator and formatter
+        # NOTE: df.index must be DatetimeIndex used in mpf.plot
+        self.ax.xaxis.set_major_locator(StockDateLocator(df.index, self.ax))
+        self.ax.xaxis.set_major_formatter(StockDateFormatter(df.index))
 
         # set initial view to last 100 candles and auto-scale Y
         if len(df) > 100:
