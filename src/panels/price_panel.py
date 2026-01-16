@@ -18,6 +18,7 @@ class StockDateLocator(ticker.Locator):
 
         # calculate step for extrapolation
         if len(dates) > 1:
+            # get all intervals (differences between consecutive dates)
             diffs = pd.Series(dates).diff()
             # determine the most frequent interval, default to 1 day
             self.step = (
@@ -120,7 +121,9 @@ class StockDateFormatter(ticker.Formatter):
 
         # calculate step for extrapolation
         if len(dates) > 1:
+            # get all intervals (differences between consecutive dates)
             diffs = pd.Series(dates).diff()
+            # determine the most frequent interval, default to 1 day
             self.step = (
                 diffs.mode().iloc[0] if not diffs.mode().empty else pd.Timedelta(days=1)
             )
