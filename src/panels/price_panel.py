@@ -3,6 +3,7 @@ from tkinter import ttk
 
 import matplotlib.ticker as ticker
 import mplfinance as mpf
+import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -15,6 +16,23 @@ class StockDateLocator(ticker.Locator):
         self.ax = ax
         self.min_px_dist = min_px_dist
 
+        # Calculate step for extrapolation
+        if len(dates) > 1:
+            diffs = pd.Series(dates).diff()
+            self.step = (
+                diffs.mode().iloc[0] if not diffs.mode().empty else pd.Timedelta(days=1)
+            )
+        else:
+            self.step = pd.Timedelta(days=1)
+
+    def get_date(self, idx):
+        if 0 <= idx < len(self.dates):
+            return self.dates[idx]
+        elif idx < 0:
+            return self.dates[0] + (idx * self.step)
+        else:
+            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
+
     def __call__(self):
         """Return the locations of the ticks"""
         dmin, dmax = self.axis.get_view_interval()
@@ -25,12 +43,9 @@ class StockDateLocator(ticker.Locator):
         if not len(self.dates):
             return []
 
-        # visible range indices
-        i_min = max(0, int(vmin))
-        i_max = min(len(self.dates) - 1, int(vmax))
-
-        if i_min > i_max:
-            return []
+        # visible range indices (allow going out of bounds)
+        i_min = int(vmin)
+        i_max = int(vmax)
 
         # screen metrics
         bbox = self.ax.get_window_extent()
@@ -43,13 +58,12 @@ class StockDateLocator(ticker.Locator):
         forced_ticks = []
         for i in range(i_min, i_max + 1):
             is_start = False
-            if i == 0:
+            curr_date = self.get_date(i)
+            prev_date = self.get_date(i - 1)
+
+            if curr_date.month != prev_date.month:
                 is_start = True
-            else:
-                curr_date = self.dates[i]
-                prev_date = self.dates[i - 1]
-                if curr_date.month != prev_date.month:
-                    is_start = True
+
             if is_start:
                 forced_ticks.append(i)
 
@@ -64,7 +78,9 @@ class StockDateLocator(ticker.Locator):
 
             # 2. check if this is a Month Start (high priority)
             is_month_start = False
-            if i == 0 or self.dates[i].month != self.dates[i - 1].month:
+            curr_date = self.get_date(i)
+            prev_date = self.get_date(i - 1)
+            if curr_date.month != prev_date.month:
                 is_month_start = True
 
             # if it is a Month Start, we place it (since we passed the distance check)
@@ -98,20 +114,32 @@ class StockDateFormatter(ticker.Formatter):
     def __init__(self, dates):
         self.dates = dates
 
+        # Calculate step for extrapolation
+        if len(dates) > 1:
+            diffs = pd.Series(dates).diff()
+            self.step = (
+                diffs.mode().iloc[0] if not diffs.mode().empty else pd.Timedelta(days=1)
+            )
+        else:
+            self.step = pd.Timedelta(days=1)
+
+    def get_date(self, idx):
+        if 0 <= idx < len(self.dates):
+            return self.dates[idx]
+        elif idx < 0:
+            return self.dates[0] + (idx * self.step)
+        else:
+            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
+
     def __call__(self, x, pos=None):
         idx = int(round(x))
-        if idx < 0 or idx >= len(self.dates):
-            return ''
-
-        date = self.dates[idx]
+        date = self.get_date(idx)
 
         # determine if it's a month start
         is_start = False
-        if idx == 0:
+        prev_date = self.get_date(idx - 1)
+        if date.month != prev_date.month:
             is_start = True
-        elif idx > 0:
-            if date.month != self.dates[idx - 1].month:
-                is_start = True
 
         if is_start:
             # example: 2025-12
