@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 
 
 class StockDateLocator(ticker.Locator):
-    """Custom locator to ensure month starts are always visible"""
+    """Custom locator to ensure Month Starts are always visible"""
 
     def __init__(self, dates, ax, min_px_dist=60):
         self.dates = dates
@@ -78,7 +78,7 @@ class StockDateLocator(ticker.Locator):
             if dist < self.min_px_dist:
                 continue
 
-            # 2. check if this is a month start (high priority)
+            # 2. check if this is a Month Start (high priority)
             is_month_start = False
 
             curr_date = self.get_date(i)
@@ -87,21 +87,21 @@ class StockDateLocator(ticker.Locator):
             if curr_date.month != prev_date.month:
                 is_month_start = True
 
-            # if it is a month start, we place it (since we passed the distance check)
+            # if it is a Month Start, we place it (since we passed the distance check)
             if is_month_start:
                 ticks.append(i)
                 last_tick = i
                 continue
 
-            # if it is NOT a month start (normal day), we check if placing it would
-            # crowd out a future month start
+            # if it is NOT a Month Start (normal day), we check if placing it would
+            # crowd out a future Month Start
             idx_in_forced = bisect.bisect_right(forced_ticks, i)
             if idx_in_forced < len(forced_ticks):
                 next_forced = forced_ticks[idx_in_forced]
                 dist_to_next = (next_forced - i) * px_per_idx
 
-                # if placing 'i' now makes the next month start impossible (too close),
-                # we prefer to SKIP 'i' and wait for the month start.
+                # if placing 'i' now makes the next Month Start impossible (too close),
+                # we prefer to SKIP 'i' and wait for the Month Start
                 if dist_to_next < self.min_px_dist:
                     continue
 
@@ -139,7 +139,7 @@ class StockDateFormatter(ticker.Formatter):
         idx = int(round(x))
         date = self.get_date(idx)
 
-        # determine if it's a month start
+        # determine if it's a Month Start
         is_start = False
         prev_date = self.get_date(idx - 1)
         if date.month != prev_date.month:
