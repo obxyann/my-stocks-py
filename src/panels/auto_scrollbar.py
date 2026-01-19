@@ -2,16 +2,24 @@ from tkinter import ttk
 
 
 class AutoScrollbar(ttk.Scrollbar):
-    """A scrollbar that hides itself if it's not needed
+    """Scrollbar that hides itself if it's not needed
 
     Only works if you use the pack geometry manager.
     """
 
-    def set(self, lo, hi):
-        if float(lo) <= 0.0 and float(hi) >= 1.0:
+    def set(self, first, last):
+        """Set scrollbar visible range
+
+        Overwrite this function to update visibility.
+
+        Args:
+            first (float): top visible range between 0 and 1
+            last (float): bottom visible range between 0 and 1
+        """
+        if float(first) <= 0.0 and float(last) >= 1.0:
             self.pack_forget()
         else:
             if not self.winfo_ismapped():
                 self.pack(side='right', fill='y')
 
-        ttk.Scrollbar.set(self, lo, hi)
+        ttk.Scrollbar.set(self, first, last)

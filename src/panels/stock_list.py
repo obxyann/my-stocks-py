@@ -1,4 +1,4 @@
-from tkinter import filedialog, ttk
+from tkinter import filedialog, messagebox, ttk
 
 import pandas as pd
 
@@ -44,7 +44,7 @@ class StockListPanel(ttk.Frame):
         return bar
 
     def _create_table(self):
-        """Create table
+        """Create table for stock list
 
         Returns:
             ttk.Frame: Created table
@@ -98,7 +98,7 @@ class StockListPanel(ttk.Frame):
         """Set data to stock list
 
         Args:
-            df: pd.DataFrame containing stock data
+            df (pd.DataFrame): Stock data
         """
         # save df
         self.current_df = df
@@ -124,7 +124,7 @@ class StockListPanel(ttk.Frame):
             self.table.insert('', 'end', values=tuple(row))
 
     def read_file(self):
-        """Browse to read a csv file to load it as a dataframe and set data to table"""
+        """Browse to read csv file and load it to table"""
         file_path = filedialog.askopenfilename(
             filetypes=[('CSV files', '*.csv'), ('All files', '*.*')]
         )
@@ -150,7 +150,7 @@ class StockListPanel(ttk.Frame):
                 print(f'Error: Failed to read file: {e}')
 
     def save_file(self):
-        """Browse to save current stock list data to a csv file"""
+        """Browse to save current stock list to csv file"""
         if self.current_df is None or self.current_df.empty:
             messagebox.showinfo('Message', '尚無資料')
             return

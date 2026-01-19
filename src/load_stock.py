@@ -263,7 +263,12 @@ def transform_financial_metrics(df):
         ('eps_yoy', 'EPS 年增率', format_100),
         ('net_income_yoy', '淨利年增率', format_100),
         ('opr_cash_flow_yoy', '營業現金流年增率', format_100),
+        ('gross_margin_qoq', '毛利率季增率', format_100),
+        ('opr_margin_qoq', '營業利益率季增率', format_100),
+        ('net_margin_qoq', '稅後淨利率季增率', format_100),
         ('gross_margin_yoy', '毛利率年增率', format_100),
+        ('opr_margin_yoy', '營業利益率年增率', format_100),
+        ('net_margin_yoy', '稅後淨利率年增率', format_100),
         ('roe_yoy', 'ROE 年增率', format_100),
         ('pe_ratio', '本益比'),
         ('pb_ratio', '淨值比'),
@@ -318,8 +323,10 @@ def _pivot_dataframe(df, items):
     return pd.DataFrame(result_data)
 
 
-def format_number(value):
-    """Format number with comma separators
+def format_currency(value):
+    """Format number as string with thousands separators
+
+    e.g., 1234567 -> '1,234,567'
 
     Args:
         value: Numeric value
@@ -337,10 +344,12 @@ def format_number(value):
 
 
 def format_percent(value):
-    """Format percent value
+    """Format decimal as percentage string with % sign (multiplied by 100)
+
+    e.g., 0.1234 -> '12.34%'
 
     Args:
-        value: Numeric value (decimal, e.g., 0.1234 for 12.34%)
+        value: Numeric value
 
     Returns:
         str: Formatted string with % sign
@@ -355,10 +364,12 @@ def format_percent(value):
 
 
 def format_100(value):
-    """Format percent value without % sign
+    """Format decimal as percentage value string (multiplied by 100)
+
+    e.g., 0.1234 -> '12.34'
 
     Args:
-        value: Numeric value (decimal, e.g., 0.1234 for 12.34)
+        value: Numeric value
 
     Returns:
 
@@ -374,9 +385,9 @@ def format_100(value):
 
 
 def format_value(value):
-    """Format general value for display
+    """Round numeric value to 2 decimal places string
 
-    Round to 2 decimal places for floats.
+    e.g., 12.3456 -> '12.35'
 
     Args:
         value: Any value

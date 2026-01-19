@@ -100,7 +100,7 @@ class StockApp(ttk.Frame):
 
         # tick of axes
         ax1.tick_params(colors='#FFFFFF')
-        ax1.tick_params(axis='y', labelcolor='#599FDC')
+        ax1.tick_params(axis='y', labelcolor='#FFFFFF')
 
         # spines of axes
         ax1.spines['top'].set_visible(False)
@@ -111,7 +111,7 @@ class StockApp(ttk.Frame):
 
         if ax2 is not None:
             ax2.tick_params(colors='#FFFFFF')
-            ax2.tick_params(axis='y', labelcolor='#E66D5F')
+            ax2.tick_params(axis='y', labelcolor='#FFFFFF')
 
             ax2.spines['top'].set_visible(False)
             ax2.spines['bottom'].set_visible(False)
@@ -132,19 +132,19 @@ class StockApp(ttk.Frame):
         ax1.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
 
         # label beside axes
-        ax1.set_ylabel(label1, color='#599FDC')
+        ax1.set_ylabel(label1, color='#FFFFFF')
 
         # offset text of axes
-        ax1.yaxis.get_offset_text().set_color('#599FDC')
+        ax1.yaxis.get_offset_text().set_color('#FFFFFF')
 
         if ax2 is not None:
             # label
-            ax2.set_ylabel(label2, color='#E66D5F')
+            ax2.set_ylabel(label2, color='#FFFFFF')
 
             ax2.yaxis.set_label_position('right')
 
             # offset text
-            ax2.yaxis.get_offset_text().set_color('#E66D5F')
+            ax2.yaxis.get_offset_text().set_color('#FFFFFF')
 
     ####################
     # create UI frames #

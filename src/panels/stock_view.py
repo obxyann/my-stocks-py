@@ -68,13 +68,13 @@ class StockViewPanel(ttk.Frame):
         """Set data to stock view
 
         Args:
-            data (dict): dictionary containing metadata
-                         - 'code_name': Stock code and name, string
-                         - 'ohlc_price': OHLC price data, DataFrame
-                         - 'revenue': Revenue data, DataFrame
-                         - 'avg_price': Average price data, DataFrame
-                         - 'financial': Financial data, DataFrame
-                         - 'metrics': Financial metrics data, DataFrame
+            data (dict): dictionary containing metadata:
+                         'code_name': Stock code and name, string
+                         'ohlc_price': OHLC price data, DataFrame
+                         'revenue': Revenue data, DataFrame
+                         'avg_price': Average price data, DataFrame
+                         'financial': Financial data, DataFrame
+                         'metrics': Financial metrics data, DataFrame
         """
         self.clear()
 

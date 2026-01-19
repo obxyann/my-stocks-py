@@ -17,19 +17,19 @@ class FinancialPanel(ttk.Frame):
         # for setting styles
         self.style_helper = style_helper
 
-        # create chart at top
-        self._create_chart().pack(fill='x')
+        # create charts at top
+        self._create_charts().pack(fill='x')
 
         # create table below chart
         self._create_table().pack(fill='both', expand=True)
 
-    def _create_chart(self):
-        """Create chart
+    def _create_charts(self):
+        """Create charts
 
         Returns:
-            ttk.Frame: Created chart
+            ttk.Frame: Created frame containing charts
         """
-        # container for chart
+        # container for charts
         chart_frame = ttk.Frame(self)
 
         return chart_frame
@@ -93,7 +93,7 @@ class FinancialPanel(ttk.Frame):
         """Set data to table
 
         Args:
-            df: pd.DataFrame containing financial data
+            df (pd.DataFrame): Financial data
         """
         # reset headers of table
         table_cols = self.table['columns']
@@ -128,8 +128,10 @@ class FinancialPanel(ttk.Frame):
     def set_data(self, df):
         """Set data to panel
 
+        NOTE: Data has been pivoted for table from database (in load_stock.py)
+
         Args:
-            df: pd.DataFrame containing financial data
+            df (pd.DataFrame): Financial data
         """
         self._set_table_data(df)
 

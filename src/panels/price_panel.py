@@ -9,7 +9,15 @@ from matplotlib.figure import Figure
 
 
 class StockDateLocator(ticker.Locator):
-    """Custom locator to ensure Month Starts are always visible"""
+    """Custom locator for stock dates on x axis
+
+    Ensure Month Starts are always visible on x axis.
+
+    Args:
+        dates (pd.Index): List of datetime objects
+        ax: Matplotlib axes object
+        min_px_dist (int): Minimum pixel distance between ticks
+    """
 
     def __init__(self, dates, ax, min_px_dist=60):
         self.dates = dates
@@ -27,21 +35,26 @@ class StockDateLocator(ticker.Locator):
         else:
             self.step = pd.Timedelta(days=1)
 
-    def get_date(self, idx):
-        if 0 <= idx < len(self.dates):
-            return self.dates[idx]
-        elif idx < 0:
-            return self.dates[0] + (idx * self.step)
-        else:
-            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
-
     def __call__(self):
-        """Return the locations of the ticks"""
+        """Return locations of ticks
+
+        Returns:
+            list: List of tick positions
+        """
         dmin, dmax = self.axis.get_view_interval()
 
         return self.tick_values(dmin, dmax)
 
     def tick_values(self, vmin, vmax):
+        """Calculate tick positions within range
+
+        Args:
+            vmin (float): Minimum value in view
+            vmax (float): Maximum value in view
+
+        Returns:
+            list: Calculated tick positions
+        """
         if not len(self.dates):
             return []
 
@@ -112,9 +125,29 @@ class StockDateLocator(ticker.Locator):
 
         return ticks
 
+    def get_date(self, idx):
+        """Get date at specified index
+
+        Args:
+            idx (int): Index in date list
+
+        Returns:
+            pd.Timestamp: Date at index
+        """
+        if 0 <= idx < len(self.dates):
+            return self.dates[idx]
+        elif idx < 0:
+            return self.dates[0] + (idx * self.step)
+        else:
+            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
+
 
 class StockDateFormatter(ticker.Formatter):
-    """Custom formatter for stock dates"""
+    """Custom formatter for stock dates on x axis
+
+    Args:
+       dates (pd.Index): List of datetime objects
+    """
 
     def __init__(self, dates):
         self.dates = dates
@@ -130,15 +163,16 @@ class StockDateFormatter(ticker.Formatter):
         else:
             self.step = pd.Timedelta(days=1)
 
-    def get_date(self, idx):
-        if 0 <= idx < len(self.dates):
-            return self.dates[idx]
-        elif idx < 0:
-            return self.dates[0] + (idx * self.step)
-        else:
-            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
-
     def __call__(self, x, pos=None):
+        """Format tick value to date string
+
+        Args:
+            x (float): Tick value
+            pos (int): Position of tick on the axis
+
+        Returns:
+            str: Formatted date string for that tick label
+        """
         idx = int(round(x))
         date = self.get_date(idx)
 
@@ -155,6 +189,22 @@ class StockDateFormatter(ticker.Formatter):
             # example: 4
             return str(date.day)
 
+    def get_date(self, idx):
+        """Get date at specified index
+
+        Args:
+            idx (int): Index in date list
+
+        Returns:
+            pd.Timestamp: Date at index
+        """
+        if 0 <= idx < len(self.dates):
+            return self.dates[idx]
+        elif idx < 0:
+            return self.dates[0] + (idx * self.step)
+        else:
+            return self.dates[-1] + ((idx - (len(self.dates) - 1)) * self.step)
+
 
 class PricePanel(ttk.Frame):
     """Price chart panel with K-line candlestick chart
@@ -167,7 +217,7 @@ class PricePanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        ## for setting styles
+        # for setting styles
         self.style_helper = style_helper
 
         # drag/zoom state
@@ -187,7 +237,7 @@ class PricePanel(ttk.Frame):
         """Create control bar
 
         Returns:
-            ttk.Frame: Created bar
+            ttk.Frame: Created control bar
         """
         # container for widgets
         bar = ttk.Frame(self)
@@ -207,7 +257,7 @@ class PricePanel(ttk.Frame):
         """Create chart
 
         Returns:
-            ttk.Frame: Created chart
+            ttk.Frame: Created frame containing chart
         """
         # container for chart
         chart_frame = ttk.Frame(self)
@@ -268,11 +318,15 @@ class PricePanel(ttk.Frame):
         self.canvas.mpl_connect('scroll_event', self._on_scroll)
 
     def _on_drag_start(self, event):
-        """Handle mouse drag start"""
+        """Handle mouse drag start
+
+        Args:
+            event: Matplotlib mouse event
+        """
         if event.button != 1:  # left click only
             return
 
-        # Check for Pan (inside axes)
+        # check for Pan (inside axes)
         if event.inaxes == self.ax:
             self.drag_mode = 'pan'
             self.drag_start = (event.x, event.y)
@@ -280,7 +334,7 @@ class PricePanel(ttk.Frame):
             self.drag_ylim = self.ax.get_ylim()
             return
 
-        # Check for Scale Y (left of axes)
+        # check for Scale Y (left of axes)
         bbox = self.ax.bbox
         if (event.x < bbox.xmin) and (bbox.ymin <= event.y <= bbox.ymax):
             self.drag_mode = 'scale_y'
@@ -288,14 +342,18 @@ class PricePanel(ttk.Frame):
             self.drag_ylim = self.ax.get_ylim()
             return
 
-        # Check for Scale X (below axes)
+        # check for Scale X (below axes)
         if (bbox.xmin <= event.x <= bbox.xmax) and (event.y < bbox.ymin):
             self.drag_mode = 'scale_x'
             self.drag_start = (event.x, event.y)
             self.drag_xlim = self.ax.get_xlim()
 
     def _on_drag_move(self, event):
-        """Handle mouse drag move"""
+        """Handle mouse drag move
+
+        Args:
+            event: Matplotlib mouse event
+        """
         if self.drag_start is None:  # drag start not set
             return
 
@@ -370,12 +428,20 @@ class PricePanel(ttk.Frame):
             self.canvas.draw_idle()
 
     def _on_drag_end(self, event):
-        """Handle mouse drag end"""
+        """Handle mouse drag end
+
+        Args:
+            event: Matplotlib mouse event
+        """
         self.drag_mode = None
         self.drag_start = None
 
     def _on_scroll(self, event):
-        """Handle mouse scroll (Zoom X and Y)"""
+        """Handle mouse scroll (Zoom X and Y)
+
+        Args:
+            event: Matplotlib mouse event
+        """
         if event.inaxes != self.ax:
             return
 
@@ -394,9 +460,9 @@ class PricePanel(ttk.Frame):
         """Zoom axes around center point
 
         Args:
-            cx: Center X (data coord)
-            cy: Center Y (data coord)
-            scale: Zoom scale factor
+            cx (float): Center X (data coord)
+            cy (float): Center Y (data coord)
+            scale (float): Zoom scale factor
         """
         # zoom X
         xlim = self.ax.get_xlim()
@@ -420,7 +486,7 @@ class PricePanel(ttk.Frame):
         """Set data to chart
 
         Args:
-            df: pd.DataFrame with DatetimeIndex and [Open, High, Low, Close, Volume]
+            df (pd.DataFrame): Price (OHLC) and volume data
         """
         # clear existing plot
         self.ax.clear()
@@ -475,8 +541,10 @@ class PricePanel(ttk.Frame):
     def set_data(self, df):
         """Set data to panel
 
+        Data is pd.Dataframe with DatetimeIndex and [Open, High, Low, Close, Volume]
+
         Args:
-            df: pd.DataFrame containing price (OHLC) and volume data
+            df (pd.DataFrame): Price (OHLC) and volume data
         """
         self._set_chart_data(df)
 

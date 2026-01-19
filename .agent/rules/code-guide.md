@@ -7,7 +7,7 @@ trigger: always_on
 - Libraries: pandas
 - Database: SQLite
 - UI: Tkinter ttk
-- Data visualization: seaborn
+- Data visualization: matplotlib
 
 ## Code Style
 - Follow PEP 8
@@ -28,6 +28,7 @@ trigger: always_on
 - In-line Comments: Start with a lowercase letter and end without a period
 - Docstrings:
   * Use Google Style Docstrings
+  * If a function has arguments or return value, it must be included.
   * Start with an uppercase letter and end without a period
 
 ## Function Design
