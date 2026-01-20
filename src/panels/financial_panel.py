@@ -1,5 +1,10 @@
 from tkinter import ttk
 
+import math
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
 from panels.auto_scrollbar import AutoScrollbar
 
 
@@ -29,10 +34,209 @@ class FinancialPanel(ttk.Frame):
         Returns:
             ttk.Frame: Created frame containing charts
         """
-        # container for charts
         chart_frame = ttk.Frame(self)
 
+        self.fig = Figure(figsize=(7.5, 3.2), dpi=100)
+
+        self.ax_cash_flow = self.fig.add_subplot(121)
+        self.ax_eps = self.fig.add_subplot(122)
+
+        self._set_charts_style()
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=chart_frame)
+
+        self.canvas.get_tk_widget().configure(background='#1C1C1C')
+        self.canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        self.fig.tight_layout()
+
         return chart_frame
+
+    def _set_charts_style(self):
+        """Set charts style"""
+        self.style_helper.set_chart_style(self.fig, self.ax_cash_flow)
+        self.style_helper.set_chart_style(self.fig, self.ax_eps)
+
+        self._set_axes_style(self.ax_cash_flow, 'Cash Flow')
+        self._set_axes_style(self.ax_eps, 'EPS')
+
+    def _set_axes_style(self, ax, label):
+        """Set axes style for charts
+
+        Args:
+            ax: Matplotlib axis to style
+            label (str): Label for the y-axis
+        """
+        self.style_helper.set_axes_style(ax, label1=label)
+
+        ax.tick_params(axis='x', rotation=0)
+
+    def _set_charts_data(self, df):
+        """Set data to charts
+
+        Args:
+            df (pd.DataFrame): Financial data (pivoted, same as table)
+        """
+        self.ax_cash_flow.clear()
+        self.ax_eps.clear()
+
+        if df is None or df.empty:
+            self.canvas.draw_idle()
+            return
+
+        item_col = df.columns[0]
+        periods_desc = df.columns[1:].tolist()
+        periods = list(reversed(periods_desc))
+
+        net_income_desc = self._get_item_values(df, item_col, '稅後淨利')
+        opr_cash_flow_desc = self._get_item_values(df, item_col, '營業現金流')
+        eps_desc = self._get_item_values(df, item_col, '每股盈餘')
+
+        net_income = self._parse_numeric_values(list(reversed(net_income_desc)) if net_income_desc else None)
+        opr_cash_flow = self._parse_numeric_values(
+            list(reversed(opr_cash_flow_desc)) if opr_cash_flow_desc else None
+        )
+        eps = self._parse_numeric_values(list(reversed(eps_desc)) if eps_desc else None)
+
+        self._plot_cash_flow_chart(periods, net_income, opr_cash_flow)
+        self._plot_eps_chart(periods, eps)
+
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
+
+    def _get_item_values(self, df, item_col, display_name):
+        """Get period values list for a specific display item name"""
+        series = df[item_col].astype(str).str.strip()
+        matched = df[series == display_name]
+        if matched.empty:
+            return None
+
+        row = matched.iloc[0]
+        return row.iloc[1:].tolist()
+
+    def _parse_numeric_values(self, values):
+        """Parse formatted table values into float list (nan for missing)"""
+        if values is None:
+            return None
+
+        parsed = []
+        for v in values:
+            if v is None:
+                parsed.append(math.nan)
+                continue
+
+            if isinstance(v, (int, float)):
+                parsed.append(float(v))
+                continue
+
+            s = str(v).strip()
+            if s == '' or s == '-' or s.lower() == 'nan':
+                parsed.append(math.nan)
+                continue
+
+            s = s.replace(',', '')
+            try:
+                parsed.append(float(s))
+            except Exception:
+                parsed.append(math.nan)
+
+        return parsed
+
+    def _plot_cash_flow_chart(self, periods, net_income, opr_cash_flow):
+        """Plot cash flow chart"""
+        ax = self.ax_cash_flow
+
+        self._set_axes_style(ax, 'Cash Flow')
+
+        x_indices = range(len(periods))
+
+        if net_income is not None:
+            ax.plot(
+                x_indices,
+                net_income,
+                color='#66BB6A',
+                linewidth=2,
+                label='Net Income',
+            )
+
+        if opr_cash_flow is not None:
+            ax.plot(
+                x_indices,
+                opr_cash_flow,
+                color='#599FDC',
+                linewidth=2,
+                label='Op Cash Flow',
+            )
+
+        self._format_x_ticks(ax, periods)
+        self._apply_legend(ax)
+
+    def _plot_eps_chart(self, periods, eps):
+        """Plot EPS chart"""
+        ax = self.ax_eps
+
+        self._set_axes_style(ax, 'EPS')
+
+        if eps is None:
+            return
+
+        x_indices = range(len(periods))
+
+        ax.bar(
+            x_indices,
+            eps,
+            color='#E66D5F',
+            alpha=0.8,
+            label='EPS',
+            width=0.6,
+        )
+
+        self._format_x_ticks(ax, periods)
+        self._apply_legend(ax)
+
+    def _format_x_ticks(self, ax, series, num_max_ticks=4):
+        """Format x-axis ticks and labels with step size
+
+        Args:
+            ax: Matplotlib axis to format
+            series: Data containing all available x labels
+            num_max_ticks (int): Maximum number of ticks to show
+        """
+        num_ticks = len(series)
+        if num_ticks == 0:
+            return
+
+        step = max(1, num_ticks // num_max_ticks)
+
+        tick_positions = range(0, num_ticks, step)
+        tick_labels = series[::step]
+
+        ax.set_xticks(tick_positions, labels=tick_labels)
+
+        ax.set_xlim(-0.5, num_ticks - 0.5)
+
+    def _apply_legend(self, ax):
+        """Apply legend to specified axis
+
+        Args:
+            ax: Matplotlib axis to apply
+        """
+        handles, labels = ax.get_legend_handles_labels()
+        if not handles:
+            return
+
+        legend = ax.legend(
+            handles,
+            labels,
+            loc='upper left',
+            frameon=False,
+            labelcolor='#FFFFFF',
+            bbox_to_anchor=(0, 1.2),
+            ncol=3,
+        )
+        legend.get_frame().set_facecolor('#1C1C1C')
+        legend.get_frame().set_alpha(0.6)
+        legend.set_zorder(100)
 
     def _create_table(self):
         """Create table
@@ -133,9 +337,10 @@ class FinancialPanel(ttk.Frame):
         Args:
             df (pd.DataFrame): Financial data
         """
+        self._set_charts_data(df)
         self._set_table_data(df)
 
     def clear(self):
         """Clear data on panel"""
-        # clear table
+        self._set_charts_data(None)
         self._set_table_data(None)
