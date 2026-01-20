@@ -244,12 +244,11 @@ class MetricsPanel(ttk.Frame):
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profit QoQ (%)')
 
-        num_ticks = len(x_labels)
-        x = list(range(num_ticks))
+        x_indices = range(len(x_labels))
         width = 0.25
 
         ax.bar(
-            [i - width for i in x],
+            [i - width for i in x_indices],
             series.get('gross_margin_qoq', []),
             width=width,
             color='#599FDC',
@@ -257,7 +256,7 @@ class MetricsPanel(ttk.Frame):
             label='gross',
         )
         ax.bar(
-            x,
+            x_indices,
             series.get('opr_margin_qoq', []),
             width=width,
             color='#E66D5F',
@@ -265,7 +264,7 @@ class MetricsPanel(ttk.Frame):
             label='opr',
         )
         ax.bar(
-            [i + width for i in x],
+            [i + width for i in x_indices],
             series.get('net_margin_qoq', []),
             width=width,
             color='#66BB6A',
@@ -294,12 +293,11 @@ class MetricsPanel(ttk.Frame):
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profit YoY (%)')
 
-        num_ticks = len(x_labels)
-        x = list(range(num_ticks))
+        x_indices = range(len(x_labels))
         width = 0.25
 
         ax.bar(
-            [i - width for i in x],
+            [i - width for i in x_indices],
             series.get('gross_margin_yoy', []),
             width=width,
             color='#599FDC',
@@ -307,7 +305,7 @@ class MetricsPanel(ttk.Frame):
             label='gross',
         )
         ax.bar(
-            x,
+            x_indices,
             series.get('opr_margin_yoy', []),
             width=width,
             color='#E66D5F',
@@ -315,7 +313,7 @@ class MetricsPanel(ttk.Frame):
             label='opr',
         )
         ax.bar(
-            [i + width for i in x],
+            [i + width for i in x_indices],
             series.get('net_margin_yoy', []),
             width=width,
             color='#66BB6A',
