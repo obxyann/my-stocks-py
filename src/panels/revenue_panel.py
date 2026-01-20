@@ -413,15 +413,15 @@ class RevenuePanel(ttk.Frame):
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row.iloc[:num_cols]))
 
-    def set_data(self, df_revenue, df_plot=None):
+    def set_data(self, df, df_plot=None):
         """Set data to panel
 
         Args:
-            df_revenue (pd.DataFrame): Revenue data for table
+            df (pd.DataFrame): Revenue data for table
             df_plot (pd.DataFrame): Revenue plot data for charts
         """
         self._set_charts_data(df_plot)
-        self._set_table_data(df_revenue)
+        self._set_table_data(df)
 
     def clear(self):
         """Clear data on panel"""

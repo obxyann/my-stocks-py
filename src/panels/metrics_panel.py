@@ -1,6 +1,5 @@
 from tkinter import ttk
 
-import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -148,11 +147,11 @@ class MetricsPanel(ttk.Frame):
 
         return table_frame
 
-    def _set_charts_data(self, df):
+    def _set_charts_data(self, df_plot):
         """Set data to chart
 
         Args:
-            df (pd.DataFrame): Metrics data
+            df_plot (pd.DataFrame): Metrics plot data
         """
         # clear existing plots
         self.ax_profit.clear()
@@ -163,15 +162,20 @@ class MetricsPanel(ttk.Frame):
         # self.ax_empty.axis('off')
 
         # check data
-        if df is None or df.empty:
+        if df_plot is None or df_plot.empty:
             self.canvas.draw_idle()
             return
 
         # prepare data
-        x_labels, series = self._extract_profit_series(df)
-        if not x_labels:
-            self.canvas.draw_idle()
-            return
+        # df columns: year_quarter, gross_margin, ...
+        x_labels = df_plot['year_quarter'].tolist()
+
+        series = {}
+        # convert relevant columns to list
+        for col in df_plot.columns:
+            if col == 'year_quarter':
+                continue
+            series[col] = df_plot[col].tolist()
 
         # plot charts
         self._plot_profit(x_labels, series)
@@ -182,84 +186,6 @@ class MetricsPanel(ttk.Frame):
         self.fig.tight_layout()
 
         self.canvas.draw_idle()
-
-    def _extract_profit_series(self, df):
-        """Extract profitability series from data
-
-        Args:
-            df (pd.DataFrame): Metrics data
-
-        Returns:
-            tuple: (x_labels, series_dict)
-        """
-        if df is None or df.empty or len(df.columns) < 2:
-            return [], {}
-
-        item_col = df.columns[0]
-        period_cols = df.columns[1:].tolist()
-
-        parsed = []
-        for col in period_cols:
-            year, quarter = self._parse_period(col)
-            if year is None or quarter is None:
-                continue
-            parsed.append((col, year, quarter))
-
-        parsed.sort(key=lambda x: (x[1], x[2]))
-        if not parsed:
-            return [], {}
-
-        sorted_cols = [c for c, _, _ in parsed]
-        x_labels = [f'{y}.Q{q}' for _, y, q in parsed]
-
-        row_labels = {
-            'gross_margin': '營業毛利率',
-            'opr_margin': '營業利益率',
-            'net_margin': '稅後淨利率',
-            'gross_margin_qoq': '毛利率季增率',
-            'opr_margin_qoq': '營業利益率季增率',
-            'net_margin_qoq': '稅後淨利率季增率',
-            'gross_margin_yoy': '毛利率年增率',
-            'opr_margin_yoy': '營業利益率年增率',
-            'net_margin_yoy': '稅後淨利率年增率',
-        }
-
-        series = {}
-        for key, label in row_labels.items():
-            row = df[df[item_col] == label]
-            if row.empty:
-                values = [None] * len(sorted_cols)
-            else:
-                values = row.iloc[0][sorted_cols].tolist()
-
-            series[key] = pd.to_numeric(pd.Series(values), errors='coerce').tolist()
-
-        return x_labels, series
-
-    def _parse_period(self, label):
-        """Parse period string to year and quarter
-
-        Args:
-            label (str): Period string in format 'YYYY.QX'
-
-        Returns:
-            tuple: (year, quarter) or (None, None) if parsing fails
-        """
-        try:
-            parts = str(label).split('.Q')
-
-            if len(parts) != 2:
-                return None, None
-
-            year = int(parts[0])
-            quarter = int(parts[1])
-
-            if quarter < 1 or quarter > 4:
-                return None, None
-            return year, quarter
-
-        except Exception:
-            return None, None
 
     def _plot_profit(self, x_labels, series):
         """Plot profitability lines on axis
@@ -489,15 +415,14 @@ class MetricsPanel(ttk.Frame):
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row))
 
-    def set_data(self, df):
+    def set_data(self, df, df_plot=None):
         """Set data to panel
 
-        NOTE: Data has been pivoted for table from database (in load_stock.py)
-
         Args:
-            df (pd.DataFrame): Metrics data
+            df (pd.DataFrame): Metrics data for table
+            df_plot (pd.DataFrame): Metrics plot data for charts
         """
-        self._set_charts_data(df)
+        self._set_charts_data(df_plot)
         self._set_table_data(df)
 
     def clear(self):

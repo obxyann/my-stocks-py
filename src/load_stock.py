@@ -24,6 +24,7 @@ def load_stock(stock_code, db):
               'revenue_plot': Revenue plot data, DataFrame
               'financial': Financial data, DataFrame
               'metrics': Financial metrics data, DataFrame
+              'metrics_plot': Financial metrics plot data, DataFrame
     """
     # retrieve stock info
     df_s = db.get_stock_by_code(stock_code)
@@ -54,6 +55,7 @@ def load_stock(stock_code, db):
     df_plot_r = transform_revenue_plot_data(df_r, df_mp)
     df_tbl_f = transform_financial(df_f)
     df_tbl_m = transform_financial_metrics(df_m)
+    df_plot_m = transform_financial_metrics_plot(df_m)
 
     return {
         'code_name': code_name,
@@ -62,6 +64,7 @@ def load_stock(stock_code, db):
         'revenue_plot': df_plot_r,
         'financial': df_tbl_f,
         'metrics': df_tbl_m,
+        'metrics_plot': df_plot_m,
     }
 
 
@@ -458,3 +461,52 @@ def format_value(value):
         return f'{value:.2f}'
 
     return str(value)
+
+
+def transform_financial_metrics_plot(df):
+    """Transform financial metrics data for plotting
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: DataFrame for plotting
+                      columns: [year_quarter, gross_margin, opr_margin, net_margin, ...]
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # work on copy
+    result = df.copy()
+
+    # create year_quarter column e.g. 2025.Q3
+    result['year_quarter'] = (
+        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
+    )
+
+    # select columns for plot
+    # gross_margin, opr_margin, net_margin
+    # gross_margin_qoq, opr_margin_qoq, net_margin_qoq
+    # gross_margin_yoy, opr_margin_yoy, net_margin_yoy
+
+    # multiply by 100 for percentage
+    cols_to_percent = [
+        'gross_margin',
+        'opr_margin',
+        'net_margin',
+        'gross_margin_qoq',
+        'opr_margin_qoq',
+        'net_margin_qoq',
+        'gross_margin_yoy',
+        'opr_margin_yoy',
+        'net_margin_yoy',
+    ]
+
+    for col in cols_to_percent:
+        if col in result.columns:
+            result[col] = result[col] * 100
+
+    # sort by year, quarter ascending (oldest first for chart)
+    result = result.sort_values(by=['year', 'quarter'], ascending=[True, True])
+
+    return result.reset_index(drop=True)

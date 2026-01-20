@@ -75,6 +75,7 @@ class StockViewPanel(ttk.Frame):
                          'revenue_plot': Revenue plot data, DataFrame
                          'financial': Financial data, DataFrame
                          'metrics': Financial metrics data, DataFrame
+                         'metrics_plot': Financial metrics plot data, DataFrame
         """
         self.clear()
 
@@ -90,7 +91,7 @@ class StockViewPanel(ttk.Frame):
         if 'financial' in data:
             self.financial_panel.set_data(data['financial'])
         if 'metrics' in data:
-            self.metrics_panel.set_data(data['metrics'])
+            self.metrics_panel.set_data(data['metrics'], data.get('metrics_plot'))
 
     def clear(self):
         """Clear stock view"""
