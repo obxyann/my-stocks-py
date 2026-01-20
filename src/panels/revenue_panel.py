@@ -1,6 +1,5 @@
 from tkinter import ttk
 
-import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -164,12 +163,11 @@ class RevenuePanel(ttk.Frame):
 
         return table_frame
 
-    def _set_charts_data(self, df_revenue, df_price=None):
+    def _set_charts_data(self, df_plot):
         """Set data to charts
 
         Args:
-            df_revenue (pd.DataFrame): Revenue data
-            df_price (pd.DataFrame): Price data (optional)
+            df_plot (pd.DataFrame): Revenue plot data
         """
         # clear existing plots
         self.ax1.clear()
@@ -179,22 +177,11 @@ class RevenuePanel(ttk.Frame):
         self.ax4.clear()
 
         # check data
-        if df_revenue is None or df_revenue.empty:
+        if df_plot is None or df_plot.empty:
             self.canvas.draw_idle()
             return
 
-        # prepare data
-        # 1. sort ascending for chart x-axis
-        df_plot = df_revenue.copy().sort_values('year_month')
-
-        # 2. merge price data
-        if df_price is not None and not df_price.empty:
-            # align price data with revenue x-axis
-            df_plot = pd.merge(
-                df_plot, df_price[['year_month', 'price']], on='year_month', how='left'
-            )
-
-        # 3. determine scale and unit based on max revenue
+        # determine scale and unit based on max revenue
         if 'revence' in df_plot.columns and not df_plot.empty:
             max_rev = df_plot['revence'].max()
         else:
@@ -211,6 +198,7 @@ class RevenuePanel(ttk.Frame):
             unit = 'M'
 
         # apply scale to revenue data
+        # Note: df_plot is a copy from load_stock or caller, so we can modify it
         if 'revence' in df_plot.columns:
             df_plot['revence'] = df_plot['revence'] / scale
         if 'revenue_ma3' in df_plot.columns:
@@ -306,14 +294,9 @@ class RevenuePanel(ttk.Frame):
 
         # plot revenue YoY bars (on main y-axis)
         if 'revence_yoy' in df_plot.columns:
-            # convert string values to float if needed (e.g., '1.23%')
-            yoy_values = pd.to_numeric(df_plot['revence_yoy'], errors='coerce')
-
             self.ax3.bar(
                 x_indices,
-                yoy_values,
-                # or
-                # df_plot['revence_yoy'],  # only if this is a number
+                df_plot['revence_yoy'],
                 color='#A94085',
                 alpha=0.8,
                 label='YoY (%)',
@@ -430,14 +413,14 @@ class RevenuePanel(ttk.Frame):
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row.iloc[:num_cols]))
 
-    def set_data(self, df_revenue, df_price=None):
+    def set_data(self, df_revenue, df_plot=None):
         """Set data to panel
 
         Args:
-            df_revenue (pd.DataFrame): Revenue data
-            df_price (pd.DataFrame): Price data (optional)
+            df_revenue (pd.DataFrame): Revenue data for table
+            df_plot (pd.DataFrame): Revenue plot data for charts
         """
-        self._set_charts_data(df_revenue, df_price)
+        self._set_charts_data(df_plot)
         self._set_table_data(df_revenue)
 
     def clear(self):

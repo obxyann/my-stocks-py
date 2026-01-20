@@ -72,7 +72,7 @@ class StockViewPanel(ttk.Frame):
                          'code_name': Stock code and name, string
                          'ohlc_price': OHLC price data, DataFrame
                          'revenue': Revenue data, DataFrame
-                         'avg_price': Average price data, DataFrame
+                         'revenue_plot': Revenue plot data, DataFrame
                          'financial': Financial data, DataFrame
                          'metrics': Financial metrics data, DataFrame
         """
@@ -86,7 +86,7 @@ class StockViewPanel(ttk.Frame):
         if 'ohlc_price' in data:
             self.price_panel.set_data(data['ohlc_price'])
         if 'revenue' in data:
-            self.revenue_panel.set_data(data['revenue'], data.get('avg_price'))
+            self.revenue_panel.set_data(data['revenue'], data.get('revenue_plot'))
         if 'financial' in data:
             self.financial_panel.set_data(data['financial'])
         if 'metrics' in data:

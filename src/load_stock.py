@@ -17,11 +17,13 @@ def load_stock(stock_code, db):
         db (StockDatabase): Database instance
 
     Returns:
-        dict: Dictionary containing metadata and DataFrames
-            - 'code_name': Stock code and name string
-            - 'revenue': Revenue data
-            - 'financial': Financial data
-            - 'metrics': Financial metrics data
+        dict: Dictionary containing metadata:
+              'code_name': Stock code and name, string
+              'ohlc_price': OHLC price data, DataFrame
+              'revenue': Revenue data, DataFrame
+              'revenue_plot': Revenue plot data, DataFrame
+              'financial': Financial data, DataFrame
+              'metrics': Financial metrics data, DataFrame
     """
     # retrieve stock info
     df_s = db.get_stock_by_code(stock_code)
@@ -38,26 +40,28 @@ def load_stock(stock_code, db):
     )
 
     # retrieve data from database
-    df_o = db.get_prices_by_code(stock_code, start_date=start_date)
-    df_a = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
+    df_dp = db.get_prices_by_code(stock_code, start_date=start_date)
+    df_mp = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
+
     df_r = db.get_revenue_by_code(stock_code, start_date=start_date)
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
-    tbl_o = transform_ohlc_price(df_o)
-    tbl_a = transform_monthly_avg_price(df_a)
-    tbl_r = transform_monthly_revenue(df_r)
-    tbl_f = transform_financial(df_f)
-    tbl_m = transform_financial_metrics(df_m)
+    df_plot_dp = transform_ohlc_price(df_dp)
+    # df_plot_mp = transform_monthly_avg_price(df_mp)
+    df_tbl_r = transform_revenue(df_r)
+    df_plot_r = transform_revenue_plot_data(df_r, df_mp)
+    df_tbl_f = transform_financial(df_f)
+    df_tbl_m = transform_financial_metrics(df_m)
 
     return {
         'code_name': code_name,
-        'ohlc_price': tbl_o,
-        'avg_price': tbl_a,
-        'revenue': tbl_r,
-        'financial': tbl_f,
-        'metrics': tbl_m,
+        'ohlc_price': df_plot_dp,
+        'revenue': df_tbl_r,
+        'revenue_plot': df_plot_r,
+        'financial': df_tbl_f,
+        'metrics': df_tbl_m,
     }
 
 
@@ -128,7 +132,7 @@ def transform_monthly_avg_price(df):
     return result
 
 
-def transform_monthly_revenue(df):
+def transform_revenue(df):
     """Transform monthly revenue data to UI format
 
     Source format: columns [code, year, month, revenue, ...]
@@ -177,6 +181,59 @@ def transform_monthly_revenue(df):
 
     # sort by year_month descending (latest first)
     result = result.iloc[::-1].reset_index(drop=True)
+
+    return result
+
+
+def transform_revenue_plot_data(df_r, df_a):
+    """Transform revenue and price data for plotting
+
+    Args:
+        df_r: Revenue DataFrame
+        df_a: Monthly average price DataFrame
+
+    Returns:
+        pd.DataFrame: Merged and filtered DataFrame for plotting
+                      columns: [year_month, revence, revenue_ma3, revenue_ma12, revence_yoy, price]
+    """
+    if df_r.empty:
+        return pd.DataFrame(
+            columns=[
+                'year_month',
+                'revence',
+                'revenue_ma3',
+                'revenue_ma12',
+                'revence_yoy',
+                'price',
+            ]
+        )
+
+    # 1. prepare revenue data
+    df_r_plot = pd.DataFrame()
+    df_r_plot['year_month'] = (
+        df_r['year'].astype(str) + '/' + df_r['month'].astype(str).str.zfill(2)
+    )
+    df_r_plot['revence'] = df_r['revenue']
+    df_r_plot['revenue_ma3'] = df_r['revenue_ma3']
+    df_r_plot['revenue_ma12'] = df_r['revenue_ma12']
+    # multiply by 100 for percentage
+    df_r_plot['revence_yoy'] = df_r['revenue_yoy'] * 100
+
+    # 2. prepare price data
+    if df_a.empty:
+        df_a_plot = pd.DataFrame(columns=['year_month', 'price'])
+    else:
+        df_a_plot = pd.DataFrame()
+        df_a_plot['year_month'] = (
+            df_a['year'].astype(str) + '/' + df_a['month'].astype(str).str.zfill(2)
+        )
+        df_a_plot['price'] = df_a['price']
+
+    # 3. merge
+    result = pd.merge(df_r_plot, df_a_plot, on='year_month', how='left')
+
+    # 4. sort by year_month ascending (oldest first for chart)
+    result = result.sort_values('year_month').reset_index(drop=True)
 
     return result
 
