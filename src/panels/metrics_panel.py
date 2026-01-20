@@ -178,7 +178,7 @@ class MetricsPanel(ttk.Frame):
             series[col] = df_plot[col].tolist()
 
         # plot charts
-        self._plot_profit(x_labels, series)
+        self._plot_profit_chart(x_labels, series)
         self._plot_profit_qoq_chart(x_labels, series)
         self._plot_profit_yoy_chart(x_labels, series)
 
@@ -187,7 +187,7 @@ class MetricsPanel(ttk.Frame):
 
         self.canvas.draw_idle()
 
-    def _plot_profit(self, x_labels, series):
+    def _plot_profit_chart(self, x_labels, series):
         """Plot profitability lines on axis
 
         Args:
