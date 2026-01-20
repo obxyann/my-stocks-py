@@ -182,13 +182,14 @@ class RevenuePanel(ttk.Frame):
             return
 
         # determine scale and unit based on max revenue
-        if 'revence' in df_plot.columns and not df_plot.empty:
+        if 'revence' in df_plot.columns:
             max_rev = df_plot['revence'].max()
+        elif 'revenue_ma3' in df_plot.columns:
+            max_rev = df_plot['revenue_ma3'].max()
+        elif 'revenue_ma12' in df_plot.columns:
+            max_rev = df_plot['revenue_ma12'].max()
         else:
             max_rev = 0
-
-        scale = 1
-        unit = 'K'
 
         if max_rev > 9999999:
             scale = 1000000
@@ -196,6 +197,9 @@ class RevenuePanel(ttk.Frame):
         elif max_rev > 9999:
             scale = 1000
             unit = 'M'
+        else:
+            scale = 1
+            unit = 'K'
 
         # apply scale to revenue data
         # Note: df_plot is a copy from load_stock or caller, so we can modify it
@@ -274,7 +278,7 @@ class RevenuePanel(ttk.Frame):
             )
 
         # format x-axis ticks
-        self._format_x_ticks(self.ax1, df_plot['year_month'])
+        self._format_x_ticks(self.ax1, df_plot.get('year_month', []))
 
         # legends
         self._apply_legend(self.ax1, 'left')
@@ -314,7 +318,7 @@ class RevenuePanel(ttk.Frame):
             )
 
         # format x-axis ticks
-        self._format_x_ticks(self.ax3, df_plot['year_month'])
+        self._format_x_ticks(self.ax3, df_plot.get('year_month', []))
 
         # legends
         self._apply_legend(self.ax3, 'left')

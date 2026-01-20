@@ -166,65 +166,58 @@ class MetricsPanel(ttk.Frame):
             self.canvas.draw_idle()
             return
 
-        # prepare data
-        # df columns: year_quarter, gross_margin, ...
-        x_labels = df_plot['year_quarter'].tolist()
-
-        series = {}
-        # convert relevant columns to list
-        for col in df_plot.columns:
-            if col == 'year_quarter':
-                continue
-            series[col] = df_plot[col].tolist()
-
         # plot charts
-        self._plot_profit_chart(x_labels, series)
-        self._plot_profit_qoq_chart(x_labels, series)
-        self._plot_profit_yoy_chart(x_labels, series)
+        self._plot_profit_chart(df_plot)
+        self._plot_profit_qoq_chart(df_plot)
+        self._plot_profit_yoy_chart(df_plot)
 
         # adjust layout
         self.fig.tight_layout()
 
         self.canvas.draw_idle()
 
-    def _plot_profit_chart(self, x_labels, series):
-        """Plot profitability lines on axis
+    def _plot_profit_chart(self, df_plot):
+        """Plot profitability chart
 
         Args:
-            x_labels (list): List of x-axis labels
-            series (dict): Dictionary containing data series
+            df_plot (pd.DataFrame): Data for ploting
         """
         ax = self.ax_profit
 
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profitability (%)')
 
-        x_indices = range(len(x_labels))
+        # x-axis indices (categorical 0, 1, 2...)
+        x_indices = range(len(df_plot))
 
-        ax.plot(
-            x_indices,
-            series.get('gross_margin', []),
-            color='#599FDC',
-            linewidth=2,
-            label='gross',
-        )
-        ax.plot(
-            x_indices,
-            series.get('opr_margin', []),
-            color='#E66D5F',
-            linewidth=2,
-            label='opr',
-        )
-        ax.plot(
-            x_indices,
-            series.get('net_margin', []),
-            color='#66BB6A',
-            linewidth=2,
-            label='net',
-        )
+        # plot lines
+        if 'gross_margin' in df_plot.columns:
+            ax.plot(
+                x_indices,
+                df_plot['gross_margin'],
+                color='#599FDC',
+                linewidth=2,
+                label='gross',
+            )
+        if 'opr_margin' in df_plot.columns:
+            ax.plot(
+                x_indices,
+                df_plot['opr_margin'],
+                color='#E66D5F',
+                linewidth=2,
+                label='opr',
+            )
+        if 'net_margin' in df_plot.columns:
+            ax.plot(
+                x_indices,
+                df_plot['net_margin'],
+                color='#66BB6A',
+                linewidth=2,
+                label='net',
+            )
 
         # format x-axis ticks
-        self._format_x_ticks(ax, x_labels)
+        self._format_x_ticks(ax, df_plot.get('year_quarter', []))
 
         # legends
         self._apply_legend(ax)
@@ -232,48 +225,51 @@ class MetricsPanel(ttk.Frame):
         # title
         # ax.set_title('Profitability', color='#FFFFFF')
 
-    def _plot_profit_qoq_chart(self, x_labels, series):
+    def _plot_profit_qoq_chart(self, df_plot):
         """Plot profitability QoQ bars on axis
 
         Args:
-            x_labels (list): List of x-axis labels
-            series (dict): Dictionary containing data series
+             df_plot (pd.DataFrame): Data for ploting
         """
         ax = self.ax_profit_qoq
 
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profit QoQ (%)')
 
-        x_indices = range(len(x_labels))
+        x_indices = range(len(df_plot))
         width = 0.25
 
-        ax.bar(
-            [i - width for i in x_indices],
-            series.get('gross_margin_qoq', []),
-            width=width,
-            color='#599FDC',
-            alpha=0.8,
-            label='gross',
-        )
-        ax.bar(
-            x_indices,
-            series.get('opr_margin_qoq', []),
-            width=width,
-            color='#E66D5F',
-            alpha=0.8,
-            label='opr',
-        )
-        ax.bar(
-            [i + width for i in x_indices],
-            series.get('net_margin_qoq', []),
-            width=width,
-            color='#66BB6A',
-            alpha=0.8,
-            label='net',
-        )
+        # plot bars
+        if 'gross_margin_qoq' in df_plot.columns:
+            ax.bar(
+                [i - width for i in x_indices],
+                df_plot['gross_margin_qoq'],
+                width=width,
+                color='#599FDC',
+                alpha=0.8,
+                label='gross',
+            )
+        if 'opr_margin_qoq' in df_plot.columns:
+            ax.bar(
+                x_indices,
+                df_plot['opr_margin_qoq'],
+                width=width,
+                color='#E66D5F',
+                alpha=0.8,
+                label='opr',
+            )
+        if 'net_margin_qoq' in df_plot.columns:
+            ax.bar(
+                [i + width for i in x_indices],
+                df_plot['net_margin_qoq'],
+                width=width,
+                color='#66BB6A',
+                alpha=0.8,
+                label='net',
+            )
 
         # format x-axis ticks
-        self._format_x_ticks(ax, x_labels)
+        self._format_x_ticks(ax, df_plot.get('year_quarter', []))
 
         # legends
         self._apply_legend(ax)
@@ -281,48 +277,51 @@ class MetricsPanel(ttk.Frame):
         # title
         # ax.set_title('Profitability QoQ', color='#FFFFFF')
 
-    def _plot_profit_yoy_chart(self, x_labels, series):
+    def _plot_profit_yoy_chart(self, df_plot):
         """Plot profitability YoY bars on axis
 
         Args:
-            x_labels (list): List of x-axis labels
-            series (dict): Dictionary containing data series
+            df_plot (pd.DataFrame): Data for ploting
         """
         ax = self.ax_profit_yoy
 
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profit YoY (%)')
 
-        x_indices = range(len(x_labels))
+        x_indices = range(len(df_plot))
         width = 0.25
 
-        ax.bar(
-            [i - width for i in x_indices],
-            series.get('gross_margin_yoy', []),
-            width=width,
-            color='#599FDC',
-            alpha=0.8,
-            label='gross',
-        )
-        ax.bar(
-            x_indices,
-            series.get('opr_margin_yoy', []),
-            width=width,
-            color='#E66D5F',
-            alpha=0.8,
-            label='opr',
-        )
-        ax.bar(
-            [i + width for i in x_indices],
-            series.get('net_margin_yoy', []),
-            width=width,
-            color='#66BB6A',
-            alpha=0.8,
-            label='net',
-        )
+        # plot bars
+        if 'gross_margin_yoy' in df_plot.columns:
+            ax.bar(
+                [i - width for i in x_indices],
+                df_plot['gross_margin_yoy'],
+                width=width,
+                color='#599FDC',
+                alpha=0.8,
+                label='gross',
+            )
+        if 'opr_margin_yoy' in df_plot.columns:
+            ax.bar(
+                x_indices,
+                df_plot['opr_margin_yoy'],
+                width=width,
+                color='#E66D5F',
+                alpha=0.8,
+                label='opr',
+            )
+        if 'net_margin_yoy' in df_plot.columns:
+            ax.bar(
+                [i + width for i in x_indices],
+                df_plot['net_margin_yoy'],
+                width=width,
+                color='#66BB6A',
+                alpha=0.8,
+                label='net',
+            )
 
         # format x-axis ticks
-        self._format_x_ticks(ax, x_labels)
+        self._format_x_ticks(ax, df_plot.get('year_quarter', []))
 
         # legends
         self._apply_legend(ax)
@@ -330,23 +329,23 @@ class MetricsPanel(ttk.Frame):
         # title
         # ax.set_title('Profitability YoY', color='#FFFFFF')
 
-    def _format_x_ticks(self, ax, x_labels, num_max_ticks=4):
+    def _format_x_ticks(self, ax, series, num_max_ticks=4):
         """Format x-axis ticks and labels with step size
 
         Args:
             ax: Matplotlib axis to format
-            x_labels (list): List of all available x labels
+            series (pd.Series): Data containing all available x labels
             num_max_ticks (int): Maximum number of ticks to show
         """
-        num_ticks = len(x_labels)
+        num_ticks = len(series)
         if num_ticks == 0:
             return
 
         # format x-axis ticks
         step = max(1, num_ticks // num_max_ticks)
 
-        tick_positions = list(range(0, num_ticks, step))
-        tick_labels = [x_labels[i] for i in tick_positions]
+        tick_positions = range(0, num_ticks, step)
+        tick_labels = series.iloc[::step]
 
         ax.set_xticks(tick_positions, labels=tick_labels)
 
