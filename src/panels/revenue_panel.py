@@ -181,6 +181,23 @@ class RevenuePanel(ttk.Frame):
             self.canvas.draw_idle()
             return
 
+        # plot revenue chart
+        self._plot_revenue_chart(df_plot)
+
+        # plot revenue yoy chart
+        self._plot_yoy_chart(df_plot)
+
+        # adjust layout
+        self.fig.tight_layout()
+
+        self.canvas.draw_idle()
+
+    def _plot_revenue_chart(self, df_plot):
+        """Plot revenue/price chart
+
+        Args:
+            df_plot (pd.DataFrame): Data for ploting
+        """
         # determine scale and unit based on max revenue
         if 'revenue' in df_plot.columns:
             max_rev = df_plot['revenue'].max()
@@ -201,33 +218,6 @@ class RevenuePanel(ttk.Frame):
             scale = 1
             unit = 'K'
 
-        # apply scale to revenue data
-        # Note: df_plot is a copy from load_stock or caller, so we can modify it
-        if 'revenue' in df_plot.columns:
-            df_plot['revenue'] = df_plot['revenue'] / scale
-        if 'revenue_ma3' in df_plot.columns:
-            df_plot['revenue_ma3'] = df_plot['revenue_ma3'] / scale
-        if 'revenue_ma12' in df_plot.columns:
-            df_plot['revenue_ma12'] = df_plot['revenue_ma12'] / scale
-
-        # plot revenue chart
-        self._plot_revenue_chart(df_plot, unit)
-
-        # plot revenue yoy chart
-        self._plot_yoy_chart(df_plot)
-
-        # adjust layout
-        self.fig.tight_layout()
-
-        self.canvas.draw_idle()
-
-    def _plot_revenue_chart(self, df_plot, unit):
-        """Plot revenue/price chart
-
-        Args:
-            df_plot (pd.DataFrame): Data for ploting
-            unit (str): Unit for showing as part of label on y-axis
-        """
         # Reapply styling that were reset by ax.clear()
         self._set_revenue_axes_style('Revenue (' + unit + ')', 'Price')
 
@@ -238,7 +228,7 @@ class RevenuePanel(ttk.Frame):
         if 'revenue' in df_plot.columns:
             self.ax1.bar(
                 x_indices,
-                df_plot['revenue'],
+                df_plot['revenue'] / scale,
                 color='#599FDC',
                 width=0.6,
                 label='Revenue',
@@ -248,7 +238,7 @@ class RevenuePanel(ttk.Frame):
         if 'revenue_ma3' in df_plot.columns:
             self.ax1.plot(
                 x_indices,
-                df_plot['revenue_ma3'],
+                df_plot['revenue_ma3'] / scale,
                 color='#FBC470',
                 alpha=0.8,
                 linewidth=2,
@@ -259,7 +249,7 @@ class RevenuePanel(ttk.Frame):
         if 'revenue_ma12' in df_plot.columns:
             self.ax1.plot(
                 x_indices,
-                df_plot['revenue_ma12'],
+                df_plot['revenue_ma12'] / scale,
                 color='#66BB6A',
                 alpha=0.8,
                 linewidth=2,
