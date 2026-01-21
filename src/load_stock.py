@@ -386,55 +386,6 @@ def _pivot_dataframe(df, items):
     return pd.DataFrame(result_data)
 
 
-def transform_financial_metrics_plot(df):
-    """Transform financial metrics data for plotting
-
-    Args:
-        df: Source DataFrame from database
-
-    Returns:
-        pd.DataFrame: DataFrame for plotting
-                      columns: [year_quarter, gross_margin, opr_margin, net_margin, ...]
-    """
-    if df.empty:
-        return pd.DataFrame()
-
-    # work on copy
-    result = df.copy()
-
-    # create year_quarter column e.g. 2025.Q3
-    result['year_quarter'] = (
-        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
-    )
-
-    # select columns for plot
-    # gross_margin, opr_margin, net_margin
-    # gross_margin_qoq, opr_margin_qoq, net_margin_qoq
-    # gross_margin_yoy, opr_margin_yoy, net_margin_yoy
-
-    # multiply by 100 for percentage
-    cols_to_percent = [
-        'gross_margin',
-        'opr_margin',
-        'net_margin',
-        'gross_margin_qoq',
-        'opr_margin_qoq',
-        'net_margin_qoq',
-        'gross_margin_yoy',
-        'opr_margin_yoy',
-        'net_margin_yoy',
-    ]
-
-    for col in cols_to_percent:
-        if col in result.columns:
-            result[col] = result[col] * 100
-
-    # sort by year, quarter ascending (oldest first for chart)
-    result = result.sort_values(by=['year', 'quarter'], ascending=[True, True])
-
-    return result.reset_index(drop=True)
-
-
 def transform_financial_plot(df):
     """Transform financial data for plotting
 
@@ -465,6 +416,50 @@ def transform_financial_plot(df):
     for col in cols_to_extract:
         if col in df_sorted.columns:
             result[col] = df_sorted[col]
+
+    return result.reset_index(drop=True)
+
+
+def transform_financial_metrics_plot(df):
+    """Transform financial metrics data for plotting
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: DataFrame for plotting
+                      columns: [year_quarter, gross_margin, opr_margin, net_margin, ...]
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # sort by year, quarter ascending (oldest first for chart)
+    df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[True, True])
+
+    # create result DataFrame
+    result = pd.DataFrame()
+
+    # create year_quarter column e.g. 2025.Q3
+    result['year_quarter'] = (
+        df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
+    )
+
+    # select and transform necessary columns (multiply by 100 for percentage)
+    cols_to_extract = [
+        ('gross_margin', 100),
+        ('opr_margin', 100),
+        ('net_margin', 100),
+        ('gross_margin_qoq', 100),
+        ('opr_margin_qoq', 100),
+        ('net_margin_qoq', 100),
+        ('gross_margin_yoy', 100),
+        ('opr_margin_yoy', 100),
+        ('net_margin_yoy', 100),
+    ]
+
+    for col, mul in cols_to_extract:
+        if col in df_sorted.columns:
+            result[col] = df_sorted[col] * mul
 
     return result.reset_index(drop=True)
 
