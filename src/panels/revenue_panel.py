@@ -123,34 +123,34 @@ class RevenuePanel(ttk.Frame):
         # container for widgets
         table_frame = ttk.Frame(self)
 
-        # table: | year_month | revence | ... | revence ytd yoy |
+        # table: | year_month | revenue | ... | revenue ytd yoy |
         columns = (
             'year_month',
-            'revence',
-            'revence_mom',
-            'revence_ly',
-            'revence_yoy',
-            'revence_ytd',
-            'revence_ytd_yoy',
+            'revenue',
+            'revenue_mom',
+            'revenue_ly',
+            'revenue_yoy',
+            'revenue_ytd',
+            'revenue_ytd_yoy',
         )
 
         table = ttk.Treeview(table_frame, columns=columns, show='headings')
 
         table.heading('year_month', text='年/月')
-        table.heading('revence', text='營收')
-        table.heading('revence_mom', text='MoM%')
-        table.heading('revence_ly', text='去年同期')
-        table.heading('revence_yoy', text='YoY%')
-        table.heading('revence_ytd', text='累計營收')
-        table.heading('revence_ytd_yoy', text='YoY%')
+        table.heading('revenue', text='營收')
+        table.heading('revenue_mom', text='MoM%')
+        table.heading('revenue_ly', text='去年同期')
+        table.heading('revenue_yoy', text='YoY%')
+        table.heading('revenue_ytd', text='累計營收')
+        table.heading('revenue_ytd_yoy', text='YoY%')
 
         table.column('year_month', width=60)
-        table.column('revence', width=80, anchor='e')
-        table.column('revence_mom', width=60, anchor='e')
-        table.column('revence_ly', width=80, anchor='e')
-        table.column('revence_yoy', width=60, anchor='e')
-        table.column('revence_ytd', width=80, anchor='e')
-        table.column('revence_ytd_yoy', width=60, anchor='e')
+        table.column('revenue', width=80, anchor='e')
+        table.column('revenue_mom', width=60, anchor='e')
+        table.column('revenue_ly', width=80, anchor='e')
+        table.column('revenue_yoy', width=60, anchor='e')
+        table.column('revenue_ytd', width=80, anchor='e')
+        table.column('revenue_ytd_yoy', width=60, anchor='e')
 
         # scrollbar: | table ||
         scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
@@ -182,8 +182,8 @@ class RevenuePanel(ttk.Frame):
             return
 
         # determine scale and unit based on max revenue
-        if 'revence' in df_plot.columns:
-            max_rev = df_plot['revence'].max()
+        if 'revenue' in df_plot.columns:
+            max_rev = df_plot['revenue'].max()
         elif 'revenue_ma3' in df_plot.columns:
             max_rev = df_plot['revenue_ma3'].max()
         elif 'revenue_ma12' in df_plot.columns:
@@ -203,8 +203,8 @@ class RevenuePanel(ttk.Frame):
 
         # apply scale to revenue data
         # Note: df_plot is a copy from load_stock or caller, so we can modify it
-        if 'revence' in df_plot.columns:
-            df_plot['revence'] = df_plot['revence'] / scale
+        if 'revenue' in df_plot.columns:
+            df_plot['revenue'] = df_plot['revenue'] / scale
         if 'revenue_ma3' in df_plot.columns:
             df_plot['revenue_ma3'] = df_plot['revenue_ma3'] / scale
         if 'revenue_ma12' in df_plot.columns:
@@ -222,7 +222,7 @@ class RevenuePanel(ttk.Frame):
         self.canvas.draw_idle()
 
     def _plot_revenue_chart(self, df_plot, unit):
-        """Plot revence/price chart
+        """Plot revenue/price chart
 
         Args:
             df_plot (pd.DataFrame): Data for ploting
@@ -235,10 +235,10 @@ class RevenuePanel(ttk.Frame):
         x_indices = range(len(df_plot))
 
         # plot revenue bars (on main y-axis)
-        if 'revence' in df_plot.columns:
+        if 'revenue' in df_plot.columns:
             self.ax1.bar(
                 x_indices,
-                df_plot['revence'],
+                df_plot['revenue'],
                 color='#599FDC',
                 width=0.6,
                 label='Revenue',
@@ -284,7 +284,7 @@ class RevenuePanel(ttk.Frame):
         self._apply_legend(self.ax2, 'right')
 
     def _plot_yoy_chart(self, df_plot):
-        """Plot revence YoY/price chart
+        """Plot revenue YoY/price chart
 
         Args:
             df_plot (pd.DataFrame): Data for ploting
@@ -296,10 +296,10 @@ class RevenuePanel(ttk.Frame):
         x_indices = range(len(df_plot))
 
         # plot revenue YoY bars (on main y-axis)
-        if 'revence_yoy' in df_plot.columns:
+        if 'revenue_yoy' in df_plot.columns:
             self.ax3.bar(
                 x_indices,
-                df_plot['revence_yoy'],
+                df_plot['revenue_yoy'],
                 color='#A94085',
                 width=0.6,
                 label='YoY (%)',

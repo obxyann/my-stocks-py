@@ -51,7 +51,6 @@ def load_stock(stock_code, db):
 
     # transform data
     df_p_plot = transform_ohlc_price(df_p)
-    # df_mp_plot = transform_monthly_avg_price(df_mp)
     df_r_tbl = transform_revenue(df_r)
     df_r_plot = transform_revenue_plot(df_r, df_mp)
     df_f_tbl = transform_financial(df_f)
@@ -72,7 +71,7 @@ def load_stock(stock_code, db):
 
 
 def transform_ohlc_price(df):
-    """Transform OHLC price data for mplfinance
+    """Transform OHLC price data for plotting (mplfinance)
 
     Source format: columns [code, trade_date, open_price, high_price, ...]
     Target format: columns [Open, High, Low, Close, Volume]
@@ -84,7 +83,7 @@ def transform_ohlc_price(df):
         pd.DataFrame: Transformed DataFrame with DatetimeIndex
     """
     if df.empty:
-        return pd.DataFrame()
+        return pd.DataFrame(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
     # rename columns to match mplfinance requirements
     result = df.rename(
@@ -104,36 +103,8 @@ def transform_ohlc_price(df):
     # set Date as index
     result = result.set_index('Date')
 
-    return result
-
-
-def transform_monthly_avg_price(df):
-    """Transform monthly avg price data to UI format
-
-    Source format: columns [code, year, month, price, volume]
-    Target format: columns [year_month, price, volume]
-
-    Args:
-        df: Source DataFrame from database
-
-    Returns:
-        pd.DataFrame: Transformed DataFrame for UI display
-    """
-    if df.empty:
-        return pd.DataFrame(columns=['year_month', 'price', 'volume'])
-
-    # create year_month column
-    result = pd.DataFrame()
-    result['year_month'] = (
-        df['year'].astype(str) + '/' + df['month'].astype(str).str.zfill(2)
-    )
-
-    # map columns and format values
-    result['price'] = df['price']  # .apply(format_value)
-    result['volume'] = df['volume']  # .apply(format_number)
-
-    # sort by year_month descending (latest first)
-    result = result.iloc[::-1].reset_index(drop=True)
+    # sort by Date ascending (oldest first for chart)
+    result = result.sort_index(ascending=True)
 
     return result
 
@@ -142,7 +113,7 @@ def transform_revenue(df):
     """Transform monthly revenue data to UI format
 
     Source format: columns [code, year, month, revenue, ...]
-    Target format: columns [year_month, revence, revence_mom, revence_ly, revence_yoy, revence_ytd, revence_ytd_yoy]
+    Target format: columns [year_month, revenue, revenue_mom, revenue_ly, revenue_yoy, revenue_ytd, revenue_ytd_yoy]
 
     Args:
         df: Source DataFrame from database
@@ -154,41 +125,49 @@ def transform_revenue(df):
         return pd.DataFrame(
             columns=[
                 'year_month',
-                'revence',
-                'revence_mom',
-                'revence_ly',
-                'revence_yoy',
-                'revence_ytd',
-                'revence_ytd_yoy',
-                'revenue_ma3',
-                'revenue_ma12',
-                'revenue_ytd_yoy_ma3',
-                'revenue_ytd_yoy_ma12',
+                'revenue',
+                'revenue_mom',
+                'revenue_ly',
+                'revenue_yoy',
+                'revenue_ytd',
+                'revenue_ytd_yoy',
             ]
         )
 
-    # create year_month column
+    # create result DataFrame
     result = pd.DataFrame()
+
+    # create year_month column e.g. 2025/01
     result['year_month'] = (
         df['year'].astype(str) + '/' + df['month'].astype(str).str.zfill(2)
     )
 
-    # map columns and format values
-    result['revence'] = df['revenue']  # .apply(format_number)
-    result['revence_mom'] = df['revenue_mom'].apply(format_100)
-    result['revence_ly'] = df['revenue_ly']  # .apply(format_number)
-    result['revence_yoy'] = df['revenue_yoy'].apply(format_100)
-    result['revence_ytd'] = df['revenue_ytd']  # .apply(format_number)
-    result['revence_ytd_yoy'] = df['revenue_ytd_yoy'].apply(format_100)
-    result['revenue_ma3'] = df['revenue_ma3']  # .apply(format_number)
-    result['revenue_ma12'] = df['revenue_ma12']  # .apply(format_number)
-    result['revenue_ytd_yoy_ma3'] = df['revenue_ytd_yoy_ma3']  # .apply(format_number)
-    result['revenue_ytd_yoy_ma12'] = df['revenue_ytd_yoy_ma12']  # .apply(format_number)
+    # define items to extract (column_name, formatter)
+    # NOTE: if formatter not assigned, use format_value by default
+    #       ratios stored as decimals (e.g., 0.1234 for 12.34%), use format_100
+    items = [
+        ('revenue',),
+        ('revenue_mom', format_100),
+        ('revenue_ly',),
+        ('revenue_yoy', format_100),
+        ('revenue_ytd',),
+        ('revenue_ytd_yoy', format_100),
+    ]
+
+    # extract items and apply formatters
+    for item in items:
+        col = item[0]
+        formatter = item[1] if len(item) > 1 else format_value
+
+        if col not in df.columns:
+            continue
+
+        result[col] = df[col].apply(formatter)
 
     # sort by year_month descending (latest first)
-    result = result.iloc[::-1].reset_index(drop=True)
+    result = result.sort_values('year_month', ascending=False)
 
-    return result
+    return result.reset_index(drop=True)
 
 
 def transform_revenue_plot(df_r, df_a):
@@ -200,36 +179,37 @@ def transform_revenue_plot(df_r, df_a):
 
     Returns:
         pd.DataFrame: Merged and filtered DataFrame for plotting
-                      columns: [year_month, revence, revenue_ma3, revenue_ma12, revence_yoy, price]
+                      columns: [year_month, revenue, revenue_ma3, revenue_ma12, revenue_yoy, price]
     """
     if df_r.empty:
         return pd.DataFrame(
             columns=[
                 'year_month',
-                'revence',
+                'revenue',
                 'revenue_ma3',
                 'revenue_ma12',
-                'revence_yoy',
+                'revenue_yoy',
                 'price',
             ]
         )
 
     # 1. prepare revenue data
     df_r_plot = pd.DataFrame()
+
     df_r_plot['year_month'] = (
         df_r['year'].astype(str) + '/' + df_r['month'].astype(str).str.zfill(2)
     )
-    df_r_plot['revence'] = df_r['revenue']
+    df_r_plot['revenue'] = df_r['revenue']
     df_r_plot['revenue_ma3'] = df_r['revenue_ma3']
     df_r_plot['revenue_ma12'] = df_r['revenue_ma12']
-    # multiply by 100 for percentage
-    df_r_plot['revence_yoy'] = df_r['revenue_yoy'] * 100
+    df_r_plot['revenue_yoy'] = df_r['revenue_yoy'] * 100  # for percentage
 
     # 2. prepare price data
     if df_a.empty:
         df_a_plot = pd.DataFrame(columns=['year_month', 'price'])
     else:
         df_a_plot = pd.DataFrame()
+
         df_a_plot['year_month'] = (
             df_a['year'].astype(str) + '/' + df_a['month'].astype(str).str.zfill(2)
         )
@@ -239,9 +219,9 @@ def transform_revenue_plot(df_r, df_a):
     result = pd.merge(df_r_plot, df_a_plot, on='year_month', how='left')
 
     # 4. sort by year_month ascending (oldest first for chart)
-    result = result.sort_values('year_month').reset_index(drop=True)
+    result = result.sort_values('year_month')
 
-    return result
+    return result.reset_index(drop=True)
 
 
 def transform_financial(df):
@@ -259,7 +239,9 @@ def transform_financial(df):
     if df.empty:
         return pd.DataFrame(columns=['Item'])
 
-    # define items to display (column_name, display_name)
+    # define items to extract (column_name, display_name, formatter)
+    # NOTE: if formatter not assigned, use format_value by default
+    #       ratios stored as decimals (e.g., 0.1234 for 12.34%), use format_100
     items = [
         ('opr_revenue', '營業收入'),
         ('opr_costs', '營業成本'),
@@ -303,8 +285,9 @@ def transform_financial_metrics(df):
     if df.empty:
         return pd.DataFrame(columns=['Item'])
 
-    # define items to display (column_name, display_name, formatter)
-    # ratios are stored as decimals (e.g., 0.1234 for 12.34%), use format_100
+    # define items to extract (column_name, display_name, formatter)
+    # NOTE: if formatter not assigned, use format_value by default
+    #       ratios stored as decimals (e.g., 0.1234 for 12.34%), use format_100
     items = [
         ('gross_margin', '營業毛利率', format_100),
         ('opr_margin', '營業利益率', format_100),
@@ -351,21 +334,21 @@ def _pivot_dataframe(df, items):
     Returns:
         pd.DataFrame: Pivoted DataFrame with Item as first column
     """
-    # create period labels (e.g., '2025.Q3')
-    # sort by period descending (latest first)
-    df_sorted = df.sort_values(
-        by=['year', 'quarter'], ascending=[False, False]
-    ).reset_index(drop=True)
+    # sort by year, quarter descending (latest first)
+    df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[False, False])
 
+    df_sorted = df_sorted.reset_index(drop=True)
+
+    # create year_quarter column e.g. 2025.Q1
     periods = (
         df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
     ).tolist()
 
     # build result dictionary
-    result_data = {'Item': []}
+    result = {'Item': []}
 
     for period in periods:
-        result_data[period] = []
+        result[period] = []
 
     # fill data for each item
     for item in items:
@@ -376,14 +359,14 @@ def _pivot_dataframe(df, items):
         if col_name not in df_sorted.columns:
             continue
 
-        result_data['Item'].append(display_name)
+        result['Item'].append(display_name)
 
         for i, period in enumerate(periods):
             value = df_sorted.iloc[i][col_name]
 
-            result_data[period].append(formatter(value))
+            result[period].append(formatter(value))
 
-    return pd.DataFrame(result_data)
+    return pd.DataFrame(result)
 
 
 def transform_financial_plot(df):
@@ -399,23 +382,23 @@ def transform_financial_plot(df):
     if df.empty:
         return pd.DataFrame()
 
-    # sort by year, quarter ascending (oldest first for chart)
-    df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[True, True])
-
     # create result DataFrame
     result = pd.DataFrame()
 
-    # create year_quarter column e.g. 2025.Q3
-    result['year_quarter'] = (
-        df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
-    )
+    # create year_quarter column e.g. 2025.Q1
+    result['year_quarter'] = df['year'].astype(str) + '.Q' + df['quarter'].astype(str)
 
-    # select necessary columns
-    cols_to_extract = ['net_income', 'opr_cash_flow', 'eps']
+    # define items to extract
+    items = ['net_income', 'opr_cash_flow', 'eps']
 
-    for col in cols_to_extract:
-        if col in df_sorted.columns:
-            result[col] = df_sorted[col]
+    for col in items:
+        if col not in df.columns:
+            continue
+
+        result[col] = df[col]
+
+    # sort by year_quarter ascending (oldest first for chart)
+    result = result.sort_values('year_quarter', ascending=True)
 
     return result.reset_index(drop=True)
 
@@ -433,19 +416,15 @@ def transform_financial_metrics_plot(df):
     if df.empty:
         return pd.DataFrame()
 
-    # sort by year, quarter ascending (oldest first for chart)
-    df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[True, True])
-
     # create result DataFrame
     result = pd.DataFrame()
 
-    # create year_quarter column e.g. 2025.Q3
-    result['year_quarter'] = (
-        df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
-    )
+    # create year_quarter column e.g. 2025.Q1
+    result['year_quarter'] = df['year'].astype(str) + '.Q' + df['quarter'].astype(str)
 
-    # select and transform necessary columns (multiply by 100 for percentage)
-    cols_to_extract = [
+    # define items to extract (column_name, multiplier)
+    # NOTE: multiply by 100 for percentage
+    items = [
         ('gross_margin', 100),
         ('opr_margin', 100),
         ('net_margin', 100),
@@ -457,9 +436,15 @@ def transform_financial_metrics_plot(df):
         ('net_margin_yoy', 100),
     ]
 
-    for col, mul in cols_to_extract:
-        if col in df_sorted.columns:
-            result[col] = df_sorted[col] * mul
+    # extract items
+    for col, mul in items:
+        if col not in df.columns:
+            continue
+
+        result[col] = df[col] * mul
+
+    # sort by year_quarter ascending (oldest first for chart)
+    result = result.sort_values('year_quarter', ascending=True)
 
     return result.reset_index(drop=True)
 
