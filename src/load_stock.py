@@ -329,7 +329,7 @@ def _pivot_dataframe(df, items):
 
     Args:
         df: Source DataFrame with year, quarter columns
-        items: List of tuples (column_name, display_name)
+        items: List of tuples (column_name, display_name, formatter)
 
     Returns:
         pd.DataFrame: Pivoted DataFrame with Item as first column
@@ -344,7 +344,7 @@ def _pivot_dataframe(df, items):
         df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
     ).tolist()
 
-    # build result dictionary
+    # create result dictionary
     result = {'Item': []}
 
     for period in periods:
