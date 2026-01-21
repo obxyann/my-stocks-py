@@ -23,6 +23,7 @@ def load_stock(stock_code, db):
               'revenue': Revenue data, DataFrame
               'revenue_plot': Revenue plot data, DataFrame
               'financial': Financial data, DataFrame
+              'financial_plot': Financial financial plot data, DataFrame
               'metrics': Financial metrics data, DataFrame
               'metrics_plot': Financial metrics plot data, DataFrame
     """
@@ -41,7 +42,7 @@ def load_stock(stock_code, db):
     )
 
     # retrieve data from database
-    df_dp = db.get_prices_by_code(stock_code, start_date=start_date)
+    df_p = db.get_prices_by_code(stock_code, start_date=start_date)
     df_mp = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
 
     df_r = db.get_revenue_by_code(stock_code, start_date=start_date)
@@ -49,22 +50,24 @@ def load_stock(stock_code, db):
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
-    df_plot_dp = transform_ohlc_price(df_dp)
-    # df_plot_mp = transform_monthly_avg_price(df_mp)
-    df_tbl_r = transform_revenue(df_r)
-    df_plot_r = transform_revenue_plot_data(df_r, df_mp)
-    df_tbl_f = transform_financial(df_f)
-    df_tbl_m = transform_financial_metrics(df_m)
-    df_plot_m = transform_financial_metrics_plot(df_m)
+    df_p_plot = transform_ohlc_price(df_p)
+    # df_mp_plot = transform_monthly_avg_price(df_mp)
+    df_r_tbl = transform_revenue(df_r)
+    df_r_plot = transform_revenue_plot(df_r, df_mp)
+    df_f_tbl = transform_financial(df_f)
+    df_f_plot = transform_financial_plot(df_f)
+    df_m_tbl = transform_financial_metrics(df_m)
+    df_m_plot = transform_financial_metrics_plot(df_m)
 
     return {
         'code_name': code_name,
-        'ohlc_price': df_plot_dp,
-        'revenue': df_tbl_r,
-        'revenue_plot': df_plot_r,
-        'financial': df_tbl_f,
-        'metrics': df_tbl_m,
-        'metrics_plot': df_plot_m,
+        'ohlc_price': df_p_plot,
+        'revenue': df_r_tbl,
+        'revenue_plot': df_r_plot,
+        'financial': df_f_tbl,
+        'financial_plot': df_f_plot,
+        'metrics': df_m_tbl,
+        'metrics_plot': df_m_plot,
     }
 
 
@@ -188,7 +191,7 @@ def transform_revenue(df):
     return result
 
 
-def transform_revenue_plot_data(df_r, df_a):
+def transform_revenue_plot(df_r, df_a):
     """Transform revenue and price data for plotting
 
     Args:
@@ -383,6 +386,110 @@ def _pivot_dataframe(df, items):
     return pd.DataFrame(result_data)
 
 
+def transform_financial_metrics_plot(df):
+    """Transform financial metrics data for plotting
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: DataFrame for plotting
+                      columns: [year_quarter, gross_margin, opr_margin, net_margin, ...]
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # work on copy
+    result = df.copy()
+
+    # create year_quarter column e.g. 2025.Q3
+    result['year_quarter'] = (
+        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
+    )
+
+    # select columns for plot
+    # gross_margin, opr_margin, net_margin
+    # gross_margin_qoq, opr_margin_qoq, net_margin_qoq
+    # gross_margin_yoy, opr_margin_yoy, net_margin_yoy
+
+    # multiply by 100 for percentage
+    cols_to_percent = [
+        'gross_margin',
+        'opr_margin',
+        'net_margin',
+        'gross_margin_qoq',
+        'opr_margin_qoq',
+        'net_margin_qoq',
+        'gross_margin_yoy',
+        'opr_margin_yoy',
+        'net_margin_yoy',
+    ]
+
+    for col in cols_to_percent:
+        if col in result.columns:
+            result[col] = result[col] * 100
+
+    # sort by year, quarter ascending (oldest first for chart)
+    result = result.sort_values(by=['year', 'quarter'], ascending=[True, True])
+
+    return result.reset_index(drop=True)
+
+
+def transform_financial_plot(df):
+    """Transform financial data for plotting
+
+    Args:
+        df: Source DataFrame from database
+
+    Returns:
+        pd.DataFrame: DataFrame for plotting
+                      columns: [year_quarter, net_income, opr_cash_flow, eps]
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # work on copy
+    result = df.copy()
+
+    # create year_quarter column e.g. 2025.Q3
+    result['year_quarter'] = (
+        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
+    )
+
+    # select columns for plot
+    # net_income, opr_cash_flow, eps
+    cols_to_keep = ['year_quarter', 'net_income', 'opr_cash_flow', 'eps']
+
+    # ensure columns exist
+    existing_cols = [col for col in cols_to_keep if col in result.columns]
+    
+    result = result[existing_cols]
+
+    # sort by year, quarter ascending (oldest first for chart)
+    # we need to recover year/quarter from year_quarter or use original df index if preserved
+    # faster way: just rely on the fact that we derived it from a df that has year/quarter.
+    # But we just sliced it. So we need to sort BEFORE slicing or include year/quarter in slice then drop.
+
+    # Better approach: Sort original df copy first, then assign year_quarter, then slice.
+
+    # Let's re-do logic slightly to be safe
+    df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[True, True])
+
+    result = pd.DataFrame()
+    result['year_quarter'] = (
+        df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
+    )
+
+    if 'net_income' in df_sorted.columns:
+        result['net_income'] = df_sorted['net_income']
+    if 'opr_cash_flow' in df_sorted.columns:
+        result['opr_cash_flow'] = df_sorted['opr_cash_flow']
+    if 'eps' in df_sorted.columns:
+        result['eps'] = df_sorted['eps']
+
+    return result.reset_index(drop=True)
+
+
 def format_currency(value):
     """Format number as string with thousands separators
 
@@ -461,52 +568,3 @@ def format_value(value):
         return f'{value:.2f}'
 
     return str(value)
-
-
-def transform_financial_metrics_plot(df):
-    """Transform financial metrics data for plotting
-
-    Args:
-        df: Source DataFrame from database
-
-    Returns:
-        pd.DataFrame: DataFrame for plotting
-                      columns: [year_quarter, gross_margin, opr_margin, net_margin, ...]
-    """
-    if df.empty:
-        return pd.DataFrame()
-
-    # work on copy
-    result = df.copy()
-
-    # create year_quarter column e.g. 2025.Q3
-    result['year_quarter'] = (
-        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
-    )
-
-    # select columns for plot
-    # gross_margin, opr_margin, net_margin
-    # gross_margin_qoq, opr_margin_qoq, net_margin_qoq
-    # gross_margin_yoy, opr_margin_yoy, net_margin_yoy
-
-    # multiply by 100 for percentage
-    cols_to_percent = [
-        'gross_margin',
-        'opr_margin',
-        'net_margin',
-        'gross_margin_qoq',
-        'opr_margin_qoq',
-        'net_margin_qoq',
-        'gross_margin_yoy',
-        'opr_margin_yoy',
-        'net_margin_yoy',
-    ]
-
-    for col in cols_to_percent:
-        if col in result.columns:
-            result[col] = result[col] * 100
-
-    # sort by year, quarter ascending (oldest first for chart)
-    result = result.sort_values(by=['year', 'quarter'], ascending=[True, True])
-
-    return result.reset_index(drop=True)

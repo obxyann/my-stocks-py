@@ -240,10 +240,9 @@ class RevenuePanel(ttk.Frame):
                 x_indices,
                 df_plot['revence'],
                 color='#599FDC',
-                alpha=0.8,
-                label='Revenue',
                 width=0.6,
-            )
+                label='Revenue',
+             )
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:
@@ -251,7 +250,7 @@ class RevenuePanel(ttk.Frame):
                 x_indices,
                 df_plot['revenue_ma3'],
                 color='#FBC470',
-                alpha=0.7,
+                alpha=0.8,
                 linewidth=2,
                 label='MA3',
             )
@@ -262,7 +261,7 @@ class RevenuePanel(ttk.Frame):
                 x_indices,
                 df_plot['revenue_ma12'],
                 color='#66BB6A',
-                alpha=0.7,
+                alpha=0.8,
                 linewidth=2,
                 label='MA12',
             )
@@ -302,9 +301,8 @@ class RevenuePanel(ttk.Frame):
                 x_indices,
                 df_plot['revence_yoy'],
                 color='#A94085',
-                alpha=0.8,
-                label='YoY (%)',
                 width=0.6,
+                label='YoY (%)',
             )
 
         # plot monthly price line (on secondary y-axis)

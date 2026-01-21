@@ -43,7 +43,9 @@ class MetricsPanel(ttk.Frame):
         self.ax_profit = self.fig.add_subplot(221)
         self.ax_profit_qoq = self.fig.add_subplot(222)
         self.ax_profit_yoy = self.fig.add_subplot(223)
-        self.ax_empty = self.fig.add_subplot(224)
+        # self.ax_empty = self.fig.add_subplot(224)
+
+        # self.ax_empty.axis('off')
 
         # set style
         self._set_charts_style()
@@ -64,9 +66,7 @@ class MetricsPanel(ttk.Frame):
         self.style_helper.set_chart_style(self.fig, self.ax_profit)
         self.style_helper.set_chart_style(self.fig, self.ax_profit_qoq)
         self.style_helper.set_chart_style(self.fig, self.ax_profit_yoy)
-        self.style_helper.set_chart_style(self.fig, self.ax_empty)
-
-        self.ax_empty.axis('off')
+        # self.style_helper.set_chart_style(self.fig, self.ax_empty)
 
         # self.ax_profit.set_title('Profitability', color='#FFFFFF')
         # self.ax_profit_qoq.set_title('Profitability QoQ', color='#FFFFFF')
@@ -84,8 +84,6 @@ class MetricsPanel(ttk.Frame):
             label (str): Label for the y-axis
         """
         self.style_helper.set_axes_style(ax, label1=label)
-
-        # TBD ax.grid(True, axis='y', linestyle=':', alpha=0.2, color='#FFFFFF')
 
         ax.tick_params(axis='x', rotation=0)
 
@@ -159,8 +157,6 @@ class MetricsPanel(ttk.Frame):
         self.ax_profit_yoy.clear()
         # self.ax_empty.clear()
 
-        # self.ax_empty.axis('off')
-
         # check data
         if df_plot is None or df_plot.empty:
             self.canvas.draw_idle()
@@ -226,7 +222,7 @@ class MetricsPanel(ttk.Frame):
         # ax.set_title('Profitability', color='#FFFFFF')
 
     def _plot_profit_qoq_chart(self, df_plot):
-        """Plot profitability QoQ bars on axis
+        """Plot profitability QoQ chart
 
         Args:
              df_plot (pd.DataFrame): Data for ploting
@@ -236,6 +232,7 @@ class MetricsPanel(ttk.Frame):
         # Reapply styling that were reset by ax.clear()
         self._set_axes_style(ax, 'Profit QoQ (%)')
 
+        # x-axis indices (categorical 0, 1, 2...)
         x_indices = range(len(df_plot))
         width = 0.25
 
@@ -244,27 +241,24 @@ class MetricsPanel(ttk.Frame):
             ax.bar(
                 [i - width for i in x_indices],
                 df_plot['gross_margin_qoq'],
-                width=width,
                 color='#599FDC',
-                alpha=0.8,
+                width=width,
                 label='gross',
             )
         if 'opr_margin_qoq' in df_plot.columns:
             ax.bar(
                 x_indices,
                 df_plot['opr_margin_qoq'],
-                width=width,
                 color='#E66D5F',
-                alpha=0.8,
+                width=width,
                 label='opr',
             )
         if 'net_margin_qoq' in df_plot.columns:
             ax.bar(
                 [i + width for i in x_indices],
                 df_plot['net_margin_qoq'],
-                width=width,
                 color='#66BB6A',
-                alpha=0.8,
+                width=width,
                 label='net',
             )
 
@@ -296,27 +290,24 @@ class MetricsPanel(ttk.Frame):
             ax.bar(
                 [i - width for i in x_indices],
                 df_plot['gross_margin_yoy'],
-                width=width,
                 color='#599FDC',
-                alpha=0.8,
+                width=width,
                 label='gross',
             )
         if 'opr_margin_yoy' in df_plot.columns:
             ax.bar(
                 x_indices,
                 df_plot['opr_margin_yoy'],
-                width=width,
                 color='#E66D5F',
-                alpha=0.8,
+                width=width,
                 label='opr',
             )
         if 'net_margin_yoy' in df_plot.columns:
             ax.bar(
                 [i + width for i in x_indices],
                 df_plot['net_margin_yoy'],
-                width=width,
                 color='#66BB6A',
-                alpha=0.8,
+                width=width,
                 label='net',
             )
 

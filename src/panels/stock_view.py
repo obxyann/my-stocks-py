@@ -74,6 +74,7 @@ class StockViewPanel(ttk.Frame):
                          'revenue': Revenue data, DataFrame
                          'revenue_plot': Revenue plot data, DataFrame
                          'financial': Financial data, DataFrame
+                         'financial_plot': Financial financial plot data, DataFrame
                          'metrics': Financial metrics data, DataFrame
                          'metrics_plot': Financial metrics plot data, DataFrame
         """
@@ -89,7 +90,7 @@ class StockViewPanel(ttk.Frame):
         if 'revenue' in data:
             self.revenue_panel.set_data(data['revenue'], data.get('revenue_plot'))
         if 'financial' in data:
-            self.financial_panel.set_data(data['financial'])
+            self.financial_panel.set_data(data['financial'], data.get('financial_plot'))
         if 'metrics' in data:
             self.metrics_panel.set_data(data['metrics'], data.get('metrics_plot'))
 
