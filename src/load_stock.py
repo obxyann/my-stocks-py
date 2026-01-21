@@ -448,44 +448,23 @@ def transform_financial_plot(df):
     if df.empty:
         return pd.DataFrame()
 
-    # work on copy
-    result = df.copy()
-
-    # create year_quarter column e.g. 2025.Q3
-    result['year_quarter'] = (
-        result['year'].astype(str) + '.Q' + result['quarter'].astype(str)
-    )
-
-    # select columns for plot
-    # net_income, opr_cash_flow, eps
-    cols_to_keep = ['year_quarter', 'net_income', 'opr_cash_flow', 'eps']
-
-    # ensure columns exist
-    existing_cols = [col for col in cols_to_keep if col in result.columns]
-    
-    result = result[existing_cols]
-
     # sort by year, quarter ascending (oldest first for chart)
-    # we need to recover year/quarter from year_quarter or use original df index if preserved
-    # faster way: just rely on the fact that we derived it from a df that has year/quarter.
-    # But we just sliced it. So we need to sort BEFORE slicing or include year/quarter in slice then drop.
-
-    # Better approach: Sort original df copy first, then assign year_quarter, then slice.
-
-    # Let's re-do logic slightly to be safe
     df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[True, True])
 
+    # create result DataFrame
     result = pd.DataFrame()
+
+    # create year_quarter column e.g. 2025.Q3
     result['year_quarter'] = (
         df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
     )
 
-    if 'net_income' in df_sorted.columns:
-        result['net_income'] = df_sorted['net_income']
-    if 'opr_cash_flow' in df_sorted.columns:
-        result['opr_cash_flow'] = df_sorted['opr_cash_flow']
-    if 'eps' in df_sorted.columns:
-        result['eps'] = df_sorted['eps']
+    # select necessary columns
+    cols_to_extract = ['net_income', 'opr_cash_flow', 'eps']
+
+    for col in cols_to_extract:
+        if col in df_sorted.columns:
+            result[col] = df_sorted[col]
 
     return result.reset_index(drop=True)
 

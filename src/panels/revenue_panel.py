@@ -242,7 +242,7 @@ class RevenuePanel(ttk.Frame):
                 color='#599FDC',
                 width=0.6,
                 label='Revenue',
-             )
+            )
 
         # plot revenue MA3 line (on main y-axis)
         if 'revenue_ma3' in df_plot.columns:

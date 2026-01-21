@@ -80,7 +80,7 @@ class FinancialPanel(ttk.Frame):
         ax.tick_params(axis='x', rotation=0)
 
         # ensure scientific notation is off and don't use offset text
-        # ax.ticklabel_format(style='plain', axis='y', useOffset=False)        
+        # ax.ticklabel_format(style='plain', axis='y', useOffset=False)
 
     def _create_table(self):
         """Create table
@@ -158,7 +158,7 @@ class FinancialPanel(ttk.Frame):
 
         # adjust layout
         self.fig.tight_layout()
-        
+
         self.canvas.draw_idle()
 
     def _plot_cash_flow_chart(self, df_plot):
@@ -196,12 +196,12 @@ class FinancialPanel(ttk.Frame):
 
         # format x-axis ticks
         self._format_x_ticks(ax, df_plot.get('year_quarter', []))
-        
+
         # legends
         self._apply_legend(ax)
 
         # title
-        # ax.set_title('Cash Flow', color='#FFFFFF')        
+        # ax.set_title('Cash Flow', color='#FFFFFF')
 
     def _plot_eps_chart(self, df_plot):
         """Plot EPS chart
@@ -233,7 +233,7 @@ class FinancialPanel(ttk.Frame):
         self._apply_legend(ax)
 
         # title
-        # ax.set_title('EPS', color='#FFFFFF')           
+        # ax.set_title('EPS', color='#FFFFFF')
 
     def _format_x_ticks(self, ax, series, num_max_ticks=4):
         """Format x-axis ticks and labels with step size
@@ -281,7 +281,6 @@ class FinancialPanel(ttk.Frame):
         # legend.get_frame().set_edgecolor('#363636')
         legend.get_frame().set_alpha(0.6)
         legend.set_zorder(100)
-
 
     def _set_table_data(self, df):
         """Set data to table
