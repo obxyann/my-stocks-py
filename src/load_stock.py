@@ -339,7 +339,7 @@ def _pivot_dataframe(df, items):
 
     df_sorted = df_sorted.reset_index(drop=True)
 
-    # create year_quarter column e.g. 2025.Q1
+    # create year_quarter list e.g. ['2025.Q3', '2025.Q2', ...]
     periods = (
         df_sorted['year'].astype(str) + '.Q' + df_sorted['quarter'].astype(str)
     ).tolist()
