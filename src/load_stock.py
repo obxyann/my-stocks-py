@@ -345,8 +345,20 @@ def _pivot_dataframe(df, items):
     ).tolist()
 
     # create result dictionary
-    result = {'Item': []}
+    result = {}
 
+    # final result will be like:
+    # {
+    #     'Item': ['營業毛利率', '營業利益率', ...],
+    #     '2025.Q3': [10, 20, ...],
+    #     '2025.Q2': [10, 20, ...],
+    #     '2025.Q1': [10, 20, ...],
+    #     '2024.Q4': [10, 20, ...],
+    # }
+
+    # build 'Item' column
+    result['Item'] = []
+    # build '2025.Q3', '2025.Q2', ... columns
     for period in periods:
         result[period] = []
 
@@ -359,8 +371,10 @@ def _pivot_dataframe(df, items):
         if col_name not in df_sorted.columns:
             continue
 
+        # add display_name to 'Item' column
         result['Item'].append(display_name)
 
+        # add value to '2025.Q3', '2025.Q2', ... columns
         for i, period in enumerate(periods):
             value = df_sorted.iloc[i][col_name]
 
