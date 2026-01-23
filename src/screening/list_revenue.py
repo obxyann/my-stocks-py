@@ -4,6 +4,7 @@ import pandas as pd
 
 
 # 近 N 個月營收創近 M 月新高
+# ex. 近 2 個月營收創近 1 年新高
 def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None):
     """Get stocks whose recent revenue hit a new high
 
@@ -96,6 +97,7 @@ def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None
 
 
 # 3/12 個月平均營收連續 N 個月成長
+# ex. 12 個月平均營收連續 2 個月成長
 def list_revenue_continuous_growth(db, ma_type, n_months=3, input_df=None):
     """Filter stocks with continuous growth in MA3 or MA12 revenue for N months.
 
@@ -197,6 +199,7 @@ def list_revenue_continuous_growth(db, ma_type, n_months=3, input_df=None):
 
 
 # 營收月增率連續 N 個月 ＞ P%
+# ex. 營收月增率連續 2 個月 ＞ 0%
 def list_revenue_mom_growth(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks with consecutive MoM growth > P% for N months.
 
@@ -260,6 +263,7 @@ def list_revenue_mom_growth(db, n_months=3, threshold=0.0, input_df=None):
 
 
 # 營收年增率連續 N 個月 ＞ P%
+# ex. 營收年增率連續 1 個月 ＞ 40%
 def list_revenue_yoy_growth(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks with consecutive YoY growth > P% for N months.
 
@@ -322,6 +326,7 @@ def list_revenue_yoy_growth(db, n_months=3, threshold=0.0, input_df=None):
 
 
 # N 個月累積營收年增率連續 M 個月成長
+# ex. 3 個月累積營收年增率連續 1 個月成長
 def list_revenue_accumulated_growth(
     db, n_months_accum=3, m_months_cont=3, input_df=None
 ):
@@ -418,6 +423,78 @@ def list_revenue_accumulated_growth(
                     'code': code,
                     'name': code_to_name.get(code, ''),
                     # 'debug_yoy': target_yoy,
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# N 個月累積營收年增率成長幅度 > p%
+# ex. 12 個月累積營收年增率成長幅度 ＞ 2%
+def list_revenue_accumulated_growth_exceeds(
+    db, n_months=3, threshold=0.0, input_df=None
+):
+    """Filter stocks where N-month Accumulated Revenue YoY Rate > threshold.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_months (int): Number of months to accumulate (N)
+        threshold (float): Threshold percentage (P)
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    if input_df is not None and not input_df.empty:
+        stock_codes = input_df['code'].tolist()
+        code_to_name = dict(zip(input_df['code'], input_df['name']))
+        code_to_score = dict(zip(input_df['code'], input_df['score']))
+    else:
+        stocks_df = db.get_industrial_stocks()
+        if stocks_df.empty:
+            return pd.DataFrame(columns=['code', 'name', 'score'])
+        stock_codes = stocks_df['code'].tolist()
+        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
+        code_to_score = {}
+
+    results = []
+
+    for code in stock_codes:
+        limit = n_months
+        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
+
+        if len(df_rev) < limit:
+            continue
+
+        # Calculate N-month sum for Revenue and Revenue_LY
+        sum_rev = df_rev['revenue'].sum()
+        sum_rev_ly = df_rev['revenue_ly'].sum()
+
+        if sum_rev_ly <= 0 or pd.isna(sum_rev_ly):
+            continue
+
+        accum_yoy = (sum_rev - sum_rev_ly) / sum_rev_ly * 100
+
+        if accum_yoy > threshold:
+            # Score Calculation
+            # -----------------------------------------------------------
+            # Algorithm: Difference between Accumulated YoY and Threshold
+            # Score = Accum_YoY - Threshold
+            # -----------------------------------------------------------
+            score_val = accum_yoy - threshold
+
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
                     'score': round(final_score, 2),
                 }
             )
