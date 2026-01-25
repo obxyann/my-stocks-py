@@ -3,6 +3,22 @@
 import pandas as pd
 
 
+# Helper to setup input stocks
+def _get_target_stocks(db, input_df):
+    if input_df is not None and not input_df.empty:
+        stock_codes = input_df['code'].tolist()
+        code_to_name = dict(zip(input_df['code'], input_df['name']))
+        code_to_score = dict(zip(input_df['code'], input_df['score']))
+    else:
+        stocks_df = db.get_industrial_stocks()
+        if stocks_df.empty:
+            return [], {}, {}
+        stock_codes = stocks_df['code'].tolist()
+        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
+        code_to_score = {}
+    return stock_codes, code_to_name, code_to_score
+
+
 # 近 N 個月營收創近 M 月新高
 # ex. 近 2 個月營收創近 1 年新高
 def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None):
@@ -24,23 +40,9 @@ def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None
             score is the percentage by which recent high exceeds previous high
     """
     # determine source stocks
-    if input_df is not None and not input_df.empty:
-        # use input_df as source
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-
-        stock_codes = input_df['code'].tolist()
-    else:
-        # get all industrial stocks as default
-        stocks_df = db.get_industrial_stocks()
-
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
-
-        stock_codes = stocks_df['code'].tolist()
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # total months needed
     total_months = recent_months + lookback_months
@@ -120,18 +122,9 @@ def list_revenue_continuous_growth(db, ma_type, n_months=3, input_df=None):
     col_name = f'revenue_ma{ma_type}'
 
     # 2. Determine source stocks
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
     # To check continuous growth for N months (N intervals), we need N+1 data points.
@@ -213,17 +206,9 @@ def list_revenue_mom_growth(db, n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # Determine source stocks
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
@@ -276,17 +261,9 @@ def list_revenue_yoy_growth(db, n_months=3, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
@@ -343,17 +320,9 @@ def list_revenue_accumulated_growth(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
@@ -450,17 +419,9 @@ def list_revenue_accumulated_growth_exceeds(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return pd.DataFrame(columns=['code', 'name', 'score'])
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
