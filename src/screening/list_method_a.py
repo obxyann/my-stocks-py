@@ -4,7 +4,7 @@ from screening.list_metrics import (
     # 近 N 季稅後純益率(net_margin)平均 ＞ P%
     list_net_margin_average_threshold,
     # 近 N 季營業利益率(opr_margin)最小／最大 ＞ P%
-    list_opr_margin_extremum_threshold,
+    list_opr_margin_min_max_ratio_threshold,
     # 近 N 季營業利益率(opr_margin)最少 ＞ P%
     list_opr_margin_min_threshold,
     # 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長

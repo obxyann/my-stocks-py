@@ -20,18 +20,18 @@ def _get_target_stocks(db, input_df):
 
 
 # 近 N 季營業利益率(opr_margin)最小／最大 ＞ P%
-def list_opr_margin_extremum_threshold(
-    db, n_quarters=4, threshold=0.0, mode='min', input_df=None
+def list_opr_margin_min_max_ratio_threshold(
+    db, n_quarters=4, threshold=0.0, input_df=None
 ):
-    """Filter stocks where Min or Max Operating Margin in last N quarters > P%.
+    """Filter stocks where (Min Opr Margin / Max Opr Margin) in last N quarters > P%.
+
+    This metric is often used to assess the stability of the operating margin.
+    A ratio close to 100% indicates very stable margins.
 
     Args:
         db (StockDatabase): Database instance
         n_quarters (int): Number of recent quarters to check
-        threshold (float): Threshold percentage (e.g. 10.0 for 10%)
-        mode (str): 'min' or 'max'.
-            'min': Minimum opr_margin > threshold
-            'max': Maximum opr_margin > threshold
+        threshold (float): Threshold percentage (e.g. 50.0 for 50%)
         input_df (pd.DataFrame): Optional input list of stocks
 
     Returns:
@@ -53,20 +53,27 @@ def list_opr_margin_extremum_threshold(
 
         # check valid data (filter out None)
         valid_margins = [m for m in opr_margins if m is not None]
+        # if not enough data points (e.g. need at least 1, usually N), though len check above covers it mostly
         if not valid_margins:
             continue
 
         # opr_margin is ratio (0.15), convert to percentage (15.0)
         valid_margins_pct = [m * 100 for m in valid_margins]
 
-        if mode == 'min':
-            val = min(valid_margins_pct)
-        else:
-            val = max(valid_margins_pct)
+        val_min = min(valid_margins_pct)
+        val_max = max(valid_margins_pct)
 
-        if val > threshold:
+        # Skip if max is not positive (cannot divide or implies all negative/zero)
+        if val_max <= 0:
+            continue
+
+        # Calculate ratio in percentage
+        # e.g. min=10, max=20 -> 50%
+        ratio = (val_min / val_max) * 100
+
+        if ratio > threshold:
             # Score: Exceeding amount
-            score_val = val - threshold
+            score_val = ratio - threshold
 
             # accumulate
             current_score = code_to_score.get(code, 0)
@@ -118,15 +125,11 @@ def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None)
 
         # valid data check
         if any(m is None for m in opr_margins):
-            # If simplistic None check fails, filter None handling?
-            # Stricter: ignore if any None
             continue
 
         # Split: [.... rest .... | ... recent N ...]
-        # Total list length is 'limit' (or less if not full data, but checked above)
-        # Recent N is at the end: opr_margins[-n_quarters:]
-
         recent_vals = opr_margins[-n_quarters:]
+        # full_vals includes recent_vals
         full_vals = opr_margins
 
         max_all = max(full_vals)
@@ -177,7 +180,6 @@ def list_opr_margin_yoy_growth_continuous(
     """Filter stocks where opr_margin_yoy has grown continuously for M quarters within the recent N quarters window.
 
     Actually interpreting: The recent trend (ending at latest) shows M quarters of continuous growth in opr_margin_yoy.
-    (Ignoring N parameter if M defines the window, or resolving limit = max(N, M+1)).
 
     Args:
         db (StockDatabase): Database instance
@@ -370,7 +372,48 @@ def list_opr_margin_min_threshold(db, n_quarters=4, threshold=0.0, input_df=None
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    # Reuse the generic function with mode='min'
-    return list_opr_margin_extremum_threshold(
-        db, n_quarters, threshold, mode='min', input_df=input_df
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
+
+        if len(df_metrics) < n_quarters:
+            continue
+
+        opr_margins = df_metrics['opr_margin'].tolist()
+
+        # check valid data (filter out None)
+        valid_margins = [m for m in opr_margins if m is not None]
+        if not valid_margins:
+            continue
+
+        # opr_margin is ratio (0.15), convert to percentage (15.0)
+        valid_margins_pct = [m * 100 for m in valid_margins]
+
+        val_min = min(valid_margins_pct)
+
+        if val_min > threshold:
+            # Score: Exceeding amount
+            score_val = val_min - threshold
+
+            # accumulate
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
     )
+    return result_df
