@@ -1,0 +1,376 @@
+"""Financial metrics screening methods"""
+
+import pandas as pd
+
+
+# Helper to setup input stocks
+def _get_target_stocks(db, input_df):
+    if input_df is not None and not input_df.empty:
+        stock_codes = input_df['code'].tolist()
+        code_to_name = dict(zip(input_df['code'], input_df['name']))
+        code_to_score = dict(zip(input_df['code'], input_df['score']))
+    else:
+        stocks_df = db.get_industrial_stocks()
+        if stocks_df.empty:
+            return [], {}, {}
+        stock_codes = stocks_df['code'].tolist()
+        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
+        code_to_score = {}
+    return stock_codes, code_to_name, code_to_score
+
+
+# 近 N 季營業利益率(opr_margin)最小／最大 ＞ P%
+def list_opr_margin_extremum_threshold(
+    db, n_quarters=4, threshold=0.0, mode='min', input_df=None
+):
+    """Filter stocks where Min or Max Operating Margin in last N quarters > P%.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): Number of recent quarters to check
+        threshold (float): Threshold percentage (e.g. 10.0 for 10%)
+        mode (str): 'min' or 'max'.
+            'min': Minimum opr_margin > threshold
+            'max': Maximum opr_margin > threshold
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
+
+        if len(df_metrics) < n_quarters:
+            continue
+
+        opr_margins = df_metrics['opr_margin'].tolist()
+
+        # check valid data (filter out None)
+        valid_margins = [m for m in opr_margins if m is not None]
+        if not valid_margins:
+            continue
+
+        # opr_margin is ratio (0.15), convert to percentage (15.0)
+        valid_margins_pct = [m * 100 for m in valid_margins]
+
+        if mode == 'min':
+            val = min(valid_margins_pct)
+        else:
+            val = max(valid_margins_pct)
+
+        if val > threshold:
+            # Score: Exceeding amount
+            score_val = val - threshold
+
+            # accumulate
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# 近 N 季營業利益率(opr_margin)為近 M 季最大
+def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None):
+    """Filter stocks where opr_margin in recent N quarters contains the Max of recent M quarters.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): Number of recent quarters to consider as 'recent'
+        m_lookback (int): Total number of quarters to look back (M >= N)
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    limit = max(n_quarters, m_lookback)
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
+
+        if len(df_metrics) < limit:
+            continue
+
+        opr_margins = df_metrics['opr_margin'].tolist()  # Sorted old -> new
+
+        # valid data check
+        if any(m is None for m in opr_margins):
+            # If simplistic None check fails, filter None handling?
+            # Stricter: ignore if any None
+            continue
+
+        # Split: [.... rest .... | ... recent N ...]
+        # Total list length is 'limit' (or less if not full data, but checked above)
+        # Recent N is at the end: opr_margins[-n_quarters:]
+
+        recent_vals = opr_margins[-n_quarters:]
+        full_vals = opr_margins
+
+        max_all = max(full_vals)
+        max_recent = max(recent_vals)
+
+        # Condition: recent max is the all-time max (of this window)
+        if max_recent >= max_all:
+            # Score: How much it exceeds the 'non-recent' max?
+            # If non-recent part exists:
+            others = full_vals[:-n_quarters]
+            if others:
+                max_others = max(others)
+                if max_others == 0:
+                    # avoided div by zero
+                    if max_recent > 0:
+                        score_val = 100  # arbitrary high score
+                    else:
+                        score_val = 0
+                else:
+                    # Percentage excess over previous high
+                    score_val = (max_recent - max_others) / abs(max_others) * 100
+            else:
+                # If N=M, checking against itself?
+                score_val = 0
+
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
+def list_opr_margin_yoy_growth_continuous(
+    db, n_quarters=4, m_quarters=3, input_df=None
+):
+    """Filter stocks where opr_margin_yoy has grown continuously for M quarters within the recent N quarters window.
+
+    Actually interpreting: The recent trend (ending at latest) shows M quarters of continuous growth in opr_margin_yoy.
+    (Ignoring N parameter if M defines the window, or resolving limit = max(N, M+1)).
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): (Unused/Redundant in strict interpretation) Window size
+        m_quarters (int): Consecutive quarters of growth required
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # To check M quarters growth we need M+1 data points: T > T-1 > ... > T-M
+    limit = m_quarters + 1
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
+
+        if len(df_metrics) < limit:
+            continue
+
+        vals = df_metrics['opr_margin_yoy'].tolist()
+
+        if any(v is None for v in vals):
+            continue
+
+        # Check strictly increasing
+        is_increasing = True
+        for i in range(len(vals) - 1):
+            if vals[i + 1] <= vals[i]:
+                is_increasing = False
+                break
+
+        if is_increasing:
+            # Score: Total increase (Magnitude)
+            score_val = vals[-1] - vals[0]
+
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
+def list_opr_margin_qoq_growth_continuous(
+    db, n_quarters=4, m_quarters=3, input_df=None
+):
+    """Filter stocks where opr_margin_qoq has grown continuously for M quarters.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): (Unused)
+        m_quarters (int): Consecutive quarters of growth required
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+    limit = m_quarters + 1
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
+
+        if len(df_metrics) < limit:
+            continue
+
+        vals = df_metrics['opr_margin_qoq'].tolist()
+
+        if any(v is None for v in vals):
+            continue
+
+        # Check strictly increasing
+        is_increasing = True
+        for i in range(len(vals) - 1):
+            if vals[i + 1] <= vals[i]:
+                is_increasing = False
+                break
+
+        if is_increasing:
+            # Score: Total increase
+            score_val = vals[-1] - vals[0]
+
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# 近 N 季稅後純益率(net_margin)平均 ＞ P%
+def list_net_margin_average_threshold(db, n_quarters=4, threshold=0.0, input_df=None):
+    """Filter stocks where Average Net Margin in last N quarters > P%.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): Number of quarters
+        threshold (float): Threshold percentage
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for code in stock_codes:
+        df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
+
+        if len(df_metrics) < n_quarters:
+            continue
+
+        vals = df_metrics['net_margin'].tolist()
+
+        # Filter None
+        vals = [v for v in vals if v is not None]
+        if not vals:
+            continue
+
+        # Convert to percentage
+        vals_pct = [v * 100 for v in vals]
+
+        avg_val = sum(vals_pct) / len(vals_pct)
+
+        if avg_val > threshold:
+            score_val = avg_val - threshold
+
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score_val
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+    return result_df
+
+
+# 近 N 季營業利益率(opr_margin)最少 ＞ P%
+def list_opr_margin_min_threshold(db, n_quarters=4, threshold=0.0, input_df=None):
+    """Filter stocks where Minimum Operating Margin in last N quarters > P%.
+
+    Args:
+        db (StockDatabase): Database instance
+        n_quarters (int): Number of quarters
+        threshold (float): Threshold percentage
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # Reuse the generic function with mode='min'
+    return list_opr_margin_extremum_threshold(
+        db, n_quarters, threshold, mode='min', input_df=input_df
+    )
