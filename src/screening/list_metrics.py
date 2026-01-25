@@ -19,7 +19,8 @@ def _get_target_stocks(db, input_df):
     return stock_codes, code_to_name, code_to_score
 
 
-# 近 N 季營業利益率(opr_margin)最小／最大 ＞ P%
+# 近 N 季營業利益率最小／最大 ＞ P%
+# ex. 近 8 季營益率最小／最大 ＞ 60%
 def list_opr_margin_min_max_ratio_threshold(
     db, n_quarters=4, threshold=0.0, input_df=None
 ):
@@ -94,7 +95,8 @@ def list_opr_margin_min_max_ratio_threshold(
     return result_df
 
 
-# 近 N 季營業利益率(opr_margin)為近 M 季最大
+# 近 N 季營業利益率為近 M 季最大
+# ex. 近 1 季營業利益率為近 8 季最大
 def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None):
     """Filter stocks where opr_margin in recent N quarters contains the Max of recent M quarters.
 
@@ -174,6 +176,7 @@ def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None)
 
 
 # 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
+# ex. 近 2 季營業利益率年增率連續 2 季成長
 def list_opr_margin_yoy_growth_continuous(
     db, n_quarters=4, m_quarters=3, input_df=None
 ):
@@ -240,6 +243,7 @@ def list_opr_margin_yoy_growth_continuous(
 
 
 # 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
+# ex. 近 3 季營業利益率季增率連續 3 季成長
 def list_opr_margin_qoq_growth_continuous(
     db, n_quarters=4, m_quarters=3, input_df=None
 ):
@@ -301,7 +305,8 @@ def list_opr_margin_qoq_growth_continuous(
     return result_df
 
 
-# 近 N 季稅後純益率(net_margin)平均 ＞ P%
+# 近 N 季稅後純益率平均 ＞ P%
+# ex. 近 1 季稅後純益率平均 ＞ 0%
 def list_net_margin_average_threshold(db, n_quarters=4, threshold=0.0, input_df=None):
     """Filter stocks where Average Net Margin in last N quarters > P%.
 
@@ -359,7 +364,8 @@ def list_net_margin_average_threshold(db, n_quarters=4, threshold=0.0, input_df=
     return result_df
 
 
-# 近 N 季營業利益率(opr_margin)最少 ＞ P%
+# 近 N 季營業利益率最少 ＞ P%
+# ex. 近 4 季營業利益率最少 ＞ 0%
 def list_opr_margin_min_threshold(db, n_quarters=4, threshold=0.0, input_df=None):
     """Filter stocks where Minimum Operating Margin in last N quarters > P%.
 

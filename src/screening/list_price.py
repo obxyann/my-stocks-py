@@ -5,6 +5,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 # 近 N 個月股價漲幅 ＞ p%
+# ex. 近 6 個月股價漲幅 ＞ 0%
 def list_price_growth(db, n_months=3, p_percent=10.0, input_df=None):
     """Filter stocks where price growth over the last N months > p%.
 
@@ -118,6 +119,7 @@ def list_price_growth(db, n_months=3, p_percent=10.0, input_df=None):
 
 
 # 最新股價 ＞ 近 N 個月月均價
+# ex. 最新股價 ＞ 近 2 個月月均價
 def list_price_above_avg(db, n_months=3, input_df=None):
     """Filter stocks where Latest Price > Average of Monthly Average Prices of last N months.
 
