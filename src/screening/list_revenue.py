@@ -20,7 +20,7 @@ def _get_target_stocks(db, input_df):
 
 
 # 近 N 個月營收創近 M 月新高
-# ex. 近 2 個月營收創近 1 年新高
+# ex. 近 2 個月營收創近 1 年(12 個月)新高
 def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None):
     """Get stocks whose recent revenue hit a new high
 
