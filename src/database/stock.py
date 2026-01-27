@@ -1188,19 +1188,19 @@ class StockDatabase:
                             -- revenue_mom
                             CASE
                                 WHEN val_revenue_lm IS NOT NULL AND val_revenue_lm != 0
-                                THEN (revenue * 1.0 / val_revenue_lm - 1.0) 
+                                THEN (revenue - val_revenue_lm) * 1.0 / ABS(val_revenue_lm)
                                 ELSE NULL
                             END AS val_revenue_mom,
                             -- revenue_yoy
                             CASE
                                 WHEN val_revenue_ly IS NOT NULL AND val_revenue_ly != 0
-                                THEN (revenue * 1.0 / val_revenue_ly - 1.0)
+                                THEN (revenue - val_revenue_ly) * 1.0 / ABS(val_revenue_ly)
                                 ELSE NULL
                             END AS val_revenue_yoy,
                             -- revenue_ytd_yoy
                             CASE
                                 WHEN val_revenue_ytd_ly IS NOT NULL AND val_revenue_ytd_ly != 0
-                                THEN (val_revenue_ytd * 1.0 / val_revenue_ytd_ly - 1.0)
+                                THEN (val_revenue_ytd - val_revenue_ytd_ly) * 1.0 / ABS(val_revenue_ytd_ly)
                                 ELSE NULL
                             END AS val_revenue_ytd_yoy
                         FROM calc_ytd_ly
@@ -1335,9 +1335,9 @@ class StockDatabase:
                 df['revenue_ly'] = df.groupby('code')['revenue'].shift(12)
                 df['revenue_ytd'] = df.groupby(['code', 'year'])['revenue'].cumsum()
                 df['revenue_ytd_ly'] = df.groupby('code')['revenue_ytd'].shift(12)
-                df['revenue_mom'] = df.groupby('code')['revenue'].pct_change(periods=1)
-                df['revenue_yoy'] = df.groupby('code')['revenue'].pct_change(periods=12)
-                df['revenue_ytd_yoy'] = (df['revenue_ytd'] / df['revenue_ytd_ly'] - 1)
+                df['revenue_mom'] = (df['revenue'] - df.groupby('code')['revenue'].shift(1)) / df.groupby('code')['revenue'].shift(1).abs()
+                df['revenue_yoy'] = (df['revenue'] - df.groupby('code')['revenue'].shift(12)) / df.groupby('code')['revenue'].shift(12).abs()
+                df['revenue_ytd_yoy'] = (df['revenue_ytd'] - df['revenue_ytd_ly']) / df['revenue_ytd_ly'].abs()
                 # moving averages (min_periods ensures we have enough data)
                 df['revenue_ma3'] = df.groupby('code')['revenue'].transform(lambda x: x.rolling(window=3, min_periods=3).mean()) # fmt: skip
                 df['revenue_ma12'] = df.groupby('code')['revenue'].transform(lambda x: x.rolling(window=12, min_periods=12).mean()) # fmt: skip
