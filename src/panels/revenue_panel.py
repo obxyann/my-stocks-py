@@ -26,6 +26,9 @@ class RevenuePanel(ttk.Frame):
         # create table below chart
         self._create_table().pack(fill='both', expand=True)
 
+        # ax3 constraints flag
+        self._ax3_constrained = False
+
     def _create_charts(self):
         """Create charts
 
@@ -55,6 +58,9 @@ class RevenuePanel(ttk.Frame):
 
         self.canvas.get_tk_widget().configure(background='#1C1C1C')
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        # handle click events
+        self.canvas.mpl_connect('button_press_event', self._on_click)
 
         # adjust layout
         self.fig.tight_layout()
@@ -312,6 +318,12 @@ class RevenuePanel(ttk.Frame):
         self._apply_legend(self.ax3, 'left')
         self._apply_legend(self.ax4, 'right')
 
+        # apply constraints if enabled
+        if getattr(self, '_ax3_constrained', False):
+            curr_min, curr_max = self.ax3.get_ylim()
+
+            self.ax3.set_ylim(max(curr_min, -100), min(curr_max, 100))
+
     def _format_x_ticks(self, ax, series, num_max_ticks=6):
         """Format x-axis ticks and labels with step size
 
@@ -333,6 +345,26 @@ class RevenuePanel(ttk.Frame):
 
         # remove padding on left and right
         ax.set_xlim(-0.5, num_ticks - 0.5)
+
+    def _on_click(self, event):
+        """Handle click event on charts
+
+        Args:
+            event: Matplotlib event
+        """
+        if event.inaxes in [self.ax3, self.ax4]:
+            self._ax3_constrained = not getattr(self, '_ax3_constrained', False)
+
+            if self._ax3_constrained:
+                curr_min, curr_max = self.ax3.get_ylim()
+
+                self.ax3.set_ylim(max(curr_min, -100), min(curr_max, 100))
+            else:
+                self.ax3.autoscale(enable=True, axis='y')
+                self.ax3.relim()
+                self.ax3.autoscale_view(scalex=False, scaley=True)
+
+            self.canvas.draw_idle()
 
     def _apply_legend(self, ax, side='left'):
         """Apply legend to specified axis and side
