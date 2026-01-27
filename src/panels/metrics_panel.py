@@ -26,6 +26,10 @@ class MetricsPanel(ttk.Frame):
         # create table below chart
         self._create_table().pack(fill='both', expand=True)
 
+        # constraints flags
+        self._ax_qoq_constrained = False
+        self._ax_yoy_constrained = False
+
     def _create_charts(self):
         """Create charts
 
@@ -55,6 +59,9 @@ class MetricsPanel(ttk.Frame):
 
         self.canvas.get_tk_widget().configure(background='#1C1C1C')
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        # handle click events
+        self.canvas.mpl_connect('button_press_event', self._on_click)
 
         # adjust layout
         self.fig.tight_layout()
@@ -268,6 +275,11 @@ class MetricsPanel(ttk.Frame):
         # legends
         self._apply_legend(ax)
 
+        # apply constraints if enabled
+        if getattr(self, '_ax_qoq_constrained', False):
+            curr_min, curr_max = ax.get_ylim()
+            ax.set_ylim(max(curr_min, -100), min(curr_max, 100))
+
         # title
         # ax.set_title('Profitability QoQ', color='#FFFFFF')
 
@@ -317,6 +329,11 @@ class MetricsPanel(ttk.Frame):
         # legends
         self._apply_legend(ax)
 
+        # apply constraints if enabled
+        if getattr(self, '_ax_yoy_constrained', False):
+            curr_min, curr_max = ax.get_ylim()
+            ax.set_ylim(max(curr_min, -100), min(curr_max, 100))
+
         # title
         # ax.set_title('Profitability YoY', color='#FFFFFF')
 
@@ -342,6 +359,44 @@ class MetricsPanel(ttk.Frame):
 
         # remove padding on left and right
         ax.set_xlim(-0.5, num_ticks - 0.5)
+
+    def _on_click(self, event):
+        """Handle click event on charts
+
+        Args:
+            event: Matplotlib event
+        """
+        if event.inaxes == self.ax_profit_qoq:
+            self._ax_qoq_constrained = not getattr(self, '_ax_qoq_constrained', False)
+
+            ax = self.ax_profit_qoq
+
+            if self._ax_qoq_constrained:
+                curr_min, curr_max = ax.get_ylim()
+
+                ax.set_ylim(max(curr_min, -100), min(curr_max, 100))
+            else:
+                ax.autoscale(enable=True, axis='y')
+                ax.relim()
+                ax.autoscale_view(scalex=False, scaley=True)
+
+            self.canvas.draw_idle()
+
+        elif event.inaxes == self.ax_profit_yoy:
+            self._ax_yoy_constrained = not getattr(self, '_ax_yoy_constrained', False)
+
+            ax = self.ax_profit_yoy
+
+            if self._ax_yoy_constrained:
+                curr_min, curr_max = ax.get_ylim()
+
+                ax.set_ylim(max(curr_min, -100), min(curr_max, 100))
+            else:
+                ax.autoscale(enable=True, axis='y')
+                ax.relim()
+                ax.autoscale_view(scalex=False, scaley=True)
+
+            self.canvas.draw_idle()
 
     def _apply_legend(self, ax):
         """Apply legend to specified axis
