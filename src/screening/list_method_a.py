@@ -25,13 +25,13 @@ from screening.list_revenue import (
     list_accum_revenue_yoy_cont_growth,
     # 近 N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
     list_accum_revenue_yoy_growth_above,
-    # 3/12 個月平均營收連續 N 個月成長
+    # N 個月平均營收連續 M 個月成長
     list_avg_revenue_cont_growth,
     # 近 N 個月營收創近 M 月新高
     list_revenue_hit_new_high,
     # 營收月增率(revenue_mom)連續 N 個月 ＞ P%
     list_revenue_mom_cont_above,
-    # 月營收年增率(revenue_yoy)連續 N 個月 ＞ P%
+    # 營收年增率(revenue_yoy)連續 N 個月 ＞ P%
     list_revenue_yoy_cont_above,
 )
 

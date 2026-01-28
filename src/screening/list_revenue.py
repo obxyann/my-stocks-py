@@ -97,14 +97,14 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
     return result_df
 
 
-# 3/12 個月平均營收連續 N 個月成長 (or other MA type)
-def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
+# N 個月平均營收連續 M 個月成長
+def list_avg_revenue_cont_growth(db, ma_type, m_months=3, input_df=None):
     """Filter stocks with continuous growth in average revenue (MA) for N months.
 
     Args:
         db (StockDatabase): Database instance
         ma_type (int): Moving average window size (e.g. 3, 6, 12)
-        n_months (int): Number of continuous months of growth required
+        m_months (int): Number of continuous months of growth required
         input_df (pd.DataFrame): Optional input list of stocks with columns ['code', 'name', 'score']
             If provided, filter only stocks in this list and accumulate scores.
             If None, use get_industrial_stocks as default.
@@ -125,7 +125,7 @@ def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
         use_precalc = True
         col_name = f'revenue_ma{ma_type}'
         # To check continuous growth for N months (N intervals), we need N+1 data points.
-        limit = n_months + 1
+        limit = m_months + 1
     else:
         # Calculate MA on the fly
         use_precalc = False
@@ -133,7 +133,7 @@ def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
         # We need N+1 data points of MA.
         # To calculate the first (oldest) MA point of window W, we need W prior revenue points.
         # So total revenue rows needed = (N + 1) + (ma_type - 1) = n_months + ma_type
-        limit = n_months + ma_type
+        limit = m_months + ma_type
 
     for code in stock_codes:
         # 3. Data source from db
@@ -152,10 +152,10 @@ def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
             ma_series = df_rev['revenue'].rolling(window=ma_type).mean()
             # We only need the last (n_months + 1) valid MA values
             # The first (ma_type - 1) values will be NaN, which is expected
-            vals = ma_series.tail(n_months + 1).tolist()
+            vals = ma_series.tail(m_months + 1).tolist()
 
         # Check for valid data
-        if len(vals) < n_months + 1 or any(v is None or pd.isna(v) for v in vals):
+        if len(vals) < m_months + 1 or any(v is None or pd.isna(v) for v in vals):
             continue
 
         # Check strictly increasing (Continuous Growth)
@@ -311,7 +311,7 @@ def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# N 個月累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+# 近 N 個月累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
 def list_accum_revenue_yoy_cont_growth(
     db, n_months_accum=3, m_months_cont=3, input_df=None
 ):
@@ -336,10 +336,7 @@ def list_accum_revenue_yoy_cont_growth(
 
     # We need M steps of comparison: T vs T-1, ..., T-M+1 vs T-M
     # So we need data points T, T-1, ..., T-M (Total M+1 points of AccumYoY)
-    # Each AccumYoY point needs N months of revenue.
-    # So we need rows from index T down to T - M - N + 1.
-    # Total rows = n_months_accum + m_months_cont
-    limit = n_months_accum + m_months_cont
+    limit = m_months_cont + 1
 
     for code in stock_codes:
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
@@ -352,18 +349,7 @@ def list_accum_revenue_yoy_cont_growth(
         if len(df_rev) < limit:
             continue
 
-        # Calculate N-month rolling sum for Revenue and Revenue_LY
-        # Since we need exactly M+1 points of Accumulated YoY at the END of the series
-        # Window size = n_months_accum
-
-        # Vectorized rolling calculation
-        # Note: 'min_periods=n_months_accum' ensures we only get valid sums where we have full data
-        rolling_rev = df_rev['revenue'].rolling(window=n_months_accum).sum()
-        rolling_rev_ly = df_rev['revenue_ly'].rolling(window=n_months_accum).sum()
-
-        # Calculate YoY of the accumulated revenue
-        # Handle division by zero or NaN
-        accum_yoy = (rolling_rev - rolling_rev_ly) / rolling_rev_ly * 100
+        accum_yoy = df_rev['revenue_ytd_yoy']
 
         # The rolling result will have NaNs for the first N-1 rows
         # We only care about the last m_months_cont + 1 values
@@ -411,7 +397,7 @@ def list_accum_revenue_yoy_cont_growth(
     return result_df
 
 
-# N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > p%
+# 近 N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
 def list_accum_revenue_yoy_growth_above(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks where N-month Accumulated Revenue YoY Rate > threshold.
 
@@ -431,20 +417,16 @@ def list_accum_revenue_yoy_growth_above(db, n_months=3, threshold=0.0, input_df=
     results = []
 
     for code in stock_codes:
-        limit = n_months
+        limit = 1
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
 
-        if len(df_rev) < limit:
+        if df_rev.empty:
             continue
 
-        # Calculate N-month sum for Revenue and Revenue_LY
-        sum_rev = df_rev['revenue'].sum()
-        sum_rev_ly = df_rev['revenue_ly'].sum()
+        accum_yoy = df_rev['revenue_ytd_yoy'].iloc[-1]
 
-        if sum_rev_ly <= 0 or pd.isna(sum_rev_ly):
+        if pd.isna(accum_yoy):
             continue
-
-        accum_yoy = (sum_rev - sum_rev_ly) / sum_rev_ly * 100
 
         if accum_yoy > threshold:
             # Score Calculation
