@@ -97,13 +97,13 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
     return result_df
 
 
-# 3/12 個月平均營收連續 N 個月成長
+# 3/12 個月平均營收連續 N 個月成長 (or other MA type)
 def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
-    """Filter stocks with continuous growth in MA3 or MA12 revenue for N months.
+    """Filter stocks with continuous growth in average revenue (MA) for N months.
 
     Args:
         db (StockDatabase): Database instance
-        ma_type (int): 3 or 12, indicating MA3 or MA12
+        ma_type (int): Moving average window size (e.g. 3, 6, 12)
         n_months (int): Number of continuous months of growth required
         input_df (pd.DataFrame): Optional input list of stocks with columns ['code', 'name', 'score']
             If provided, filter only stocks in this list and accumulate scores.
@@ -112,23 +112,28 @@ def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    # 1. Validation for ma_type (3 or 12)
-    if ma_type not in (3, 12):
-        print(f'Warning: Invalid ma_type {ma_type}. Must be 3 or 12.')
-        return pd.DataFrame(columns=['code', 'name', 'score'])
-
-    col_name = f'revenue_ma{ma_type}'
-
     # 2. Determine source stocks
     stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
-    # To check continuous growth for N months (N intervals), we need N+1 data points.
-    # e.g. M1 < M2 < M3 (2 months growth) needs 3 points.
-    # N months growth -> N comparison steps -> N+1 points.
-    limit = n_months + 1
+
+    # Determine limit and strategy based on ma_type
+    if ma_type in (3, 12):
+        # Use pre-calculated columns
+        use_precalc = True
+        col_name = f'revenue_ma{ma_type}'
+        # To check continuous growth for N months (N intervals), we need N+1 data points.
+        limit = n_months + 1
+    else:
+        # Calculate MA on the fly
+        use_precalc = False
+        col_name = None
+        # We need N+1 data points of MA.
+        # To calculate the first (oldest) MA point of window W, we need W prior revenue points.
+        # So total revenue rows needed = (N + 1) + (ma_type - 1) = n_months + ma_type
+        limit = n_months + ma_type
 
     for code in stock_codes:
         # 3. Data source from db
@@ -139,10 +144,18 @@ def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
             continue
 
         # Extract target MA values
-        vals = df_rev[col_name].tolist()
+        if use_precalc:
+            vals = df_rev[col_name].tolist()
+        else:
+            # Calculate MA on the fly
+            # df_rev is sorted ascending by date
+            ma_series = df_rev['revenue'].rolling(window=ma_type).mean()
+            # We only need the last (n_months + 1) valid MA values
+            # The first (ma_type - 1) values will be NaN, which is expected
+            vals = ma_series.tail(n_months + 1).tolist()
 
         # Check for valid data
-        if any(v is None or pd.isna(v) for v in vals):
+        if len(vals) < n_months + 1 or any(v is None or pd.isna(v) for v in vals):
             continue
 
         # Check strictly increasing (Continuous Growth)
