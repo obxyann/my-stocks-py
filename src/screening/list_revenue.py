@@ -20,8 +20,7 @@ def _get_target_stocks(db, input_df):
 
 
 # 近 N 個月營收創近 M 月新高
-# ex. 近 2 個月營收創近 1 年(12 個月)新高
-def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None):
+def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=None):
     """Get stocks whose recent revenue hit a new high
 
     Find stocks where the maximum revenue in the last N months exceeds
@@ -99,8 +98,7 @@ def list_revenue_new_high(db, recent_months=3, lookback_months=12, input_df=None
 
 
 # 3/12 個月平均營收連續 N 個月成長
-# ex. 12 個月平均營收連續 2 個月成長
-def list_revenue_continuous_growth(db, ma_type, n_months=3, input_df=None):
+def list_avg_revenue_cont_growth(db, ma_type, n_months=3, input_df=None):
     """Filter stocks with continuous growth in MA3 or MA12 revenue for N months.
 
     Args:
@@ -191,9 +189,8 @@ def list_revenue_continuous_growth(db, ma_type, n_months=3, input_df=None):
     return result_df
 
 
-# 營收月增率連續 N 個月 ＞ P%
-# ex. 營收月增率連續 2 個月 ＞ 0%
-def list_revenue_mom_growth(db, n_months=3, threshold=0.0, input_df=None):
+# 營收月增率(revenue_mom)連續 N 個月 ＞ P%
+def list_revenue_mom_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks with consecutive MoM growth > P% for N months.
 
     Args:
@@ -247,9 +244,8 @@ def list_revenue_mom_growth(db, n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# 營收年增率連續 N 個月 ＞ P%
-# ex. 營收年增率連續 1 個月 ＞ 40%
-def list_revenue_yoy_growth(db, n_months=3, threshold=0.0, input_df=None):
+# 營收年增率(revenue_yoy)連續 N 個月 ＞ P%
+def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks with consecutive YoY growth > P% for N months.
 
     Args:
@@ -302,9 +298,8 @@ def list_revenue_yoy_growth(db, n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# N 個月累積營收年增率連續 M 個月成長
-# ex. 3 個月累積營收年增率連續 1 個月成長
-def list_revenue_accumulated_growth(
+# N 個月累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+def list_accum_revenue_yoy_cont_growth(
     db, n_months_accum=3, m_months_cont=3, input_df=None
 ):
     """Filter stocks where N-month Accumulated Revenue YoY Rate has been growing for M consecutive months.
@@ -403,11 +398,8 @@ def list_revenue_accumulated_growth(
     return result_df
 
 
-# N 個月累積營收年增率成長幅度 > p%
-# ex. 12 個月累積營收年增率成長幅度 ＞ 2%
-def list_revenue_accumulated_growth_exceeds(
-    db, n_months=3, threshold=0.0, input_df=None
-):
+# N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > p%
+def list_accum_revenue_yoy_growth_above(db, n_months=3, threshold=0.0, input_df=None):
     """Filter stocks where N-month Accumulated Revenue YoY Rate > threshold.
 
     Args:
