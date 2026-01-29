@@ -24,8 +24,8 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
@@ -36,7 +36,8 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
     start_search_date = datetime.now() - relativedelta(months=buffer_months)
     start_date_str = start_search_date.strftime('%Y-%m-%d')
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         # get daily prices
         # we need enough history to find the price N months ago
         df_prices = db.get_prices_by_code(code, start_date=start_date_str)
@@ -99,13 +100,12 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
             score_val = growth
 
             # Accumulate
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -131,8 +131,8 @@ def list_price_above_avg(db, n_months=3, input_df=None):
     """
     # 1. Determine source stocks
     # 1. Determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
@@ -143,7 +143,8 @@ def list_price_above_avg(db, n_months=3, input_df=None):
     start_search_date = datetime.now() - relativedelta(months=n_months + 2)
     start_date_str = start_search_date.strftime('%Y-%m-%d')
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         # Get latest price
         # We assume recent data is available
         # Fetching a small window of daily prices for the latest price
@@ -190,13 +191,12 @@ def list_price_above_avg(db, n_months=3, input_df=None):
             diff_percent = (latest_price - avg_price) / avg_price * 100
 
             # Accumulate
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + diff_percent
+            final_score = row['score'] + diff_percent
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )

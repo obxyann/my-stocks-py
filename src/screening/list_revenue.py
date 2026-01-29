@@ -6,14 +6,15 @@ from screening.helper import get_target_stocks
 
 
 # R01: 近 N 個月營收創近 M 月新高
-#      (月營收連續 N 個月創近 M 月新高)
+#      (or 營收連續 N 個月創近 M 月新高)
+#      (or 近 N 月營收為近 M 月最大)
 def list_revenue_hit_new_high(
     db, recent_n_months=3, lookback_m_months=12, input_df=None
 ):
-    """Get stocks whose recent revenue hit a new high
+    """Get stocks with recent revenue reaching a new high
 
     Find stocks whose revenue over the last N months exceeds the maximum
-    revenue in the preceding M months.
+    revenue observed in the preceding M months.
 
     Args:
         db (StockDatabase): Database instance
@@ -28,22 +29,29 @@ def list_revenue_hit_new_high(
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
             score is the percentage by which recent high exceeds previous high
     """
+    # check input parameters
+    if recent_n_months < 1 or lookback_m_months < 1:
+        raise ValueError('recent_n_months and lookback_m_months must be >= 1')
+    if recent_n_months > lookback_m_months:
+        raise ValueError('recent_n_months must be <= lookback_m_months')
+
     # determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
-    # total months needed
-    total_months = recent_n_months + lookback_m_months
+    early_months = lookback_m_months - recent_n_months
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
+
         # get recent revenue data
-        revenue_df = db.get_recent_revenue_by_code(code, limit=total_months)
+        revenue_df = db.get_recent_revenue_by_code(code, limit=lookback_m_months)
 
         # skip if not enough data
-        if len(revenue_df) < total_months:
+        if len(revenue_df) < lookback_m_months:
             continue
 
         # ensure sorted by date ascending
@@ -52,28 +60,29 @@ def list_revenue_hit_new_high(
         ).reset_index(drop=True)
 
         # split into lookback period and recent period
-        lookback_df = revenue_df.iloc[:lookback_m_months]
-        recent_df = revenue_df.iloc[lookback_m_months:]
+        early_df = revenue_df.iloc[:early_months]
+        recent_df = revenue_df.iloc[early_months:]
 
         # get max revenue in each period
-        lookback_max = lookback_df['revenue'].max()
+        early_max = early_df['revenue'].max()
         recent_max = recent_df['revenue'].max()
 
         # skip if lookback period has no valid revenue
-        if pd.isna(lookback_max) or lookback_max <= 0:
+        if pd.isna(early_max) or early_max <= 0:
             continue
 
         # check if recent max exceeds lookback max
-        if recent_max > lookback_max:
+        if recent_max > early_max:
             # calculate score: percentage exceeded
-            new_score = (recent_max - lookback_max) / lookback_max * 100
+            new_score = (recent_max - early_max) / abs(early_max) * 100
+
             # accumulate existing score from input_df
-            existing_score = code_to_score.get(code, 0)
-            total_score = existing_score + new_score
+            total_score = row['score'] + new_score
+
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(total_score, 2),
                 }
             )
@@ -106,14 +115,16 @@ def list_revenue_mom_cont_above(db, cont_n_months=3, threshold=0.0, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    # Determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
+
         df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
         if len(df_rev) < cont_n_months:
@@ -121,22 +132,21 @@ def list_revenue_mom_cont_above(db, cont_n_months=3, threshold=0.0, input_df=Non
 
         moms = df_rev['revenue_mom'].tolist()
 
-        # Check if all MoM > threshold
+        # check if all MoM > threshold
         if any(pd.isna(m) or m <= threshold for m in moms):
             continue
 
-        # Score Calculation
-        # Algorithm: Sum of excess growth over threshold
+        # score calculation
+        # algorithm: sum of excess growth over threshold
         # Score = Sum(MoM_i - Threshold)
         score_val = sum(m - threshold for m in moms)
 
-        current_score = code_to_score.get(code, 0)
-        final_score = current_score + score_val
+        final_score = row['score'] + score_val
 
         results.append(
             {
                 'code': code,
-                'name': code_to_name.get(code, ''),
+                'name': row['name'],
                 'score': round(final_score, 2),
             }
         )
@@ -167,13 +177,15 @@ def list_revenue_yoy_cont_above(db, cont_n_months=3, threshold=0.0, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
+
         df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
         if len(df_rev) < cont_n_months:
@@ -181,22 +193,21 @@ def list_revenue_yoy_cont_above(db, cont_n_months=3, threshold=0.0, input_df=Non
 
         yoys = df_rev['revenue_yoy'].tolist()
 
-        # Check if all YoY > threshold
+        # check if all YoY > threshold
         if any(pd.isna(y) or y <= threshold for y in yoys):
             continue
 
-        # Score Calculation
-        # Algorithm: Sum of excess growth over threshold
-        # Score = Sum(YoY_i - Threshold)
+        # score calculation
+        # algorithm: sum of excess growth over threshold
+        # score = sum(yoys - threshold)
         score_val = sum(y - threshold for y in yoys)
 
-        current_score = code_to_score.get(code, 0)
-        final_score = current_score + score_val
+        final_score = row['score'] + score_val
 
         results.append(
             {
                 'code': code,
-                'name': code_to_name.get(code, ''),
+                'name': row['name'],
                 'score': round(final_score, 2),
             }
         )
@@ -229,8 +240,8 @@ def list_avg_revenue_cont_growth(db, ma_n_months, cont_m_months=3, input_df=None
             TBD: score is the number of continuous months of growth
     """
     # determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
@@ -251,7 +262,8 @@ def list_avg_revenue_cont_growth(db, ma_n_months, cont_m_months=3, input_df=None
         # so total revenue rows needed = (N + 1) + (ma_type - 1) = n_months + ma_type
         limit = cont_m_months + ma_n_months
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         # data source from db
         # get_recent_revenue_by_code returns sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
@@ -296,13 +308,12 @@ def list_avg_revenue_cont_growth(db, ma_n_months, cont_m_months=3, input_df=None
                 score = (end_val - start_val) / abs(start_val) * 100
 
             # accumulate score
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score
+            final_score = row['score'] + score
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -337,8 +348,8 @@ def list_avg_accum_revenue_yoy_cont_growth(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
@@ -347,7 +358,8 @@ def list_avg_accum_revenue_yoy_cont_growth(
     # So we need data points T, T-1, ..., T-M (Total M+1 points of AccumYoY)
     limit = cont_m_months + 1
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
 
         # Ensure filtered by date ascending just in case, though get_recent usually returns sorted
@@ -387,13 +399,12 @@ def list_avg_accum_revenue_yoy_cont_growth(
             # If negative (techically possible if all negative but increasing? -10 -> -5),
             # it still represents improvement/growth magnitude.
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     # 'debug_yoy': target_yoy,
                     'score': round(final_score, 2),
                 }
@@ -427,13 +438,14 @@ def list_avg_accum_revenue_yoy_growth_above(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         limit = 1
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
 
@@ -453,13 +465,12 @@ def list_avg_accum_revenue_yoy_growth_above(
             # -----------------------------------------------------------
             score_val = accum_yoy - threshold
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )

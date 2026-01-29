@@ -18,13 +18,14 @@ def list_net_margin_avg_above(db, n_quarters=4, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
 
         if len(df_metrics) < n_quarters:
@@ -45,13 +46,12 @@ def list_net_margin_avg_above(db, n_quarters=4, threshold=0.0, input_df=None):
         if avg_val > threshold:
             score_val = avg_val - threshold
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -76,13 +76,14 @@ def list_opr_margin_min_above(db, n_quarters=4, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
 
         if len(df_metrics) < n_quarters:
@@ -105,13 +106,12 @@ def list_opr_margin_min_above(db, n_quarters=4, threshold=0.0, input_df=None):
             score_val = val_min - threshold
 
             # accumulate
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -139,13 +139,14 @@ def list_opr_margin_min_max_ratio_above(db, n_quarters=4, threshold=0.0, input_d
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=n_quarters)
 
         if len(df_metrics) < n_quarters:
@@ -178,13 +179,12 @@ def list_opr_margin_min_max_ratio_above(db, n_quarters=4, threshold=0.0, input_d
             score_val = ratio - threshold
 
             # accumulate
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -209,15 +209,16 @@ def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None)
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
     limit = max(n_quarters, m_lookback)
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
 
         if len(df_metrics) < limit:
@@ -257,13 +258,12 @@ def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None)
                 # If N=M, checking against itself?
                 score_val = 0
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -288,14 +288,15 @@ def list_opr_margin_qoq_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
     limit = m_quarters + 1
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
 
         if len(df_metrics) < limit:
@@ -317,13 +318,12 @@ def list_opr_margin_qoq_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
             # Score: Total increase
             score_val = vals[-1] - vals[0]
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
@@ -350,8 +350,8 @@ def list_opr_margin_yoy_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
@@ -359,7 +359,8 @@ def list_opr_margin_yoy_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
     # To check M quarters growth we need M+1 data points: T > T-1 > ... > T-M
     limit = m_quarters + 1
 
-    for code in stock_codes:
+    for _, row in target_df.iterrows():
+        code = row['code']
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=limit)
 
         if len(df_metrics) < limit:
@@ -381,13 +382,12 @@ def list_opr_margin_yoy_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
             # Score: Total increase (Magnitude)
             score_val = vals[-1] - vals[0]
 
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score_val
+            final_score = row['score'] + score_val
 
             results.append(
                 {
                     'code': code,
-                    'name': code_to_name.get(code, ''),
+                    'name': row['name'],
                     'score': round(final_score, 2),
                 }
             )
