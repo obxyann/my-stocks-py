@@ -5,23 +5,27 @@ import pandas as pd
 from screening.helper import get_target_stocks
 
 
-# 近 N 個月營收創近 M 月新高
-def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=None):
+# R01: 近 N 個月營收創近 M 月新高
+#      (月營收連續 N 個月創近 M 月新高)
+def list_revenue_hit_new_high(
+    db, recent_n_months=3, lookback_m_months=12, input_df=None
+):
     """Get stocks whose recent revenue hit a new high
 
-    Find stocks where the maximum revenue in the last N months exceeds
-    the maximum revenue in the preceding M months.
+    Find stocks whose revenue over the last N months exceeds the maximum
+    revenue in the preceding M months.
 
     Args:
         db (StockDatabase): Database instance
-        recent_months (int): Number of recent months to check (N)
-        lookback_months (int): Number of preceding months to compare against (M)
-        input_df (pd.DataFrame): Optional input DataFrame with columns ('code', 'name', 'score')
-            If provided, filter only stocks in this list and accumulate scores.
-            If None, use get_industrial_stocks as default.
+        recent_n_months (int): Number of recent months to check
+        lookback_m_months (int): Number of preceding months to compare
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use stocks from list_industrial() as default
 
     Returns:
-        pd.DataFrame: DataFrame with columns ('code', 'name', 'score')
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
             score is the percentage by which recent high exceeds previous high
     """
     # determine source stocks
@@ -30,7 +34,7 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # total months needed
-    total_months = recent_months + lookback_months
+    total_months = recent_n_months + lookback_m_months
 
     results = []
 
@@ -48,8 +52,8 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
         ).reset_index(drop=True)
 
         # split into lookback period and recent period
-        lookback_df = revenue_df.iloc[:lookback_months]
-        recent_df = revenue_df.iloc[lookback_months:]
+        lookback_df = revenue_df.iloc[:lookback_m_months]
+        recent_df = revenue_df.iloc[lookback_m_months:]
 
         # get max revenue in each period
         lookback_max = lookback_df['revenue'].max()
@@ -83,120 +87,21 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
     return result_df
 
 
-# N 個月平均營收連續 M 個月成長
-def list_avg_revenue_cont_growth(db, ma_type, m_months=3, input_df=None):
-    """Filter stocks with continuous growth in average revenue (MA) for N months.
+# R02: 營收月增率(revenue_mom)連續 N 個月 > P%
+def list_revenue_mom_cont_above(db, cont_n_months=3, threshold=0.0, input_df=None):
+    """Get stocks with continuous revenue MoM exceeds threshold
+
+    Find stocks whose revenue MoM exceeds the specified threshold continuously
+    for N months.
 
     Args:
         db (StockDatabase): Database instance
-        ma_type (int): Moving average window size (e.g. 3, 6, 12)
-        m_months (int): Number of continuous months of growth required
-        input_df (pd.DataFrame): Optional input list of stocks with columns ['code', 'name', 'score']
-            If provided, filter only stocks in this list and accumulate scores.
-            If None, use get_industrial_stocks as default.
-
-    Returns:
-        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
-    """
-    # 2. Determine source stocks
-    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
-    if not stock_codes:
-        return pd.DataFrame(columns=['code', 'name', 'score'])
-
-    results = []
-
-    # Determine limit and strategy based on ma_type
-    if ma_type in (3, 12):
-        # Use pre-calculated columns
-        use_precalc = True
-        col_name = f'revenue_ma{ma_type}'
-        # To check continuous growth for N months (N intervals), we need N+1 data points.
-        limit = m_months + 1
-    else:
-        # Calculate MA on the fly
-        use_precalc = False
-        col_name = None
-        # We need N+1 data points of MA.
-        # To calculate the first (oldest) MA point of window W, we need W prior revenue points.
-        # So total revenue rows needed = (N + 1) + (ma_type - 1) = n_months + ma_type
-        limit = m_months + ma_type
-
-    for code in stock_codes:
-        # 3. Data source from db
-        # get_recent_revenue_by_code returns sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
-
-        if len(df_rev) < limit:
-            continue
-
-        # Extract target MA values
-        if use_precalc:
-            vals = df_rev[col_name].tolist()
-        else:
-            # Calculate MA on the fly
-            # df_rev is sorted ascending by date
-            ma_series = df_rev['revenue'].rolling(window=ma_type).mean()
-            # We only need the last (n_months + 1) valid MA values
-            # The first (ma_type - 1) values will be NaN, which is expected
-            vals = ma_series.tail(m_months + 1).tolist()
-
-        # Check for valid data
-        if len(vals) < m_months + 1 or any(v is None or pd.isna(v) for v in vals):
-            continue
-
-        # Check strictly increasing (Continuous Growth)
-        # vals is [t-N, t-N+1, ..., t]
-        is_increasing = True
-        for i in range(len(vals) - 1):
-            if vals[i + 1] <= vals[i]:
-                is_increasing = False
-                break
-
-        if is_increasing:
-            # 4. Score calculation
-            # -----------------------------------------------------------
-            # Algorithm: Total percentage growth over the N months
-            # Score = (Last_Value - First_Value) / First_Value * 100
-            # NOTE: can be adjusted here
-            # -----------------------------------------------------------
-            start_val = vals[0]
-            end_val = vals[-1]
-
-            if start_val == 0:
-                score = 0
-            else:
-                score = (end_val - start_val) / abs(start_val) * 100
-
-            # 5. Accumulate score
-            current_score = code_to_score.get(code, 0)
-            final_score = current_score + score
-
-            results.append(
-                {
-                    'code': code,
-                    'name': code_to_name.get(code, ''),
-                    'score': round(final_score, 2),
-                }
-            )
-
-    # 6. Sort by score
-    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
-    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
-        drop=True
-    )
-
-    return result_df
-
-
-# 營收月增率(revenue_mom)連續 N 個月 ＞ P%
-def list_revenue_mom_cont_above(db, n_months=3, threshold=0.0, input_df=None):
-    """Filter stocks with consecutive MoM growth > P% for N months.
-
-    Args:
-        db (StockDatabase): Database instance
-        n_months (int): Number of consecutive months
-        threshold (float): Growth threshold percentage (e.g. 5.0 for 5%)
-        input_df (pd.DataFrame): Optional input list of stocks
+        cont_n_months (int): Number of continuous months to check
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
@@ -209,9 +114,9 @@ def list_revenue_mom_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     results = []
 
     for code in stock_codes:
-        df_rev = db.get_recent_revenue_by_code(code, limit=n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
-        if len(df_rev) < n_months:
+        if len(df_rev) < cont_n_months:
             continue
 
         moms = df_rev['revenue_mom'].tolist()
@@ -243,15 +148,21 @@ def list_revenue_mom_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# 營收年增率(revenue_yoy)連續 N 個月 ＞ P%
-def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
-    """Filter stocks with consecutive YoY growth > P% for N months.
+# R02: 營收年增率(revenue_yoy)連續 N 個月 > P%
+def list_revenue_yoy_cont_above(db, cont_n_months=3, threshold=0.0, input_df=None):
+    """Get stocks with continuous revenue YoY exceeds threshold
+
+    Find stocks whose revenue YoY exceeds the specified threshold continuously
+    for N months.
 
     Args:
         db (StockDatabase): Database instance
-        n_months (int): Number of consecutive months
-        threshold (float): Growth threshold percentage (e.g. 5.0 for 5%)
-        input_df (pd.DataFrame): Optional input list of stocks
+        cont_n_months (int): Number of continuous months to check
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
@@ -263,9 +174,9 @@ def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     results = []
 
     for code in stock_codes:
-        df_rev = db.get_recent_revenue_by_code(code, limit=n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
-        if len(df_rev) < n_months:
+        if len(df_rev) < cont_n_months:
             continue
 
         yoys = df_rev['revenue_yoy'].tolist()
@@ -297,19 +208,131 @@ def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# 近 N 個月累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
-def list_accum_revenue_yoy_cont_growth(
-    db, n_months_accum=3, m_months_cont=3, input_df=None
-):
-    """Filter stocks where N-month Accumulated Revenue YoY Rate has been growing for M consecutive months.
+# R03: N 個月平均營收連續 M 個月成長
+def list_avg_revenue_cont_growth(db, ma_n_months, cont_m_months=3, input_df=None):
+    """Get stocks with continuous growth in average revenue
 
-    Condition: AccumYoY(t) > AccumYoY(t-1) for M consecutive steps.
+    Find stocks whose N-month moving average revenue increases continuously
+    for M months.
 
     Args:
         db (StockDatabase): Database instance
-        n_months_accum (int): N months for accumulated revenue (e.g. 3 for Qaccum)
-        m_months_cont (int): M months of consecutive growth of the rate
-        input_df (pd.DataFrame): Optional input list of stocks
+        ma_n_months (int): Moving average window size (e.g. 3, 12)
+        cont_m_months (int): Number of continuous months of growth to check
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+            TBD: score is the number of continuous months of growth
+    """
+    # determine source stocks
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
+    if not stock_codes:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # determine limit and strategy based on ma_n_months
+    if ma_n_months in (3, 12):
+        # use pre-calculated columns
+        use_precalc = True
+        col_name = f'revenue_ma{ma_n_months}'
+        # to check continuous growth for N months (N intervals), we need N+1 data points.
+        limit = cont_m_months + 1
+    else:
+        # calculate MA on the fly
+        use_precalc = False
+        col_name = None
+        # we need N+1 data points of MA.
+        # to calculate the first (oldest) MA point of window W, we need W prior revenue points.
+        # so total revenue rows needed = (N + 1) + (ma_type - 1) = n_months + ma_type
+        limit = cont_m_months + ma_n_months
+
+    for code in stock_codes:
+        # data source from db
+        # get_recent_revenue_by_code returns sorted by date ascending (old -> new)
+        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
+
+        if len(df_rev) < limit:
+            continue
+
+        # extract target MA values
+        if use_precalc:
+            vals = df_rev[col_name].tolist()
+        else:
+            # calculate MA on the fly
+            # df_rev is sorted ascending by date
+            ma_series = df_rev['revenue'].rolling(window=ma_n_months).mean()
+            # we only need the last (n_months + 1) valid MA values
+            # the first (ma_type - 1) values will be NaN, which is expected
+            vals = ma_series.tail(cont_m_months + 1).tolist()
+
+        # check for valid data
+        if len(vals) < cont_m_months + 1 or any(v is None or pd.isna(v) for v in vals):
+            continue
+
+        # check strictly increasing (Continuous Growth)
+        # vals is [t-N, t-N+1, ..., t]
+        is_increasing = True
+        for i in range(len(vals) - 1):
+            if vals[i + 1] <= vals[i]:
+                is_increasing = False
+                break
+
+        if is_increasing:
+            # score calculation
+            # algorithm: total percentage growth over the N months
+            # score = (last_value - first_value) / first_value * 100
+            # NOTE: can be adjusted here
+            start_val = vals[0]
+            end_val = vals[-1]
+
+            if start_val == 0:
+                score = 0
+            else:
+                score = (end_val - start_val) / abs(start_val) * 100
+
+            # accumulate score
+            current_score = code_to_score.get(code, 0)
+            final_score = current_score + score
+
+            results.append(
+                {
+                    'code': code,
+                    'name': code_to_name.get(code, ''),
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # sort by score
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# R03: N 個月平均累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+def list_avg_accum_revenue_yoy_cont_growth(
+    db, ma_n_months=3, cont_m_months=3, input_df=None
+):
+    """Get stocks with continuous growth in average accumulated (YTD) revenue YOY
+
+    Find stocks whose N-month moving average accumulated (YTD) revenue YOY increases continuously
+    for M months.
+
+    Args:
+        db (StockDatabase): Database instance
+        ma_n_months (int): Moving average window size (e.g. 3, 12)
+        cont_m_months (int): Number of continuous months of growth to check
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
@@ -322,7 +345,7 @@ def list_accum_revenue_yoy_cont_growth(
 
     # We need M steps of comparison: T vs T-1, ..., T-M+1 vs T-M
     # So we need data points T, T-1, ..., T-M (Total M+1 points of AccumYoY)
-    limit = m_months_cont + 1
+    limit = cont_m_months + 1
 
     for code in stock_codes:
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
@@ -340,9 +363,9 @@ def list_accum_revenue_yoy_cont_growth(
         # The rolling result will have NaNs for the first N-1 rows
         # We only care about the last m_months_cont + 1 values
         # slice: last (m_months_cont + 1)
-        target_yoy = accum_yoy.tail(m_months_cont + 1).tolist()
+        target_yoy = accum_yoy.tail(cont_m_months + 1).tolist()
 
-        if len(target_yoy) < m_months_cont + 1:
+        if len(target_yoy) < cont_m_months + 1:
             continue
 
         if any(pd.isna(v) for v in target_yoy):
@@ -383,15 +406,23 @@ def list_accum_revenue_yoy_cont_growth(
     return result_df
 
 
-# 近 N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
-def list_accum_revenue_yoy_growth_above(db, n_months=3, threshold=0.0, input_df=None):
-    """Filter stocks where N-month Accumulated Revenue YoY Rate > threshold.
+# R04: N 個月平均累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
+def list_avg_accum_revenue_yoy_growth_above(
+    db, ma_n_months=3, threshold=0.0, input_df=None
+):
+    """Get stocks with average accumulated (YTD) revenue YOY growth exceeds threshold
+
+    Find stocks whose N-month moving average accumulated (YTD) revenue YOY increase exceeds
+    the specified threshold.
 
     Args:
         db (StockDatabase): Database instance
-        n_months (int): Number of months to accumulate (N)
-        threshold (float): Threshold percentage (P)
-        input_df (pd.DataFrame): Optional input list of stocks
+        ma_n_months (int):Moving average window size (e.g. 3, 12)
+        threshold (float): Threshold percentage
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']

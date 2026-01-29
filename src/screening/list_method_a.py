@@ -15,23 +15,23 @@ from screening.list_metrics import (
     list_opr_margin_yoy_cont_growth,
 )
 from screening.list_price import (
-    # 最新股價 ＞ 近 N 個月月均價
+    # 最新股價 > 近 N 個月月均價
     list_price_above_avg,
-    # 近 N 個月股價漲幅 ＞ P%
+    # 近 N 個月股價漲幅 > P%
     list_price_growth_above,
 )
 from screening.list_revenue import (
-    # 近 N 個月累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
-    list_accum_revenue_yoy_cont_growth,
-    # 近 N 個月累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
-    list_accum_revenue_yoy_growth_above,
+    # N 個月平均累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+    list_avg_accum_revenue_yoy_cont_growth,
+    # N 個月平均累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
+    list_avg_accum_revenue_yoy_growth_above,
     # N 個月平均營收連續 M 個月成長
     list_avg_revenue_cont_growth,
     # 近 N 個月營收創近 M 月新高
     list_revenue_hit_new_high,
-    # 營收月增率(revenue_mom)連續 N 個月 ＞ P%
+    # 營收月增率(revenue_mom)連續 N 個月 > P%
     list_revenue_mom_cont_above,
-    # 營收年增率(revenue_yoy)連續 N 個月 ＞ P%
+    # 營收年增率(revenue_yoy)連續 N 個月 > P%
     list_revenue_yoy_cont_above,
 )
 
@@ -57,27 +57,27 @@ def list_method_a(db, test_case=1, input_df=None):
 
     if test_case == 1:
         # 近 2 個月營收創近 1 年(12 個月)新高
-        return list_revenue_hit_new_high(db, recent_months=2, lookback_months=12, input_df=input_df)
+        return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
 
     if test_case == 2:
         # 12 個月平均營收連續 2 個月成長
-        return list_avg_revenue_cont_growth(db, ma_type=12, n_months=2, input_df=input_df)
+        return list_avg_revenue_cont_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
     if test_case == 3:
         # 營收月增率連續 2 個月 ＞ 0%
-        return list_revenue_mom_cont_above(db, n_months=2, threshold=0, input_df=input_df)
+        return list_revenue_mom_cont_above(db, cont_n_months=2, threshold=0, input_df=input_df)
 
     if test_case == 4:
         # 營收年增率連續 1 個月 ＞ 40%
-        return list_revenue_yoy_cont_above(db, n_months=1, threshold=40, input_df=input_df)
+        return list_revenue_yoy_cont_above(db, cont_n_months=1, threshold=40, input_df=input_df)
 
     if test_case == 5:
-        # 近 3 個月累積營收年增率連續 1 個月成長
-        return list_accum_revenue_yoy_cont_growth(db, n_months_accum=3, m_months_cont=1, input_df=input_df)
+        # 3 個月平均累積營收年增率連續 1 個月成長
+        return list_avg_accum_revenue_yoy_cont_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
 
     if test_case == 6:
-        # 近 12 個月累積營收年增率成長幅度 ＞ 2%
-        return list_accum_revenue_yoy_growth_above(db, n_months=12, threshold=2, input_df=input_df)
+        # 12 個月平均累積營收年增率成長幅度 ＞ 2%
+        return list_avg_accum_revenue_yoy_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
 
     #########
     # Price #
