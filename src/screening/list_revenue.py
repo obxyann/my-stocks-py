@@ -2,21 +2,7 @@
 
 import pandas as pd
 
-
-# Helper to setup input stocks
-def _get_target_stocks(db, input_df):
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return [], {}, {}
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
-    return stock_codes, code_to_name, code_to_score
+from screening.helper import get_target_stocks
 
 
 # 近 N 個月營收創近 M 月新高
@@ -39,7 +25,7 @@ def list_revenue_hit_new_high(db, recent_months=3, lookback_months=12, input_df=
             score is the percentage by which recent high exceeds previous high
     """
     # determine source stocks
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -113,7 +99,7 @@ def list_avg_revenue_cont_growth(db, ma_type, m_months=3, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # 2. Determine source stocks
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -216,7 +202,7 @@ def list_revenue_mom_cont_above(db, n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # Determine source stocks
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -270,7 +256,7 @@ def list_revenue_yoy_cont_above(db, n_months=3, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -328,7 +314,7 @@ def list_accum_revenue_yoy_cont_growth(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -410,7 +396,7 @@ def list_accum_revenue_yoy_growth_above(db, n_months=3, threshold=0.0, input_df=
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 

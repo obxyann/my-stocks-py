@@ -5,21 +5,7 @@ from datetime import datetime
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
-
-# Helper to setup input stocks
-def _get_target_stocks(db, input_df):
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return [], {}, {}
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
-    return stock_codes, code_to_name, code_to_score
+from screening.helper import get_target_stocks
 
 
 # 近 N 個月股價漲幅 ＞ p%
@@ -38,7 +24,7 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # determine source stocks
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -145,7 +131,7 @@ def list_price_above_avg(db, n_months=3, input_df=None):
     """
     # 1. Determine source stocks
     # 1. Determine source stocks
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 

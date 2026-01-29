@@ -2,21 +2,7 @@
 
 import pandas as pd
 
-
-# Helper to setup input stocks
-def _get_target_stocks(db, input_df):
-    if input_df is not None and not input_df.empty:
-        stock_codes = input_df['code'].tolist()
-        code_to_name = dict(zip(input_df['code'], input_df['name']))
-        code_to_score = dict(zip(input_df['code'], input_df['score']))
-    else:
-        stocks_df = db.get_industrial_stocks()
-        if stocks_df.empty:
-            return [], {}, {}
-        stock_codes = stocks_df['code'].tolist()
-        code_to_name = dict(zip(stocks_df['code'], stocks_df['name']))
-        code_to_score = {}
-    return stock_codes, code_to_name, code_to_score
+from screening.helper import get_target_stocks
 
 
 # 近 N 季稅後純益率(net_margin)平均 ＞ P%
@@ -32,7 +18,7 @@ def list_net_margin_avg_above(db, n_quarters=4, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -90,7 +76,7 @@ def list_opr_margin_min_above(db, n_quarters=4, threshold=0.0, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -153,7 +139,7 @@ def list_opr_margin_min_max_ratio_above(db, n_quarters=4, threshold=0.0, input_d
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -223,7 +209,7 @@ def list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=4, input_df=None)
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -302,7 +288,7 @@ def list_opr_margin_qoq_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
@@ -364,7 +350,7 @@ def list_opr_margin_yoy_cont_growth(db, n_quarters=4, m_quarters=3, input_df=Non
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    stock_codes, code_to_name, code_to_score = _get_target_stocks(db, input_df)
+    stock_codes, code_to_name, code_to_score = get_target_stocks(db, input_df)
     if not stock_codes:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
