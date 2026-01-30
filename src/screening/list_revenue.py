@@ -352,7 +352,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
                 }
             )
 
-    # sort by score
+    # create result DataFrame and sort by score descending
     result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
     result_df = result_df.sort_values(by='score', ascending=False).reset_index(
         drop=True
@@ -455,7 +455,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
                 }
             )
 
-    # sort by score
+    # create result DataFrame and sort by score descending
     result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
     result_df = result_df.sort_values(by='score', ascending=False).reset_index(
         drop=True
@@ -476,7 +476,7 @@ def list_accum_revenue_yoy_ma_growth_above(
 
     Args:
         db (StockDatabase): Database instance
-        ma_n_months (int):Moving average window size (e.g. 3, 12)
+        ma_n_months (int): Moving average window size (e.g. 3, 12)
         threshold (float): Threshold percentage
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -486,34 +486,58 @@ def list_accum_revenue_yoy_ma_growth_above(
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
+    # check input parameters
+    if ma_n_months < 1:
+        raise ValueError('ma_n_months must be >= 1')
+
     target_df = get_target_stocks(db, input_df)
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     results = []
 
+    # to calculate the N-months MA, we need N data points
+    # Need one extra point to calculate previous MA for growth rate comparison
+    limit = ma_n_months + 1
+
     for _, row in target_df.iterrows():
         code = row['code']
-        limit = 1
+
+        # get recent revenue data
+        # sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=limit)
 
-        if df_rev.empty:
+        # skip if not enough data
+        if len(df_rev) < limit:
             continue
 
-        accum_yoy = df_rev['revenue_ytd_yoy'].iloc[-1]
+        # calculate MA on the fly
+        # df_rev is sorted ascending by date
+        ma_series = df_rev['revenue_ytd_yoy'].rolling(window=ma_n_months).mean()
 
-        if pd.isna(accum_yoy):
+        # we only need the last 2 valid MA values
+        vals = ma_series.tail(2).tolist()
+
+        # check for valid data
+        if len(vals) < 2 or any(v is None or pd.isna(v) for v in vals):
             continue
 
-        if accum_yoy > threshold:
-            # Score Calculation
-            # -----------------------------------------------------------
-            # Algorithm: Difference between Accumulated YoY and Threshold
-            # Score = Accum_YoY - Threshold
-            # -----------------------------------------------------------
-            score_val = accum_yoy - threshold
+        prev_ma = vals[0]
+        curr_ma = vals[1]
 
-            final_score = row['score'] + score_val
+        # calculate growth rate
+        if prev_ma == 0:
+            growth_rate = 0.0
+        else:
+            growth_rate = (curr_ma - prev_ma) / abs(prev_ma) * 100
+
+        if growth_rate > threshold:
+            # calculate score:
+            # difference between growth rate and threshold
+            score = growth_rate - threshold
+
+            # accumulate existing score
+            final_score = row['score'] + score
 
             results.append(
                 {
@@ -523,8 +547,10 @@ def list_accum_revenue_yoy_ma_growth_above(
                 }
             )
 
+    # create result DataFrame and sort by score descending
     result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
     result_df = result_df.sort_values(by='score', ascending=False).reset_index(
         drop=True
     )
+
     return result_df
