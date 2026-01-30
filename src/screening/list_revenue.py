@@ -27,7 +27,8 @@ def list_revenue_hit_new_high(
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
-            score is the percentage by which recent high exceeds previous high
+            score is the percentage by which the recent high exceeds
+            the previous high
     """
     # check input parameters
     if recent_n_months < 1 or lookback_m_months < 1:
@@ -101,7 +102,7 @@ def list_revenue_hit_new_high(
 
 # R02: 營收月增率(revenue_mom)連續 N 個月 > P%
 def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
-    """Get stocks with consecutive revenue MoM exceeds threshold
+    """Get stocks with revenue MoM above threshold consecutively
 
     Find stocks whose revenue MoM exceeds the specified threshold
     for N consecutive months.
@@ -171,7 +172,7 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
 # R02: 營收年增率(revenue_yoy)連續 N 個月 > P%
 def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
-    """Get stocks with consecutive revenue YoY exceeds threshold
+    """Get stocks with revenue YoY above threshold consecutively
 
     Find stocks whose revenue YoY exceeds the specified threshold
     for N consecutive months.
@@ -242,10 +243,10 @@ def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
 # R03: N 個月平均營收連續 M 個月成長
 def list_avg_revenue_growth(db, ma_n_months, consec_m_months=3, input_df=None):
-    """Get stocks with consecutive growth in average revenue
+    """Get stocks with consecutive growth in revenue moving average
 
-    Find stocks whose N-month moving average revenue increases
-    (month over month) for M consecutive months.
+    Find stocks whose N-month revenue moving average
+    increases month over month for M consecutive months.
 
     Args:
         db (StockDatabase): Database instance
@@ -366,17 +367,18 @@ def list_avg_revenue_growth(db, ma_n_months, consec_m_months=3, input_df=None):
 
 # R03: N 個月平均累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
 def list_avg_accum_revenue_yoy_cont_growth(
-    db, ma_n_months=3, cont_m_months=3, input_df=None
+    db, ma_n_months=3, consec_m_months=3, input_df=None
 ):
-    """Get stocks with continuous growth in average accumulated (YTD) revenue YOY
+    """Get stocks with consecutive growth in accumulated (YTD) revenue YOY
+    moving average
 
-    Find stocks whose N-month moving average accumulated (YTD) revenue YOY increases continuously
-    for M months.
+    Find stocks whose N-month accumulated (YTD) revenue YOY moving average
+    increases month over month for M consecutive months.
 
     Args:
         db (StockDatabase): Database instance
         ma_n_months (int): Moving average window size (e.g. 3, 12)
-        cont_m_months (int): Number of continuous months of growth to check
+        consec_m_months (int): Number of consecutive months to check
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
             If provided, filter only stocks in this list and accumulate scores
@@ -393,7 +395,7 @@ def list_avg_accum_revenue_yoy_cont_growth(
 
     # We need M steps of comparison: T vs T-1, ..., T-M+1 vs T-M
     # So we need data points T, T-1, ..., T-M (Total M+1 points of AccumYoY)
-    limit = cont_m_months + 1
+    limit = consec_m_months + 1
 
     for _, row in target_df.iterrows():
         code = row['code']
@@ -412,9 +414,9 @@ def list_avg_accum_revenue_yoy_cont_growth(
         # The rolling result will have NaNs for the first N-1 rows
         # We only care about the last m_months_cont + 1 values
         # slice: last (m_months_cont + 1)
-        target_yoy = accum_yoy.tail(cont_m_months + 1).tolist()
+        target_yoy = accum_yoy.tail(consec_m_months + 1).tolist()
 
-        if len(target_yoy) < cont_m_months + 1:
+        if len(target_yoy) < consec_m_months + 1:
             continue
 
         if any(pd.isna(v) for v in target_yoy):
@@ -458,10 +460,11 @@ def list_avg_accum_revenue_yoy_cont_growth(
 def list_avg_accum_revenue_yoy_growth_above(
     db, ma_n_months=3, threshold=0.0, input_df=None
 ):
-    """Get stocks with average accumulated (YTD) revenue YOY growth exceeds threshold
+    """Get stocks with last growth rate above threshold in accumulated (YTD)
+    revenue YOY moving average
 
-    Find stocks whose N-month moving average accumulated (YTD) revenue YOY increase exceeds
-    the specified threshold.
+    Find stocks whose last growth rate of N-month accumulated (YTD) revenue YOY
+    moving average exceeds the specified threshold.
 
     Args:
         db (StockDatabase): Database instance
