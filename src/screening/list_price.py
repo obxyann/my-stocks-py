@@ -38,7 +38,8 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
     results = []
 
-    # calculate start date to ensure we find the date N months ago
+    # because we don't know the exact latest date of price in database
+    # estimate a start date to ensure we find the date N months ago
     # + 2 months to be safe
     need_months = recent_n_months + 2
 
@@ -56,7 +57,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         if len(df_prices) < 2:
             continue
 
-        # latest price
+        # latest price and date
         latest_row = df_prices.iloc[-1]
         latest_price = latest_row['close_price']
         latest_date_str = latest_row['trade_date']
@@ -71,8 +72,8 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
         # find the row closest to target_date
         # we prefer a date <= target_date (true N months ago or slightly more),
-        # but if holiday, maybe checks nearby.
-        # let's find index where date is closest.
+        # but if holiday, maybe checks nearby
+        # let's find index where date is closest
 
         df_prices['date_obj'] = pd.to_datetime(df_prices['trade_date'])
 
@@ -81,9 +82,9 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
         if past_candidates.empty:
             # if no data before target date, maybe the stock is too new
-            # or data fetch didn't go back far enough.
+            # or data fetch didn't go back far enough
             # try getting the earliest available if it's close enough?
-            # for strict N months growth, if we don't have data N months ago, skip.
+            # for strict N months growth, if we don't have data N months ago, skip
             continue
 
         # take the last one of the candidates (closest to target_date from the left)
@@ -123,9 +124,9 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
 # R06: 最新股價 > 近 N 個月月均價
 def list_price_above_avg(db, recent_n_months=1, input_df=None):
-    """Get stocks with last price above average price
+    """Get stocks with latest price above recent average price
 
-    Find stocks whose last price is greater than the average price of
+    Find stocks whose latest price is greater than the average price of
     the past N months.
 
     Args:
@@ -136,6 +137,10 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
+    # check input parameters
+    if recent_n_months < 1:
+        raise ValueError('recent_n_months must be >= 1')
+
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
     if target_df.empty:
@@ -143,18 +148,19 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
     results = []
 
-    # Start date for fetching monthly data
-    # We need last N months.
-    # Buffer: N+2 months to ensure we get N records.
-    start_search_date = datetime.now() - relativedelta(months=recent_n_months + 2)
-    start_date_str = start_search_date.strftime('%Y-%m-%d')
+    # because we don't know the exact latest date of price in database
+    # estimate a start date to ensure we find the date N months ago
+    # + 2 months to be safe
+    need_months = recent_n_months + 2
+
+    start_date = datetime.now() - relativedelta(months=need_months)
+    start_date_str = start_date.strftime('%Y-%m-%d')
 
     for _, row in target_df.iterrows():
         code = row['code']
-        # Get latest price
-        # We assume recent data is available
-        # Fetching a small window of daily prices for the latest price
-        # Using a distinct call or a short window
+
+        # get latest price
+        # by fetching a small window of daily prices for the latest price
         last_month_date = datetime.now() - relativedelta(days=30)
         df_daily = db.get_prices_by_code(
             code, start_date=last_month_date.strftime('%Y-%m-%d')
@@ -165,18 +171,18 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
         latest_price = df_daily.iloc[-1]['close_price']
 
-        # Get monthly averages
+        # get monthly averages
         df_monthly = db.get_monthly_avg_prices_by_code(code, start_date=start_date_str)
 
         if df_monthly.empty:
             continue
 
-        # Take last N records
+        # take last N records
         # Note: df_monthly is sorted by year, month
-        # If we have fewer than N records, use what we have?
-        # Usually "Recent N months" implies strict N.
-        # But if the stock is young, maybe N is too large.
-        # Let's use up to last N records.
+        # if we have fewer than N records, use what we have?
+        # usually "recent N months" implies strict N
+        # But if the stock is young, maybe N is too large
+        # Let's use up to last N records
 
         target_months = df_monthly.tail(recent_n_months)
 
@@ -189,14 +195,11 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
             continue
 
         if latest_price > avg_price:
-            # Score Calculation
-            # -----------------------------------------------------------
-            # Algorithm: Percentage difference above average
-            # Score = (Latest - Avg) / Avg * 100
-            # -----------------------------------------------------------
+            # calculate score
+            # percentage difference above average
             diff_percent = (latest_price - avg_price) / avg_price * 100
 
-            # Accumulate
+            # accumulate existing score
             final_score = row['score'] + diff_percent
 
             results.append(
@@ -207,8 +210,10 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
                 }
             )
 
+    # create result DataFrame and sort by score descending
     result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
     result_df = result_df.sort_values(by='score', ascending=False).reset_index(
         drop=True
     )
+
     return result_df
