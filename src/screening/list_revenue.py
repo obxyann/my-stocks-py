@@ -50,6 +50,7 @@ def list_revenue_hit_new_high(
         code = row['code']
 
         # get recent revenue data
+        # sorted by date ascending (old -> new)
         revenue_df = db.get_recent_revenue_by_code(code, limit=lookback_m_months)
 
         # skip if not enough data
@@ -134,6 +135,7 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
         code = row['code']
 
         # get recent revenue data
+        # sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=consec_n_months)
 
         # skip if not enough data
@@ -148,7 +150,7 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
             continue
 
         # calculate score:
-        # sum of excess growth over threshold
+        # sum of excess over threshold
         score = sum(m - threshold for m in moms)
 
         # accumulate existing score
@@ -204,6 +206,7 @@ def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
         code = row['code']
 
         # get recent revenue data
+        # sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=consec_n_months)
 
         # skip if not enough data
@@ -273,7 +276,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
     results = []
 
-    # determine limit and strategy based on ma_n_months
+    # determine strategy based on ma_n_months
     if ma_n_months in (3, 12):
         # use pre-calculated columns
         use_precalc = True
@@ -282,7 +285,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
         # to check consecutive growth for M months
         # we need M+1 data points
-        limit = cont_m_months + 1
+        needed_points = cont_m_months + 1
     else:
         # calculate MA on the fly
         use_precalc = False
@@ -292,17 +295,17 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
         # to calculate the first N-months MA, we need N data points
         # we need additional M data points of MA to check for consecutive M growth
         # so total data points needed = N + M
-        limit = ma_n_months + cont_m_months
+        needed_points = ma_n_months + cont_m_months
 
     for _, row in target_df.iterrows():
         code = row['code']
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
+        df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
 
         # skip if not enough data
-        if len(df_rev) < limit:
+        if len(df_rev) < needed_points:
             continue
 
         # get target MA values
@@ -331,7 +334,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
         if is_increasing:
             # calculate score:
-            # total percentage growth rate over the period
+            # percentage growth rate over the period
             # score = (end_value - start_val) / start_val * 100
             start_val = vals[0]
             end_val = vals[-1]
@@ -399,17 +402,17 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
     # to calculate the first N-months MA, we need N data points
     # we need additional M data points of MA to check for consecutive M growth
     # so total data points needed = N + M
-    limit = ma_n_months + cont_m_months
+    need_points = ma_n_months + cont_m_months
 
     for _, row in target_df.iterrows():
         code = row['code']
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
+        df_rev = db.get_recent_revenue_by_code(code, limit=need_points)
 
         # skip if not enough data
-        if len(df_rev) < limit:
+        if len(df_rev) < need_points:
             continue
 
         # calculate MA on the fly
@@ -434,7 +437,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
 
         if is_increasing:
             # calculate score:
-            # total percentage growth rate over the period
+            # percentage growth rate over the period
             # score = (end_value - start_val) / start_val * 100
             start_val = vals[0]
             end_val = vals[-1]
@@ -497,18 +500,18 @@ def list_accum_revenue_yoy_ma_growth_above(
     results = []
 
     # to calculate the N-months MA, we need N data points
-    # Need one extra point to calculate previous MA for growth rate comparison
-    limit = ma_n_months + 1
+    # need one extra point to calculate previous MA for growth rate comparison
+    needed_points = ma_n_months + 1
 
     for _, row in target_df.iterrows():
         code = row['code']
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=limit)
+        df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
 
         # skip if not enough data
-        if len(df_rev) < limit:
+        if len(df_rev) < needed_points:
             continue
 
         # calculate MA on the fly
@@ -522,18 +525,18 @@ def list_accum_revenue_yoy_ma_growth_above(
         if len(vals) < 2 or any(v is None or pd.isna(v) for v in vals):
             continue
 
-        prev_ma = vals[0]
-        curr_ma = vals[1]
+        prev_val = vals[0]
+        curr_val = vals[1]
 
         # calculate growth rate
-        if prev_ma == 0:
+        if prev_val == 0:
             growth_rate = 0.0
         else:
-            growth_rate = (curr_ma - prev_ma) / abs(prev_ma) * 100
+            growth_rate = (curr_val - prev_val) / abs(prev_val) * 100
 
         if growth_rate > threshold:
             # calculate score:
-            # difference between growth rate and threshold
+            # ammount over threshold
             score = growth_rate - threshold
 
             # accumulate existing score
