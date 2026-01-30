@@ -8,21 +8,29 @@ from dateutil.relativedelta import relativedelta
 from screening.helper import get_target_stocks
 
 
-# 近 N 個月股價漲幅 ＞ p%
-def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
-    """Filter stocks where price growth (increase) over the last N months > P%.
+# R05: 近 N 個月股價漲幅 > P%
+def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None):
+    """Get stocks with recent price growth rate above threshold
 
-    Growth = (Latest_Price - Price_N_Months_Ago) / Price_N_Months_Ago * 100
+    Find stocks whose price growth rate exceeds the specified
+    threshold in the past N months.
 
     Args:
         db (StockDatabase): Database instance
-        n_months (int): Number of months to look back
-        p_threshold (float): Growth threshold percentage
-        input_df (pd.DataFrame): Optional input list of stocks
+        recent_n_months (int): Number of recent months to check
+        threshold (float): Threshold percentage
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use stocks from list_industrial() as default
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
+    # check input parameters
+    if recent_n_months < 1:
+        raise ValueError('recent_n_months must be >= 1')
+
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
     if target_df.empty:
@@ -30,24 +38,23 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
 
     results = []
 
-    # calculate start date with a buffer to ensure we find the date N months ago
-    # buffer +1 month to be safe
-    buffer_months = n_months + 2
-    start_search_date = datetime.now() - relativedelta(months=buffer_months)
-    start_date_str = start_search_date.strftime('%Y-%m-%d')
+    # calculate start date to ensure we find the date N months ago
+    # + 2 months to be safe
+    need_months = recent_n_months + 2
+
+    start_date = datetime.now() - relativedelta(months=need_months)
+    start_date_str = start_date.strftime('%Y-%m-%d')
 
     for _, row in target_df.iterrows():
         code = row['code']
+
         # get daily prices
-        # we need enough history to find the price N months ago
+        # sorted by date ascending (old -> new)
         df_prices = db.get_prices_by_code(code, start_date=start_date_str)
 
-        if df_prices.empty or len(df_prices) < 2:
+        # skip if not enough data
+        if len(df_prices) < 2:
             continue
-
-        # ensure sorted
-        # df_prices is already sorted by get_prices_by_code, but to be safe:
-        # df_prices = df_prices.sort_values('trade_date')
 
         # latest price
         latest_row = df_prices.iloc[-1]
@@ -60,12 +67,12 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
             continue
 
         # target date for baseline price
-        target_date = latest_date - relativedelta(months=n_months)
+        target_date = latest_date - relativedelta(months=recent_n_months)
 
         # find the row closest to target_date
         # we prefer a date <= target_date (true N months ago or slightly more),
         # but if holiday, maybe checks nearby.
-        # Let's find index where date is closest.
+        # let's find index where date is closest.
 
         df_prices['date_obj'] = pd.to_datetime(df_prices['trade_date'])
 
@@ -75,8 +82,8 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
         if past_candidates.empty:
             # if no data before target date, maybe the stock is too new
             # or data fetch didn't go back far enough.
-            # Try getting the earliest available if it's close enough?
-            # For strict N months growth, if we don't have data N months ago, skip.
+            # try getting the earliest available if it's close enough?
+            # for strict N months growth, if we don't have data N months ago, skip.
             continue
 
         # take the last one of the candidates (closest to target_date from the left)
@@ -89,18 +96,13 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
         # calculate growth
         growth = (latest_price - base_price) / base_price * 100
 
-        if growth > p_threshold:
-            # score calculation
-            # -----------------------------------------------------------
-            # Algorithm: Growth percentage itself is the score factor
-            # or Difference from threshold.
-            # "超越篩選幅度越高, 越高分" -> (Growth - Threshold) or just Growth.
-            # Using Growth value directly correlates with "higher growth = higher score"
-            # -----------------------------------------------------------
-            score_val = growth
+        if growth > threshold:
+            # calculate score:
+            # growth percentage itself is the score
+            score = growth
 
-            # Accumulate
-            final_score = row['score'] + score_val
+            # accumulate existing score
+            final_score = row['score'] + score
 
             results.append(
                 {
@@ -110,27 +112,31 @@ def list_price_growth_above(db, n_months=3, p_threshold=10.0, input_df=None):
                 }
             )
 
+    # create result DataFrame and sort by score descending
     result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
     result_df = result_df.sort_values(by='score', ascending=False).reset_index(
         drop=True
     )
+
     return result_df
 
 
-# 最新股價 ＞ 近 N 個月月均價
-def list_price_above_avg(db, n_months=3, input_df=None):
-    """Filter stocks where Latest Price > Average of Monthly Average Prices of last N months.
+# R06: 最新股價 > 近 N 個月月均價
+def list_price_above_avg(db, recent_n_months=1, input_df=None):
+    """Get stocks with last price above average price
+
+    Find stocks whose last price is greater than the average price of
+    the past N months.
 
     Args:
         db (StockDatabase): Database instance
-        n_months (int): Number of months to average
+        recent_n_months (int): Number of recent months to average
         input_df (pd.DataFrame): Optional input list of stocks
 
     Returns:
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
-    # 1. Determine source stocks
-    # 1. Determine source stocks
+    # determine source stocks
     target_df = get_target_stocks(db, input_df)
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
@@ -140,7 +146,7 @@ def list_price_above_avg(db, n_months=3, input_df=None):
     # Start date for fetching monthly data
     # We need last N months.
     # Buffer: N+2 months to ensure we get N records.
-    start_search_date = datetime.now() - relativedelta(months=n_months + 2)
+    start_search_date = datetime.now() - relativedelta(months=recent_n_months + 2)
     start_date_str = start_search_date.strftime('%Y-%m-%d')
 
     for _, row in target_df.iterrows():
@@ -172,7 +178,7 @@ def list_price_above_avg(db, n_months=3, input_df=None):
         # But if the stock is young, maybe N is too large.
         # Let's use up to last N records.
 
-        target_months = df_monthly.tail(n_months)
+        target_months = df_monthly.tail(recent_n_months)
 
         if target_months.empty:
             continue

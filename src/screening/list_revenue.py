@@ -102,7 +102,7 @@ def list_revenue_hit_new_high(
 
 
 # R02: 營收月增率(revenue_mom)連續 N 個月 > P%
-def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
+def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue MoM above threshold consecutively
 
     Find stocks whose revenue MoM exceeds the specified threshold
@@ -110,7 +110,7 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
     Args:
         db (StockDatabase): Database instance
-        consec_n_months (int): Number of consecutive months to check
+        cont_n_months (int): Number of consecutive months to check
         threshold (float): Threshold percentage (e.g. 5.0 for 5%)
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -121,8 +121,8 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if consec_n_months < 1:
-        raise ValueError('consec_n_months must be >= 1')
+    if cont_n_months < 1:
+        raise ValueError('cont_n_months must be >= 1')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -136,10 +136,10 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=consec_n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
         # skip if not enough data
-        if len(df_rev) < consec_n_months:
+        if len(df_rev) < cont_n_months:
             continue
 
         # get revenue MoM
@@ -173,7 +173,7 @@ def list_revenue_mom_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
 
 # R02: 營收年增率(revenue_yoy)連續 N 個月 > P%
-def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
+def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue YoY above threshold consecutively
 
     Find stocks whose revenue YoY exceeds the specified threshold
@@ -181,7 +181,7 @@ def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
     Args:
         db (StockDatabase): Database instance
-        consec_n_months (int): Number of consecutive months to check
+        cont_n_months (int): Number of consecutive months to check
         threshold (float): Threshold percentage (e.g. 5.0 for 5%)
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -192,7 +192,7 @@ def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if consec_n_months < 1:
+    if cont_n_months < 1:
         raise ValueError('consec_n_months must be >= 1')
 
     # determine source stocks
@@ -207,10 +207,10 @@ def list_revenue_yoy_above(db, consec_n_months=3, threshold=0.0, input_df=None):
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=consec_n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
 
         # skip if not enough data
-        if len(df_rev) < consec_n_months:
+        if len(df_rev) < cont_n_months:
             continue
 
         # get revenue YoY
