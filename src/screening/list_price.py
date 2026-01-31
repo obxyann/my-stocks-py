@@ -50,7 +50,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         code = row['code']
 
         # get daily prices
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_prices = db.get_prices_by_code(code, start_date=start_date_str)
 
         # skip if not enough data
@@ -59,6 +59,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
         # latest price and date
         latest_row = df_prices.iloc[-1]
+
         latest_price = latest_row['close_price']
         latest_date_str = latest_row['trade_date']
 
@@ -162,7 +163,9 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
         # get latest price
         # by fetching a small window of daily prices for the latest price
+        # NOTE: ensure sorted by date ascending (old -> new)
         last_month_date = datetime.now() - relativedelta(days=30)
+
         df_daily = db.get_prices_by_code(
             code, start_date=last_month_date.strftime('%Y-%m-%d')
         )
@@ -173,6 +176,7 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
         latest_price = df_daily.iloc[-1]['close_price']
 
         # get monthly averages
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_monthly = db.get_monthly_avg_prices_by_code(code, start_date=start_date_str)
 
         if df_monthly.empty:
@@ -192,7 +196,7 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
         avg_price = target_months['price'].mean()
 
-        if avg_price <= 0 or pd.isna(avg_price):
+        if pd.isna(avg_price) or avg_price <= 0:
             continue
 
         if latest_price > avg_price:

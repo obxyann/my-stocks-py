@@ -274,8 +274,8 @@ def list_opr_margin_is_max(
     # check input parameters
     if recent_n_quarters < 1:
         raise ValueError('recent_n_quarters must be >= 1')
-    if lookback_m_quarters < recent_n_quarters:
-        raise ValueError('lookback_m_quarters must be >= recent_n_quarters')
+    if lookback_m_quarters <= recent_n_quarters:
+        raise ValueError('lookback_m_quarters must be > recent_n_quarters')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -288,7 +288,7 @@ def list_opr_margin_is_max(
         code = row['code']
 
         # get recent financial metrics
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_metrics = db.get_recent_financial_metrics_by_code(
             code, limit=lookback_m_quarters
         )
@@ -304,17 +304,28 @@ def list_opr_margin_is_max(
         if margins.isna().any():
             continue
 
-        # split: [.... rest .... | ... recent N ...]
+        # split into early period and recent period
+        early_vals = margins.iloc[:-recent_n_quarters]
         recent_vals = margins.iloc[-recent_n_quarters:]
 
-        max_all = margins.max()
-        max_recent = recent_vals.max()
+        # get max value in each period
+        early_max = early_vals.max()
+        recent_max = recent_vals.max()
 
-        if max_recent >= max_all:
+        # skip if early period has no valid value
+        # NOTE: normaly this should not happen, we had guranteed
+        #       enough data > recent_n_quarters
+        if pd.isna(early_max):
+            continue
+
+        if recent_max >= early_max:
             # calculate score:
             # = percentage exceeded
-            # TODO: implement
-            score = 0
+            if early_max == 0:
+                # TODO: reconsider this
+                score = 0
+            else:
+                score = (recent_max - early_max) / abs(early_max) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -378,7 +389,7 @@ def list_opr_margin_qoq_growth(
         code = row['code']
 
         # get recent financial metrics
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=need_points)
 
         # skip if not enough data
@@ -462,7 +473,7 @@ def list_opr_margin_yoy_growth(
         code = row['code']
 
         # get recent financial metrics
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_metrics = db.get_recent_financial_metrics_by_code(code, limit=need_points)
 
         # skip if not enough data

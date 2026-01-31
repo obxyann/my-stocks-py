@@ -33,16 +33,13 @@ def list_revenue_hit_new_high(
     # check input parameters
     if recent_n_months < 1:
         raise ValueError('recent_n_months must be >= 1')
-    if lookback_m_months < recent_n_months:
-        raise ValueError('lookback_m_months >= recent_n_months')
+    if lookback_m_months <= recent_n_months:
+        raise ValueError('lookback_m_months > recent_n_months')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
-
-    # determine months to compare with recent
-    early_months = lookback_m_months - recent_n_months
 
     results = []
 
@@ -50,7 +47,7 @@ def list_revenue_hit_new_high(
         code = row['code']
 
         # get recent revenue data
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         revenue_df = db.get_recent_revenue_by_code(code, limit=lookback_m_months)
 
         # skip if not enough data
@@ -66,22 +63,28 @@ def list_revenue_hit_new_high(
         revenues = revenue_df['revenue']
 
         # split into early period and recent period
-        early_series = revenues.iloc[:early_months]
-        recent_series = revenues.iloc[early_months:]
+        early_vals = revenues.iloc[:-recent_n_months]
+        recent_vals = revenues.iloc[-recent_n_months:]
 
-        # get max revenue in each period
-        early_max = early_series.max()
-        recent_max = recent_series.max()
+        # get max value in each period
+        early_max = early_vals.max()
+        recent_max = recent_vals.max()
 
-        # skip if early period has no valid revenue
-        if pd.isna(early_max) or early_max <= 0:
+        # skip if early period has no valid value
+        # NOTE: normaly this should not happen, we had guranteed
+        #       enough data > recent_n_months
+        if pd.isna(early_max):
             continue
 
         # check if recent max exceeds early max
         if recent_max > early_max:
             # calculate score:
             # = percentage exceeded
-            score = (recent_max - early_max) / abs(early_max) * 100
+            if early_max == 0:
+                # TODO: reconsider this
+                score = 0
+            else:
+                score = (recent_max - early_max) / abs(early_max) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -320,7 +323,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
         code = row['code']
 
         # get recent revenue data
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
 
         # skip if not enough data
@@ -358,6 +361,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
             # score = (end_value - start_val) / start_val * 100
             if start_val == 0:
+                # TODO: reconsider this
                 score = 0
             else:
                 score = (end_val - start_val) / abs(start_val) * 100
@@ -427,7 +431,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
         code = row['code']
 
         # get recent revenue data
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=need_points)
 
         # skip if not enough data
@@ -461,6 +465,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
 
             # score = (end_value - start_val) / start_val * 100
             if start_val == 0:
+                # TODO: reconsider this
                 score = 0
             else:
                 score = (end_val - start_val) / abs(start_val) * 100
@@ -526,7 +531,7 @@ def list_accum_revenue_yoy_ma_growth_above(
         code = row['code']
 
         # get recent revenue data
-        # sorted by date ascending (old -> new)
+        # NOTE: ensure sorted by date ascending (old -> new)
         df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
 
         # skip if not enough data
@@ -553,6 +558,7 @@ def list_accum_revenue_yoy_ma_growth_above(
 
         # calculate growth rate
         if prev_val == 0:
+            # TODO: reconsider this
             growth_rate = 0.0
         else:
             growth_rate = (curr_val - prev_val) / abs(prev_val) * 100
