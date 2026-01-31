@@ -3,16 +3,16 @@
 from screening.list_metrics import (
     # 近 N 季稅後純益率(net_margin)平均 ＞ P%
     list_net_margin_avg_above,
+    # 近 N 季營業利益率(opr_margin)為近 M 季最大
+    list_opr_margin_is_max,
     # 近 N 季營業利益率(opr_margin)最少 ＞ P%
     list_opr_margin_min_above,
     # 近 N 季營業利益率(opr_margin)最小/最大 ＞ P%
     list_opr_margin_min_max_ratio_above,
     # 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
-    list_opr_margin_qoq_cont_growth,
-    # 近 N 季營業利益率(opr_margin)為近 M 季最大
-    list_opr_margin_recent_is_max,
+    list_opr_margin_qoq_growth,
     # 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
-    list_opr_margin_yoy_cont_growth,
+    list_opr_margin_yoy_growth,
 )
 from screening.list_price import (
     # 最新股價 > 近 N 個月月均價
@@ -101,15 +101,15 @@ def list_method_a(db, test_case=1, input_df=None):
 
     if test_case == 10:
         # 近 1 季營業利益率為近 8 季最大
-        return list_opr_margin_recent_is_max(db, n_quarters=1, m_lookback=8, input_df=input_df)
+        return list_opr_margin_is_max(db, n_quarters=1, m_lookback=8, input_df=input_df)
 
     if test_case == 11:
         # 近 2 季營業利益率年增率連續 2 季成長
-        return list_opr_margin_yoy_cont_growth(db, n_quarters=2, m_quarters=2, input_df=input_df)
+        return list_opr_margin_yoy_growth(db, n_quarters=2, m_quarters=2, input_df=input_df)
 
     if test_case == 12:
         # 近 3 季營業利益率季增率連續 3 季成長
-        return list_opr_margin_qoq_cont_growth(db, n_quarters=3, m_quarters=3, input_df=input_df)
+        return list_opr_margin_qoq_growth(db, n_quarters=3, m_quarters=3, input_df=input_df)
 
     if test_case == 13:
         # 近 1 季稅後純益率平均 ＞ 0%

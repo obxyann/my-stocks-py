@@ -13,12 +13,12 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     """Get stocks with recent price growth rate above threshold
 
     Find stocks whose price growth rate exceeds the specified
-    threshold in the past N months.
+    threshold in the last N months.
 
     Args:
         db (StockDatabase): Database instance
         recent_n_months (int): Number of recent months to check
-        threshold (float): Threshold percentage
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
             If provided, filter only stocks in this list and accumulate scores
@@ -99,12 +99,13 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
         if growth > threshold:
             # calculate score:
-            # growth percentage itself is the score
+            # = growth percentage itself
             score = growth
 
             # accumulate existing score
             final_score = row['score'] + score
 
+            # append to results
             results.append(
                 {
                     'code': code,
@@ -127,7 +128,7 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     """Get stocks with latest price above recent average price
 
     Find stocks whose latest price is greater than the average price of
-    the past N months.
+    the last N months.
 
     Args:
         db (StockDatabase): Database instance
@@ -196,12 +197,13 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
         if latest_price > avg_price:
             # calculate score
-            # percentage difference above average
+            # = percentage above average
             diff_percent = (latest_price - avg_price) / avg_price * 100
 
             # accumulate existing score
             final_score = row['score'] + diff_percent
 
+            # append to results
             results.append(
                 {
                     'code': code,

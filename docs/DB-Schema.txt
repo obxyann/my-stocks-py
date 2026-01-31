@@ -112,6 +112,7 @@ revenue_ma12            | 12-Month Moving Average of 'Revenue'
 revenue_ytd_yoy_ma3     | 3-Month Moving Average of 'Revenue YTD YoY Growth'
 revenue_ytd_yoy_ma12    | 12-Month Moving Average of 'Revenue YTD YoY Growth'
 
+NOTE: all XX Growth are in decimal (e.g. 0.05 for 5%)
 
 ## Table: 'financial_core', 'financial_ytd'
 
@@ -201,8 +202,8 @@ gross_margin            | Gross Profit Margin
 opr_margin              | Operating Profit Margin
 pre_tax_margin          | Pre-tax Profit Margin
 net_margin              | (After-tax) Net Profit Margin
-roa                     | Return on Assets
-roe                     | Return on Equity
+roa                     | Return on Assets, ROA
+roe                     | Return on Equity, ROE
 annual_roa              | Annualized ROA
 annual_roe              | Annualized ROE
 rore                    | Return on Retained Earnings
@@ -228,7 +229,13 @@ div_yield               | Dividend Yield
 annual_payout_ratio     | Annual Payout Ratio, DPR
 irr                     | Internal Rate of Return, IRR
 
-
+NOTE: 1. all XX Growth are in decimal (e.g. 0.05 for 5%)
+      2. all XX Margin are in decimal (e.g. 0.05 for 5%)
+      3. all XX Ratio are in decimal (e.g. 0.05 for 5%)
+         but some are not displayed as percentage typically
+         (e.g. P/E Ratio, P/B Ratio, PBR, ...)
+      4. ROA, ROE and their annualized are in decimal (e.g. 0.05 for 5%)
+ 
 ## Table: 'dividends'
 
 Dividends paid by a company.
