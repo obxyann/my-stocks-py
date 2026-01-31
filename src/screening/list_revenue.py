@@ -62,13 +62,16 @@ def list_revenue_hit_new_high(
         #     by=['year', 'month'], ascending=True
         # ).reset_index(drop=True)
 
+        # get revenue series
+        revenues = revenue_df['revenue']
+
         # split into early period and recent period
-        early_df = revenue_df.iloc[:early_months]
-        recent_df = revenue_df.iloc[early_months:]
+        early_series = revenues.iloc[:early_months]
+        recent_series = revenues.iloc[early_months:]
 
         # get max revenue in each period
-        early_max = early_df['revenue'].max()
-        recent_max = recent_df['revenue'].max()
+        early_max = early_series.max()
+        recent_max = recent_series.max()
 
         # skip if early period has no valid revenue
         if pd.isna(early_max) or early_max <= 0:
@@ -142,19 +145,23 @@ def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
         if len(df_rev) < cont_n_months:
             continue
 
-        # get revenue MoM
-        moms = df_rev['revenue_mom'].tolist()
+        # get revenue MoM series
+        moms = df_rev['revenue_mom']
+
+        # skip if any value is missing
+        if moms.isna().any():
+            continue
 
         # convert to percentage, e.g. 0.05 -> 5.0(%)
-        moms_percent = [v * 100 for v in moms]
+        moms_percent = moms * 100
 
         # check if all MoM > threshold
-        if any(pd.isna(m) or m <= threshold for m in moms_percent):
+        if (moms_percent <= threshold).any():
             continue
 
         # calculate score:
         # = sum of exceeding amount
-        score = sum(m - threshold for m in moms_percent)
+        score = (moms_percent - threshold).sum()
 
         # accumulate existing score
         final_score = row['score'] + score
@@ -217,19 +224,23 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
         if len(df_rev) < cont_n_months:
             continue
 
-        # get revenue YoY
-        yoys = df_rev['revenue_yoy'].tolist()
+        # get revenue YoY series
+        yoys = df_rev['revenue_yoy']
+
+        # skip if any value is missing
+        if yoys.isna().any():
+            continue
 
         # convert to percentage, e.g. 0.05 -> 5.0(%)
-        yoys_percent = [v * 100 for v in yoys]
+        yoys_percent = yoys * 100
 
         # check if all YoY > threshold
-        if any(pd.isna(y) or y <= threshold for y in yoys_percent):
+        if (yoys_percent <= threshold).any():
             continue
 
         # calculate score:
         # = sum of exceeding amount
-        score = sum(y - threshold for y in yoys_percent)
+        score = (yoys_percent - threshold).sum()
 
         # accumulate existing score
         final_score = row['score'] + score
@@ -318,37 +329,32 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
         # get target MA values
         if use_precalc:
-            vals = df_rev[col_name].tolist()
+            values = df_rev[col_name]
         else:
             # calculate MA on the fly
             # df_rev is sorted ascending by date
             ma_series = df_rev['revenue'].rolling(window=ma_n_months).mean()
 
             # we only need the last (cont_m_months + 1) valid MA values
-            vals = ma_series.tail(cont_m_months + 1).tolist()
+            values = ma_series.tail(cont_m_months + 1)
 
         # skip if not enough data
-        if len(vals) < cont_m_months + 1:
+        if len(values) < cont_m_months + 1:
             continue
 
-        # skip if any value is None
-        if any(v is None or pd.isna(v) for v in vals):
+        # skip if any value is missing
+        if values.isna().any():
             continue
 
         # check strictly increasing (continuous growth)
         # vals is [t-M, t-M+1, ..., t]
-        is_increasing = True
-
-        for i in range(len(vals) - 1):
-            if vals[i + 1] <= vals[i]:
-                is_increasing = False
-                break
+        is_increasing = (values.diff().iloc[1:] > 0).all()
 
         if is_increasing:
             # calculate score:
             # = growth percentage over the period
-            start_val = vals[0]
-            end_val = vals[-1]
+            start_val = values.iloc[0]
+            end_val = values.iloc[-1]
 
             # score = (end_value - start_val) / start_val * 100
             if start_val == 0:
@@ -433,30 +439,25 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
         ma_series = df_rev['revenue_ytd_yoy'].rolling(window=ma_n_months).mean()
 
         # we only need the last (cont_m_months + 1) valid MA values
-        vals = ma_series.tail(cont_m_months + 1).tolist()
+        values = ma_series.tail(cont_m_months + 1)
 
         # skip if not enough data
-        if len(vals) < cont_m_months + 1:
+        if len(values) < cont_m_months + 1:
             continue
 
-        # skip if any value is None
-        if any(v is None or pd.isna(v) for v in vals):
+        # skip if any value is missing
+        if values.isna().any():
             continue
 
         # check strictly increasing (continuous growth)
         # vals is [t-M, ..., t]
-        is_increasing = True
-
-        for i in range(len(vals) - 1):
-            if vals[i + 1] <= vals[i]:
-                is_increasing = False
-                break
+        is_increasing = (values.diff().iloc[1:] > 0).all()
 
         if is_increasing:
             # calculate score:
             # = growth percentage over the period
-            start_val = vals[0]
-            end_val = vals[-1]
+            start_val = values.iloc[0]
+            end_val = values.iloc[-1]
 
             # score = (end_value - start_val) / start_val * 100
             if start_val == 0:
@@ -537,18 +538,18 @@ def list_accum_revenue_yoy_ma_growth_above(
         ma_series = df_rev['revenue_ytd_yoy'].rolling(window=ma_n_months).mean()
 
         # we only need the last 2 valid MA values
-        vals = ma_series.tail(2).tolist()
+        values = ma_series.tail(2)
 
         # skip if not enough data
-        if len(vals) < 2:
+        if len(values) < 2:
             continue
 
-        # skip if any value is None
-        if any(v is None or pd.isna(v) for v in vals):
+        # skip if any value is missing
+        if values.isna().any():
             continue
 
-        prev_val = vals[0]
-        curr_val = vals[1]
+        prev_val = values.iloc[0]
+        curr_val = values.iloc[1]
 
         # calculate growth rate
         if prev_val == 0:

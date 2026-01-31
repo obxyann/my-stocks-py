@@ -47,18 +47,16 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         if len(df_metrics) < recent_n_quarters:
             continue
 
-        # get net margin values
-        vals = df_metrics['net_margin'].tolist()
+        # get net margin series, drop None/NaN
+        margins = df_metrics['net_margin'].dropna()
 
-        # skip if any value is None
-        vals = [v for v in vals if v is not None]
-        if not vals:
+        # skip if empty
+        if margins.empty:
             continue
 
-        # convert to percentage, e.g. 0.05 -> 5.0(%)
-        vals_percent = [v * 100 for v in vals]
-
-        val_avg = sum(vals_percent) / len(vals_percent)
+        # convert to percentage and calculate average
+        # e.g. 0.05 -> 5.0(%)
+        val_avg = (margins * 100).mean()
 
         if val_avg > threshold:
             # calculate score:
@@ -128,18 +126,15 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         if len(df_metrics) < recent_n_quarters:
             continue
 
-        # get opr margin values
-        vals = df_metrics['opr_margin'].tolist()
+        # get opr margin series, drop None/NaN
+        margins = df_metrics['opr_margin'].dropna()
 
-        # skip if any value is None
-        vals = [v for v in vals if v is not None]
-        if not vals:
+        # skip if empty
+        if margins.empty:
             continue
 
-        # convert to percentage, e.g. 0.05 -> 5.0(%)
-        vals_percent = [v * 100 for v in vals]
-
-        val_min = min(vals_percent)
+        # convert to percentage and get min
+        val_min = (margins * 100).min()
 
         if val_min > threshold:
             # calculate score:
@@ -211,19 +206,18 @@ def list_opr_margin_min_max_ratio_above(
         if len(df_metrics) < recent_n_quarters:
             continue
 
-        # get opr margin values
-        vals = df_metrics['opr_margin'].tolist()
+        # get opr margin series, drop None/NaN
+        margins = df_metrics['opr_margin'].dropna()
 
-        # skip if any value is None
-        vals = [v for v in vals if v is not None]
-        if not vals:
+        # skip if empty
+        if margins.empty:
             continue
 
-        # convert to percentage, e.g. 0.05 -> 5.0(%)
-        vals_pct = [v * 100 for v in vals]
+        # convert to percentage
+        series_percent = margins * 100
 
-        val_min = min(vals_pct)
-        val_max = max(vals_pct)
+        val_min = series_percent.min()
+        val_max = series_percent.max()
 
         # skip if max is not positive
         # (cannot divide or implies all negative/zero)
@@ -303,20 +297,18 @@ def list_opr_margin_is_max(
         if len(df_metrics) < lookback_m_quarters:
             continue
 
-        # get opr margin values
-        opr_margins = df_metrics['opr_margin'].tolist()
+        # get opr margin series
+        margins = df_metrics['opr_margin']
 
-        # skip if any value is None
-        if any(m is None for m in opr_margins):
+        # skip if any value is missing
+        if margins.isna().any():
             continue
 
-        # Split: [.... rest .... | ... recent N ...]
-        recent_vals = opr_margins[-recent_n_quarters:]
-        # full_vals includes recent_vals
-        full_vals = opr_margins
+        # split: [.... rest .... | ... recent N ...]
+        recent_vals = margins.iloc[-recent_n_quarters:]
 
-        max_all = max(full_vals)
-        max_recent = max(recent_vals)
+        max_all = margins.max()
+        max_recent = recent_vals.max()
 
         if max_recent >= max_all:
             # calculate score:
@@ -394,24 +386,19 @@ def list_opr_margin_qoq_growth(
             continue
 
         # get opr margin QoQ values
-        vals = df_metrics['opr_margin_qoq'].tolist()
+        qoqs = df_metrics['opr_margin_qoq']
 
-        # skip if any value is None
-        if any(v is None for v in vals):
+        # skip if any value is missing
+        if qoqs.isna().any():
             continue
 
         # check strictly increasing
-        is_increasing = True
-
-        for i in range(len(vals) - 1):
-            if vals[i + 1] <= vals[i]:
-                is_increasing = False
-                break
+        is_increasing = (qoqs.diff().iloc[1:] > 0).all()
 
         if is_increasing:
             # calculate score:
             # = exceeding amount
-            score = vals[-1] - vals[0]
+            score = qoqs.iloc[-1] - qoqs.iloc[0]
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -482,25 +469,20 @@ def list_opr_margin_yoy_growth(
         if len(df_metrics) < need_points:
             continue
 
-        # get opr margin YoY values
-        vals = df_metrics['opr_margin_yoy'].tolist()
+        # get opr margin YoY series
+        yoys = df_metrics['opr_margin_yoy']
 
-        # skip if any value is None
-        if any(v is None for v in vals):
+        # skip if any value is missing
+        if yoys.isna().any():
             continue
 
         # check strictly increasing
-        is_increasing = True
-
-        for i in range(len(vals) - 1):
-            if vals[i + 1] <= vals[i]:
-                is_increasing = False
-                break
+        is_increasing = (yoys.diff().iloc[1:] > 0).all()
 
         if is_increasing:
             # calculate score:
             # = exceeding amount
-            score = vals[-1] - vals[0]
+            score = yoys.iloc[-1] - yoys.iloc[0]
 
             # accumulate existing score
             final_score = row['score'] + score
