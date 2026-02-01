@@ -36,17 +36,16 @@ def load_stock(stock_code, db):
         name = df_s.iloc[0]['name']
         code_name = f'{stock_code} {name}'
 
-    # calculate start date for the last 48 months (inclusive)
-    start_date = (datetime.now().replace(day=1) - pd.DateOffset(months=47)).strftime(
-        '%Y-%m-%d'
-    )
-
     # retrieve data from database
-    df_p = db.get_prices_by_code(stock_code, start_date=start_date)
-    df_mp = db.get_monthly_avg_prices_by_code(stock_code, start_date=start_date)
-
-    df_r = db.get_revenue_by_code(stock_code, start_date=start_date)
+    # recent 4x360=1440 days
+    df_p = db.get_recent_prices_by_code(stock_code, limit=1140)
+    # recent 48 months
+    df_mp = db.get_recent_monthly_avg_prices_by_code(stock_code, limit=48)
+    # recent 48 months
+    df_r = db.get_recent_revenue_by_code(stock_code, limit=48)
+    # recent 8 quarters
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
+    # recent 8 quarters
     df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
