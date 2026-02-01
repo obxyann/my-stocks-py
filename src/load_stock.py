@@ -205,9 +205,6 @@ def transform_revenue_plot(df_r, df_mp):
         df_r['year'].astype(str) + '/' + df_r['month'].astype(str).str.zfill(2)
     )
     df_r_plot['revenue'] = df_r['revenue']
-    # df_r_plot['revenue_ma3'] = df_r['revenue_ma3']
-    # df_r_plot['revenue_ma12'] = df_r['revenue_ma12']
-    # use rolling mean instead of pre-calculated MA
     df_r_plot['revenue_ma3'] = df_r['revenue'].rolling(window=3).mean()
     df_r_plot['revenue_ma12'] = df_r['revenue'].rolling(window=12).mean()
     df_r_plot['revenue_yoy'] = df_r['revenue_yoy'] * 100  # for percentage

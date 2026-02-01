@@ -106,11 +106,6 @@ revenue_ytd_ly          | Revenue Year-to-Date (YTD) Same Period Last Year
 revenue_mom             | Revenue MoM Growth
 revenue_yoy             | Revenue YoY Growth
 revenue_ytd_yoy         | Revenue Year-to-Date (YTD) YoY Growth
---                      | *(separator)*
-revenue_ma3             | 3-Month Moving Average of 'Revenue'
-revenue_ma12            | 12-Month Moving Average of 'Revenue'
-revenue_ytd_yoy_ma3     | 3-Month Moving Average of 'Revenue YTD YoY Growth'
-revenue_ytd_yoy_ma12    | 12-Month Moving Average of 'Revenue YTD YoY Growth'
 
 NOTE: all XX Growth are in decimal (e.g. 0.05 for 5%)
 
