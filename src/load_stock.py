@@ -4,8 +4,6 @@ This module provides API for loading stock data from database and
 transforming it to the format suitable for UI display
 """
 
-from datetime import datetime
-
 import pandas as pd
 
 
@@ -38,15 +36,17 @@ def load_stock(stock_code, db):
 
     # retrieve data from database
     # recent 4x360=1440 days
-    df_p = db.get_recent_prices_by_code(stock_code, limit=1140)
+    df_p = db.get_recent_prices_by_code(stock_code, limit=1440)
+
     # recent 48 months
-    df_mp = db.get_recent_monthly_avg_prices_by_code(stock_code, limit=48)
-    # recent 48 months
-    df_r = db.get_recent_revenue_by_code(stock_code, limit=48)
+    # +1 extra month for aligning with revenue, which lags by one month
+    df_mp = db.get_recent_monthly_avg_prices_by_code(stock_code, limit=49)
+    # +12 extra months for calculating 12-month moving average
+    df_r = db.get_recent_revenue_by_code(stock_code, limit=60)
+
     # recent 8 quarters
     df_f = db.get_recent_financial_by_code(stock_code, limit=8)
-    # recent 8 quarters
-    df_m = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
+    df_fm = db.get_recent_financial_metrics_by_code(stock_code, limit=8)
 
     # transform data
     df_p_plot = transform_ohlc_price(df_p)
@@ -54,8 +54,12 @@ def load_stock(stock_code, db):
     df_r_plot = transform_revenue_plot(df_r, df_mp)
     df_f_tbl = transform_financial(df_f)
     df_f_plot = transform_financial_plot(df_f)
-    df_m_tbl = transform_financial_metrics(df_m)
-    df_m_plot = transform_financial_metrics_plot(df_m)
+    df_fm_tbl = transform_financial_metrics(df_fm)
+    df_fm_plot = transform_financial_metrics_plot(df_fm)
+
+    # keep only the last 48 months
+    df_r_tbl = df_r_tbl.head(48)  # new -> old
+    df_r_plot = df_r_plot.tail(48)  # old -> new
 
     return {
         'code_name': code_name,
@@ -64,8 +68,8 @@ def load_stock(stock_code, db):
         'revenue_plot': df_r_plot,
         'financial': df_f_tbl,
         'financial_plot': df_f_plot,
-        'metrics': df_m_tbl,
-        'metrics_plot': df_m_plot,
+        'metrics': df_fm_tbl,
+        'metrics_plot': df_fm_plot,
     }
 
 
@@ -102,7 +106,7 @@ def transform_ohlc_price(df):
     # set Date as index
     result = result.set_index('Date')
 
-    # sort by Date ascending (oldest first for chart)
+    # sort by Date ascending (old -> new for chart)
     result = result.sort_index(ascending=True)
 
     return result
@@ -163,18 +167,20 @@ def transform_revenue(df):
 
         result[col] = df[col].apply(formatter)
 
-    # sort by year_month descending (latest first)
+    # sort by year_month descending (new -> old for table)
     result = result.sort_values('year_month', ascending=False)
 
     return result.reset_index(drop=True)
 
 
-def transform_revenue_plot(df_r, df_a):
+def transform_revenue_plot(df_r, df_mp):
     """Transform revenue and price data for plotting
+
+    NOTE: result is merged from df_r and df_mp by the year_month column
 
     Args:
         df_r: Revenue DataFrame
-        df_a: Monthly average price DataFrame
+        df_mp: Monthly average price DataFrame
 
     Returns:
         pd.DataFrame: Merged and filtered DataFrame for plotting
@@ -199,25 +205,29 @@ def transform_revenue_plot(df_r, df_a):
         df_r['year'].astype(str) + '/' + df_r['month'].astype(str).str.zfill(2)
     )
     df_r_plot['revenue'] = df_r['revenue']
-    df_r_plot['revenue_ma3'] = df_r['revenue_ma3']
-    df_r_plot['revenue_ma12'] = df_r['revenue_ma12']
+    # df_r_plot['revenue_ma3'] = df_r['revenue_ma3']
+    # df_r_plot['revenue_ma12'] = df_r['revenue_ma12']
+    # use rolling mean instead of pre-calculated MA
+    df_r_plot['revenue_ma3'] = df_r['revenue'].rolling(window=3).mean()
+    df_r_plot['revenue_ma12'] = df_r['revenue'].rolling(window=12).mean()
     df_r_plot['revenue_yoy'] = df_r['revenue_yoy'] * 100  # for percentage
 
     # 2. prepare price data
-    if df_a.empty:
-        df_a_plot = pd.DataFrame(columns=['year_month', 'price'])
+    if df_mp.empty:
+        df_mp_plot = pd.DataFrame(columns=['year_month', 'price'])
     else:
-        df_a_plot = pd.DataFrame()
+        df_mp_plot = pd.DataFrame()
 
-        df_a_plot['year_month'] = (
-            df_a['year'].astype(str) + '/' + df_a['month'].astype(str).str.zfill(2)
+        df_mp_plot['year_month'] = (
+            df_mp['year'].astype(str) + '/' + df_mp['month'].astype(str).str.zfill(2)
         )
-        df_a_plot['price'] = df_a['price']
+        df_mp_plot['price'] = df_mp['price']
 
     # 3. merge
-    result = pd.merge(df_r_plot, df_a_plot, on='year_month', how='left')
+    # use df_r_plot as the base table and merge only corresponding monthly prices
+    result = pd.merge(df_r_plot, df_mp_plot, on='year_month', how='left')
 
-    # 4. sort by year_month ascending (oldest first for chart)
+    # 4. sort by year_month ascending (old -> new for chart)
     result = result.sort_values('year_month')
 
     return result.reset_index(drop=True)
@@ -333,7 +343,7 @@ def _pivot_dataframe(df, items):
     Returns:
         pd.DataFrame: Pivoted DataFrame with Item as first column
     """
-    # sort by year, quarter descending (latest first)
+    # sort by year, quarter descending (new -> old for table)
     df_sorted = df.sort_values(by=['year', 'quarter'], ascending=[False, False])
 
     df_sorted = df_sorted.reset_index(drop=True)
@@ -410,7 +420,7 @@ def transform_financial_plot(df):
 
         result[col] = df[col]
 
-    # sort by year_quarter ascending (oldest first for chart)
+    # sort by year_quarter ascending (old -> new for chart)
     result = result.sort_values('year_quarter', ascending=True)
 
     return result.reset_index(drop=True)
@@ -456,7 +466,7 @@ def transform_financial_metrics_plot(df):
 
         result[col] = df[col] * mul
 
-    # sort by year_quarter ascending (oldest first for chart)
+    # sort by year_quarter ascending (old -> new for chart)
     result = result.sort_values('year_quarter', ascending=True)
 
     return result.reset_index(drop=True)

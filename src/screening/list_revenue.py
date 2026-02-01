@@ -270,7 +270,7 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
 def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
     """Get stocks with consecutive growth in revenue moving average
 
-    Find stocks whose N-months revenue moving average
+    Find stocks whose N-month revenue moving average
     increases month over month for M consecutive months.
 
     Args:
@@ -314,7 +314,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
         col_name = None
 
-        # to calculate the first N-months MA, we need N data points
+        # to calculate the first N-month MA, we need N data points
         # we need additional M data points of MA to check for consecutive M growth
         # so total data points needed = N + M
         needed_points = ma_n_months + cont_m_months
@@ -392,7 +392,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
     """Get stocks with consecutive growth in accumulated (YTD) revenue YOY
     moving average
 
-    Find stocks whose N-months accumulated (YTD) revenue YOY moving average
+    Find stocks whose N-month accumulated (YTD) revenue YOY moving average
     increases month over month for M consecutive months.
 
     Args:
@@ -422,7 +422,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
 
     # calculate MA on the fly
 
-    # to calculate the first N-months MA, we need N data points
+    # to calculate the first N-month MA, we need N data points
     # we need additional M data points of MA to check for consecutive M growth
     # so total data points needed = N + M
     need_points = ma_n_months + cont_m_months
@@ -498,7 +498,7 @@ def list_accum_revenue_yoy_ma_growth_above(
     """Get stocks with last growth rate above threshold in accumulated (YTD)
     revenue YOY moving average
 
-    Find stocks whose last growth rate of N-months accumulated (YTD) revenue YOY
+    Find stocks whose last growth rate of N-month accumulated (YTD) revenue YOY
     moving average exceeds the specified threshold.
 
     Args:
@@ -523,7 +523,7 @@ def list_accum_revenue_yoy_ma_growth_above(
 
     results = []
 
-    # to calculate the N-months MA, we need N data points
+    # to calculate the N-month MA, we need N data points
     # need one extra point to calculate previous MA for growth rate comparison
     needed_points = ma_n_months + 1
 
