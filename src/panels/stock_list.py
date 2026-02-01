@@ -55,7 +55,7 @@ class StockListPanel(ttk.Frame):
         # table: | Code | Name |
         columns = ('code', 'name')
 
-        table = ttk.Treeview(self, columns=columns, show='headings', height=15)
+        table = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
 
         table.heading('code', text='Code')
         table.heading('name', text='Name')
@@ -64,7 +64,7 @@ class StockListPanel(ttk.Frame):
         table.column('name', width=100)
 
         # scrollbar: | table ||
-        scrollbar = AutoScrollbar(self, orient='vertical', command=table.yview)
+        scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
 
         table.configure(yscrollcommand=scrollbar.set)
 
@@ -122,6 +122,12 @@ class StockListPanel(ttk.Frame):
         # insert data
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row))
+
+        # reset scroll position to top
+        self.table.yview_moveto(0)
+
+        # force UI update to refresh scrollbar range
+        self.update_idletasks()
 
     def read_file(self):
         """Browse to read csv file and load it to table"""

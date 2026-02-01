@@ -437,6 +437,12 @@ class RevenuePanel(ttk.Frame):
         for _, row in df.iterrows():
             self.table.insert('', 'end', values=tuple(row.iloc[:num_cols]))
 
+        # reset scroll position to top
+        self.table.yview_moveto(0)
+
+        # force UI update to refresh scrollbar range
+        self.update_idletasks()
+
     def set_data(self, df, df_plot=None):
         """Set data to panel
 
