@@ -6,11 +6,17 @@ from openData.getDailyPrices import (
     check_last_daily_prices_exist,
     download_last_daily_prices,
 )
-from openData.getMonthlyRevenues import download_hist_monthly_revenues, download_last_monthly_revenues 
-from openData.getQuarterlyReports import download_hist_quarterly_reports, download_last_quarterly_reports
+from openData.getMonthlyRevenues import (
+    download_hist_monthly_revenues,
+    download_last_monthly_revenues,
+)
+from openData.getQuarterlyReports import (
+    download_hist_quarterly_reports,
+    download_last_quarterly_reports,
+)
 from openData.getStockList import download_stock_list
-
 from utils.ass import wait
+
 
 def import_csv_to_db(csv_dir=None, db_path=None):
     """Import CSV data to database"""
@@ -148,8 +154,8 @@ def download(refetch=False, output_dir=None):
         print(f'\n{action} monthly revenues...')
         dest_dir = os.path.join(output_dir, 'monthly')
         download_hist_monthly_revenues('2013-01-01', dest_dir, refetch)  # fmt: skip
-        
-        print(f'\nRefreshing last monthly revenues...')
+
+        print('\nRefreshing last monthly revenues...')
         download_last_monthly_revenues(dest_dir)
         # print('Done')
 
@@ -161,7 +167,7 @@ def download(refetch=False, output_dir=None):
         print('')
         download_hist_quarterly_reports('cash', '2013-01-01', dest_dir, refetch)  # fmt: skip
 
-        print(f'\nRefreshing last quarterly reports...')
+        print('\nRefreshing last quarterly reports...')
         download_last_quarterly_reports('income', output_dir)
         wait(2, 10)
         download_last_quarterly_reports('balance', output_dir)
