@@ -901,7 +901,7 @@ class StockDatabase:
 
         Returns:
             pandas.DataFrame: Monthly average data with columns
-                (code, year, month, price, volume)
+                ['code', 'year', 'month', 'price', 'volume']
         """
         # convert date string to datetime
         start = parse_date_string(start_date)
@@ -940,6 +940,74 @@ class StockDatabase:
                 """,
                 conn,
                 params=(stock_code, start_period, end_period),
+            )
+
+        return df
+
+    def get_recent_prices_by_code(self, stock_code, limit):
+        """Get the latest N records of daily prices data for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            limit (int): Maximum number of records to retrieve
+
+        Returns:
+            pandas.DataFrame: Daily prices data
+        """
+        with self.get_connection() as conn:
+            # retrieve data (latest N, then sort by date ascending)
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM (
+                    SELECT *
+                    FROM daily_prices
+                    WHERE code = ?
+                    ORDER BY trade_date DESC
+                    LIMIT ?
+                )
+                ORDER BY trade_date ASC
+                """,
+                conn,
+                params=(stock_code, limit),
+            )
+
+        return df
+
+    def get_recent_monthly_avg_prices_by_code(self, stock_code, limit):
+        """Get the latest N records of monthly average prices for specific stock
+
+        Args:
+            stock_code (str): Stock code
+            limit (int): Maximum number of records to retrieve
+
+        Returns:
+            pandas.DataFrame: Monthly average data with columns
+                ['code', 'year', 'month', 'price', 'volume']
+        """
+        with self.get_connection() as conn:
+            # calculate monthly averages and
+            # retrieve data (latest N, then sort by date ascending)
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM (
+                    SELECT
+                        code,
+                        CAST(strftime('%Y', trade_date) AS INTEGER) AS year,
+                        CAST(strftime('%m', trade_date) AS INTEGER) AS month,
+                        AVG(close_price) AS price,
+                        AVG(volume) AS volume
+                    FROM daily_prices
+                    WHERE code = ?
+                    GROUP BY year, month
+                    ORDER BY year DESC, month DESC
+                    LIMIT ?
+                )
+                ORDER BY year ASC, month ASC
+                """,
+                conn,
+                params=(stock_code, limit),
             )
 
         return df
