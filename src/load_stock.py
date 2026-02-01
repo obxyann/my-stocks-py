@@ -208,6 +208,13 @@ def transform_revenue_plot(df_r, df_mp):
     df_r_plot['revenue_ma3'] = df_r['revenue'].rolling(window=3).mean()
     df_r_plot['revenue_ma12'] = df_r['revenue'].rolling(window=12).mean()
     df_r_plot['revenue_yoy'] = df_r['revenue_yoy'] * 100  # for percentage
+    df_r_plot['revenue_ytd_yoy'] = df_r['revenue_ytd_yoy'] * 100  # for percentage
+    df_r_plot['revenue_ytd_yoy_ma3'] = (
+        df_r_plot['revenue_ytd_yoy'].rolling(window=3).mean()
+    )
+    df_r_plot['revenue_ytd_yoy_ma12'] = (
+        df_r_plot['revenue_ytd_yoy'].rolling(window=12).mean()
+    )
 
     # 2. prepare price data
     if df_mp.empty:

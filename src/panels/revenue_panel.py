@@ -40,15 +40,19 @@ class RevenuePanel(ttk.Frame):
 
         # create matplotlib figure
         # figsize=(width, height) is in inches, inches * dpi = pixels
-        self.fig = Figure(figsize=(7.5, 4.5), dpi=100)
+        self.fig = Figure(figsize=(7.5, 6.5), dpi=100)
 
         # create axes for revenue chart
-        self.ax1 = self.fig.add_subplot(211)
+        self.ax1 = self.fig.add_subplot(311)
         self.ax2 = self.ax1.twinx()
 
         # create axes for revenue YoY chart
-        self.ax3 = self.fig.add_subplot(212)
+        self.ax3 = self.fig.add_subplot(312)
         self.ax4 = self.ax3.twinx()
+
+        # create axes for revenue YTD YoY chart
+        self.ax5 = self.fig.add_subplot(313)
+        self.ax6 = self.ax5.twinx()
 
         # set style
         self._set_charts_style()
@@ -71,14 +75,18 @@ class RevenuePanel(ttk.Frame):
         """Set charts style"""
         self.style_helper.set_chart_style(self.fig, self.ax1, self.ax2)
         self.style_helper.set_chart_style(self.fig, self.ax3, self.ax4)
+        self.style_helper.set_chart_style(self.fig, self.ax5, self.ax6)
 
         self.ax1.tick_params(axis='y', labelcolor='#599FDC')
         self.ax2.tick_params(axis='y', labelcolor='#E66D5F')
         self.ax3.tick_params(axis='y', labelcolor='#A94085')
         self.ax4.tick_params(axis='y', labelcolor='#E66D5F')
+        self.ax5.tick_params(axis='y', labelcolor='#4DB6AC')
+        self.ax6.tick_params(axis='y', labelcolor='#E66D5F')
 
         self._set_revenue_axes_style('Revenue', 'Price')
         self._set_yoy_axes_style('YoY (%)', 'Price')
+        self._set_ytd_yoy_axes_style('YTD YoY (%)', 'Price')
 
     def _set_revenue_axes_style(self, label1, label2):
         """Set axes style for revenue chart
@@ -119,6 +127,26 @@ class RevenuePanel(ttk.Frame):
 
         self.ax4.set_ylabel(label2, color='#E66D5F')
         self.ax4.yaxis.get_offset_text().set_color('#E66D5F')
+
+    def _set_ytd_yoy_axes_style(self, label1, label2):
+        """Set axes style for revenue YTD YoY chart
+
+        Args:
+            label1 (str): Label for the major y-axis
+            label2 (str): Label for the second y-axis
+        """
+        self.style_helper.set_axes_style(self.ax5, self.ax6, label1, label2)
+
+        # label beside axes
+        self.ax5.set_ylabel(label1, color='#4DB6AC')
+        # offset text of axes
+        self.ax5.yaxis.get_offset_text().set_color('#4DB6AC')
+
+        # ensure scientific notation is off and don't use offset text
+        # self.ax5.ticklabel_format(style='plain', axis='y', useOffset=False)
+
+        self.ax6.set_ylabel(label2, color='#E66D5F')
+        self.ax6.yaxis.get_offset_text().set_color('#E66D5F')
 
     def _create_table(self):
         """Create table
@@ -182,6 +210,9 @@ class RevenuePanel(ttk.Frame):
         self.ax3.clear()
         self.ax4.clear()
 
+        self.ax5.clear()
+        self.ax6.clear()
+
         # check data
         if df_plot is None or df_plot.empty:
             self.canvas.draw_idle()
@@ -192,6 +223,9 @@ class RevenuePanel(ttk.Frame):
 
         # plot revenue yoy chart
         self._plot_yoy_chart(df_plot)
+
+        # plot revenue ytd yoy chart
+        self._plot_ytd_yoy_chart(df_plot)
 
         # adjust layout
         self.fig.tight_layout()
@@ -324,6 +358,73 @@ class RevenuePanel(ttk.Frame):
 
             self.ax3.set_ylim(max(curr_min, -100), min(curr_max, 100))
 
+    def _plot_ytd_yoy_chart(self, df_plot):
+        """Plot revenue YTD YoY/price chart
+
+        Args:
+            df_plot (pd.DataFrame): Data for ploting
+        """
+        # Reapply styling that were reset by ax.clear()
+        self._set_ytd_yoy_axes_style('YTD YoY (%)', 'Price')
+
+        # x-axis indices (categorical 0, 1, 2...)
+        x_indices = range(len(df_plot))
+
+        # plot revenue YTD YoY bars (on main y-axis)
+        if 'revenue_ytd_yoy' in df_plot.columns:
+            self.ax5.bar(
+                x_indices,
+                df_plot['revenue_ytd_yoy'],
+                color='#4DB6AC',
+                width=0.6,
+                label='YTD YoY (%)',
+            )
+
+        # plot revenue YTD YoY MA3 line (on main y-axis)
+        if 'revenue_ytd_yoy_ma3' in df_plot.columns:
+            self.ax5.plot(
+                x_indices,
+                df_plot['revenue_ytd_yoy_ma3'],
+                color='#FBC470',
+                alpha=0.8,
+                linewidth=2,
+                label='MA3',
+            )
+
+        # plot revenue YTD YoY MA12 line (on main y-axis)
+        if 'revenue_ytd_yoy_ma12' in df_plot.columns:
+            self.ax5.plot(
+                x_indices,
+                df_plot['revenue_ytd_yoy_ma12'],
+                color='#66BB6A',
+                alpha=0.8,
+                linewidth=2,
+                label='MA12',
+            )
+
+        # plot monthly price line (on secondary y-axis)
+        if 'price' in df_plot.columns:
+            self.ax6.plot(
+                x_indices,
+                df_plot['price'],
+                color='#E66D5F',
+                linewidth=2,
+                label='Price',
+            )
+
+        # format x-axis ticks
+        self._format_x_ticks(self.ax5, df_plot.get('year_month', []))
+
+        # legends
+        self._apply_legend(self.ax5, 'left')
+        self._apply_legend(self.ax6, 'right')
+
+        # apply constraints if enabled
+        if getattr(self, '_ax5_constrained', False):
+            curr_min, curr_max = self.ax5.get_ylim()
+
+            self.ax5.set_ylim(max(curr_min, -100), min(curr_max, 100))
+
     def _format_x_ticks(self, ax, series, num_max_ticks=6):
         """Format x-axis ticks and labels with step size
 
@@ -364,7 +465,19 @@ class RevenuePanel(ttk.Frame):
                 self.ax3.relim()
                 self.ax3.autoscale_view(scalex=False, scaley=True)
 
-            self.canvas.draw_idle()
+        elif event.inaxes in [self.ax5, self.ax6]:
+            self._ax5_constrained = not getattr(self, '_ax5_constrained', False)
+
+            if self._ax5_constrained:
+                curr_min, curr_max = self.ax5.get_ylim()
+
+                self.ax5.set_ylim(max(curr_min, -100), min(curr_max, 100))
+            else:
+                self.ax5.autoscale(enable=True, axis='y')
+                self.ax5.relim()
+                self.ax5.autoscale_view(scalex=False, scaley=True)
+
+        self.canvas.draw_idle()
 
     def _apply_legend(self, ax, side='left'):
         """Apply legend to specified axis and side
