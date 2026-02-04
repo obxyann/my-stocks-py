@@ -389,10 +389,10 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
 # R03: N 個月平均累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
 def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_df=None):
-    """Get stocks with consecutive growth in accumulated (YTD) revenue YOY
+    """Get stocks with consecutive growth in accumulated (YTD) revenue YoY
     moving average
 
-    Find stocks whose N-month accumulated (YTD) revenue YOY moving average
+    Find stocks whose N-month accumulated (YTD) revenue YoY moving average
     increases month over month for M consecutive months.
 
     Args:

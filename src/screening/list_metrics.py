@@ -162,11 +162,12 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# 近 N 季營業利益率(opr_margin)最小/最大 ＞ P%
+# R09: 近 N 季營業利益率(opr_margin)最小/最大 ＞ P%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):
-    """Get stocks with (Min Opr Margin / Max Opr Margin) over threshold
+    """Get stocks with (min operating margin/max operating margin) over
+    threshold
 
     This metric is often used to assess the stability of margin.
     A ratio close to 100% indicates very stable margins.
@@ -253,11 +254,14 @@ def list_opr_margin_min_max_ratio_above(
     return result_df
 
 
-# 近 N 季營業利益率(opr_margin)為近 M 季最大
+# R01a: 近 N 季營業利益率(opr_margin)為近 M 季最大
 def list_opr_margin_is_max(
     db, recent_n_quarters=1, lookback_m_quarters=4, input_df=None
 ):
-    """Get stocks with recent opr margin is the max
+    """Get stocks with recent operating margin is the max
+
+    Find stocks whose operating margin over the last N quarters exceeds the
+    maximum operating margin observed in the past M quarters.
 
     Args:
         db (StockDatabase): Database instance
@@ -348,13 +352,13 @@ def list_opr_margin_is_max(
     return result_df
 
 
-# R09: 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
+# R10: 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
 def list_opr_margin_qoq_growth(
     db, recent_n_quarters=4, cont_m_quarters=3, input_df=None
 ):
-    """Get stocks with with consecutive growth in opr margin QoQ
+    """Get stocks with with consecutive growth in operating margin QoQ
 
-    Find stocks whose N-month opr margin QoQ
+    Find stocks whose N-month operating margin QoQ
     increases quarter over quarter for M consecutive quarters.
 
     Args:
@@ -432,13 +436,13 @@ def list_opr_margin_qoq_growth(
     return result_df
 
 
-# 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
+# R10: 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
 def list_opr_margin_yoy_growth(
     db, recent_n_quarters=4, cont_m_quarters=3, input_df=None
 ):
-    """Get stocks with with consecutive growth in opr margin YoY
+    """Get stocks with with consecutive growth in operating margin YoY
 
-    Find stocks whose N-month opr margin YoY
+    Find stocks whose N-month operating margin YoY
     increases quarter over quarter for M consecutive quarters.
 
     Args:
