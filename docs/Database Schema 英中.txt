@@ -1,0 +1,245 @@
+# Database Schema Documentation
+
+## Overview
+This database stores financial and market-related data used by the stock analysis system.
+
+- Database: SQLite
+- Charset: UTF-8
+- Timezone: UTC+8
+
+---
+
+## Naming Conventions
+- Table names: 'snake_case'
+- Column names: 'snake_case'
+- Boolean fields: 'is_', 'has_' prefix
+- Date fields: '_date', '_at'
+- Short naming rules for columns
+
+Short   | Description
+--------|------------
+1y      | 1 year
+accts   | accounts
+annual  | annual / annualized
+curr    | current
+div     | dividend
+divs    | dividends
+equivs  | equivalents
+fin     | financing / financial
+inv     | investing
+liabs   | liabilities
+lt      | long-term
+ly      | lasy year
+mon     | Month-over-Month (MoM) Growth
+opr     | operating
+outstd  | outstanding
+pay     | payable
+receiv  | receivable
+st      | short-term
+turn    | turnover
+yoy     | Year-over-Year (YoY) Growth
+ytd     | Year-to-Date (YTD)
+
+---
+
+## Table: 'stocks'
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)                       | 股票(證券)代碼
+name                    | Name                                      | 名字
+market                  | Market: 'tse','otc'                       | 交易市場
+industry                | Industry                                  | 產業別
+security_type           | Security Type: 'stk','etf','etn','tdr'    | 證券類別
+business_type           | Business Type: 'basi', 'bd', 'ci', 'fh', 'ins', 'mim' | 業務類別
+
+    // market
+    'tse'   Taiwan Stock Exchange                   台灣證券交易所 - 上市 (Listed)
+    'otc'   Over-The-Counter / Taipei Exchange      櫃檯買賣中心 - 上櫃
+
+    // security_type
+    'stk'   Stock                                   股票
+    'etf'   Exchange Traded Fund                    指數股票型基金
+    'etn'   Exchange Traded Note                    指數投資證券
+    'tdr'   Taiwan Depositary Receipt               台灣存託憑證
+
+    // business_type
+    'basi'  Banking and Savings Institutions        金融業 (包含信合社、儲蓄機構)
+    'bd'    Brokers and Dealers                     證券期貨業
+    'ci'    Commercial and Industrial               一般業 (製造、零售、服務業)
+    'fh'    Financial Holding Companies             金控業 (金融控股)
+    'ins'   Insurance                               保險業
+    'mim'   Multiple Industrial and Manufacturing   異業 (跨產業型態)
+
+
+## Table: 'daily_prices'
+
+Daily stock price data.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+date                    | Trading Date ('YYYY-MM-DD')
+--                      | *(separator)*
+open_price              | Opening Price
+high_price              | Highest Price
+low_price               | Lowest Price
+close_price             | Closing Price
+volume                  | Trading Volume
+
+
+## Table: 'monthly_revenue'
+
+Monthly revenue data per company.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)
+year                    | Revenue Year
+month                   | Revenue Month
+revenue                 | Revenue
+note                    | Note
+--                      | *(separator)*
+revenue_ly              | Revenue Same Period Last Year
+revenue_ytd             | Revenue Year-to-Date (YTD)
+revenue_ytd_ly          | Revenue Year-to-Date (YTD) Same Period Last Year
+revenue_mom             | Revenue MoM Growth
+revenue_yoy             | Revenue YoY Growth
+revenue_ytd_yoy         | Revenue Year-to-Date (YTD) YoY Growth
+
+NOTE: all XX Growth are in decimal (e.g. 0.05 for 5%)
+
+## Table: 'financial_core', 'financial_ytd'
+
+'financial_core' stores Quarter-to-Date financial statement data.
+
+NOTE: QTD data is not available when a company has only released half-year or annual reports.
+
+'financial_ytd' stores Year-to-Date financial statement data.
+
+NOTE: YTD data is not guaranteed to exist for every quarter.
+      For half-year-only disclosures, YTD data is stored in Q2 and Q4 and
+      for annual-only disclosures, YTD data is stored in Q4 only.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)                       | 股票(證券)代碼
+year                    | Fiscal Year                               | 年度
+quarter                 | Fiscal Quarter                            | 季度
+--                      | *(balance)*
+curr_assets             | Current Assets                            | 流動資產
+non_curr_assets         | Non-current Assets                        | 非流動資產
+total_assets            | Total Assets                              | 資產總計
+curr_liabs              | Current Liabilities                       | 流動負債
+non_curr_liabs          | Non-current Liabilities                   | 非流動負債
+total_liabs             | Total Liabilities                         | 負債總計
+total_equity            | Total Equity (Stockholders' Equity)       | 權益總計
+book_value              | Book Value Per Share                      | 每股淨值
+--                      | *(balance details - for calculating metrics)*
+accts_receiv            | Accounts Receivable, A/R                  | !應收帳款           <- 流動資產 > 應收帳款淨額
+notes_receiv            | Notes Receivable                          | !應收票據           <- 流動資產 > 應收票據淨額
+accts_notes_receiv      | Accounts and Notes Receivable             | =應收帳款及票據     = 應收帳款淨額 + 應收票據淨額
+inventory               | Inventory                                 | !存貨               <- 流動資產 > 存貨
+prepaid                 | Prepaid Expenses (Prepayments)            | !預付款項           <- 流動資產 > 預付款項
+accts_pay               | Accounts Payable, A/P                     | !應付帳款           <- 流動負債 > 應付帳款
+notes_pay               | Notes Payable                             | !應付票據           <- 流動負債 > 應付短期票券
+accts_notes_pay         | Accounts and Notes Payable                | =應付帳款及票據     = 應付帳款 + 應付短期票券
+st_loans                | Short-term Loans                          | !短期借款           <- 流動負債 > 短期借款
+lt_liabs_due_1y         | Current Portion of Long-term Liabilities  | !一年內到期長期負債 <- 流動負債 > 一年或一營業週期內到期長期負債
+lt_loans                | Long-term Loans                           | !長期借款           <- 非流動負債 > 長期借款
+bonds_pay               | Bonds payable                             | 應付公司債          <- 非流動負債 > 應付公司債
+ret_earnings            | Retained Earnings                         | 保留盈餘            <- 歸屬於母公司業主之權益 > 保留盈餘
+--                      | *(income)*
+opr_revenue             | Operating Revenue                         | 營業收入
+opr_costs               | Operating Costs                           | 營業成本
+gross_profit            | Gross Profit                              | 營業毛利
+opr_expenses            | Operating Expenses                        | 營業費用
+opr_profit              | Operating Profit (Operating Income)       | 營業利益
+non_opr_income          | Non-operating Income (and Expenses)       | 營業外收入及支出
+pre_tax_income          | Pre-tax Income (Earnings Before Tax, EBT) | 稅前淨利
+income_tax              | Income Tax Expense                        | 所得稅費用
+net_income              | (After-tax) Net Income, NI                | 稅後淨利            <= 本期淨利
+eps                     | Earnings Per Share, EPS                   | 每股盈餘
+--                      | *(cash)*
+opr_cash_flow           | Operating Cash Flow, OCF                  | 營業現金流          <= 營業活動之淨現金流入
+inv_cash_flow           | Investing Cash Flow, ICF                  | 投資現金流          <= 投資活動之淨現金流入
+fin_cash_flow           | Financing Cash Flow, CFC                  | 籌資現金流          <= 籌資活動之淨現金流入
+cash_equivs             | Cash and Cash Equivalents                 | 現金及約當現金      <= 期末現金及約當現金
+divs_paid               | Dividends Paid                            | !配發股利           <- 籌資活動之現金流量 > 發放現金股利
+
+
+## Table: 'financial_metrics'
+
+Financial metrics calculated from financial statements.
+
+NOTE: Values may be null if related financial data is not available.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)                       | 股票(證券)代碼
+year                    | Fiscal Year                               | 年度
+quarter                 | Fiscal Quarter                            | 季度
+--                      | *(efficiency)*
+free_cash_flow          | Free Cash Flow, FCF                       | 自由現金流
+days_inventory_outstd   | Days Inventory Outstanding, DIO           | 存貨銷售天數 (存貨周轉天數)
+days_sales_outstd       | Days Sales Outstanding, DSO               | 應收帳款收現天數 (應收帳款周轉天數)
+days_pay_outstd         | Days Payable Outstanding, DPO             | 應付帳款付現天數 (應付帳款周轉天數)
+ccc                     | Cash Conversion Cycle, CCC                | 現金轉換循環 (現金循環週期)
+--                      | *(financial position)*
+curr_ratio              | Current Ratio                             | 流動比率
+quick_ratio             | Quick Ratio                               | 速動比率
+debt_ratio              | Debt Ratio                                | 負債比率
+fin_debt_ratio          | Financial Debt Ratio                      | 金融負債比率
+core_profit_ratio       | Core Profit Ratio                         | 本業比
+asset_turn_ratio        | Asset Turnover Ratio                      | 資產週轉率
+--                      | *(profitability)*
+gross_margin            | Gross Profit Margin                       | 毛利率
+opr_margin              | Operating Profit Margin                   | 營業利益率
+pre_tax_margin          | Pre-tax Profit Margin                     | 稅前純益率
+net_margin              | (After-tax) Net Profit Margin             | 稅後純益率
+roa                     | Return on Assets, ROA                     | 資產報酬率
+roe                     | Return on Equity, ROE                     | 股東權益報酬率
+annual_roa              | Annualized ROA                            | 年化 ROA
+annual_roe              | Annualized ROE                            | 年化 ROE
+rore                    | Return on Retained Earnings               | 保留盈餘報酬率
+--                      | *(growth)*
+eps_qoq                 | (-) EPS QoQ Growth                        | ? EPS 季增率
+eps_yoy                 | EPS YoY Growth                            | EPS 年增率
+net_income_qoq          | (-) (After-tax) Net Income QoQ Growth     | ? 稅後淨利季增率
+net_income_yoy          | (After-tax) Net Income YoY Growth         | 稅後淨利年增率
+opr_cash_flow_qoq       | (-) Operating Cash Flow QoQ Growth        | ? 營業現金流季增率
+opr_cash_flow_yoy       | Operating Cash Flow YoY Growth            | 營業現金流年增率
+gross_margin_qoq        | Gross Profit Margin QoQ Growth            | 毛利率季增率
+gross_margin_yoy        | Gross Profit Margin YoY Growth            | 毛利率年增率
+opr_margin_qoq          | Operating Profit Margin QoQ Growth        | 營業利益率季增率
+opr_margin_yoy          | Operating Profit Margin YoY Growth        | 營業利益率年增率
+net_margin_qoq          | Net Profit Margin QoQ Growth              | 稅後純益率季增率
+net_margin_yoy          | Net Profit Margin YoY Growth              | 稅後純益率年增率
+roe_qoq                 | ROE QoQ Growth                            | ROE 季增率
+roe_yoy                 | (-) ROE YoY Growth                        | ? ROE 年增率
+--                      | *(price indicators)*
+pe_ratio                | Price-to-Earnings Ratio, P/E Ratio, PER   | 本益比
+pb_ratio                | Price-Book Ratio, P/B Ratio, PBR          | 股價淨值比
+div_yield               | Dividend Yield                            | 殖利率
+annual_payout_ratio     | Annual Payout Ratio, DPR                  | 年配息率
+irr                     | Internal Rate of Return, IRR              | 內部報酬率
+
+
+NOTE: 1. all XX Growth are in decimal (e.g. 0.05 for 5%)
+      2. all XX Margin are in decimal (e.g. 0.05 for 5%)
+      3. all XX Ratio are in decimal (e.g. 0.05 for 5%)
+         but some are not displayed as percentage typically
+         (e.g. P/E Ratio, P/B Ratio, PBR, ...)
+      4. ROA, ROE and their annualized are in decimal (e.g. 0.05 for 5%)
+ 
+## Table: 'dividends'
+
+Dividends paid by a company.
+
+Column Name             | Description
+------------------------|------------
+code                    | Stock Code (Symbol)                       | 股票(證券)代碼
+ex_div_date             | Ex-Dividend Date ('YYYY-MM-DD')           | 除息日
+--                      | *(separator)*
+cash_div                | Cash Dividend                             | 現金股利
+stock_div               | Stock Dividend                            | 股票股利

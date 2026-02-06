@@ -1,16 +1,18 @@
 # Screening Rules Documentation
 
-## R1. Threshold (門檻判斷)
+## R1. Aggregation (聚合)
 ---
 核心語意：
 
-  數據是否超過(或低於)門檻
+  數據經過聚合運算後是否超過(或低於)門檻
+
+  注意：是經過運算(變成單一個數值)後比較，而不是每期比較
 
 通用(母)規則：
 
-  在指定期間 N 內，對 XXX 做聚合(變成一個值)後，與門檻 T 比較
+  在指定期間 N 內，對 XXX 做聚合後，與門檻 T 比較
 
-  P.S. 聚合方式 aggregation = latest / avg / min / max / sum / ...
+  P.S. 聚合方式 aggregation = latest / avg / min / max / ...
 
 涵蓋子規則：
 
@@ -20,34 +22,36 @@
     最新一期 XXX < T              (aka N=1)
   - 近 N 期 XXX 最小/最大 > T     (P.S. 最小 ÷ 最大 or 最少 ÷ 最多)
 
-  NOTE: 以下可等同 R3. 連續行為: 門檻  (當近 N 期...連續 N 期)
+  NOTE: 以下 '最小 > T' 或 '最大 > T' 可等同 R3. 連續行為: 門檻
 
   - 近 N 期 XXX 最小 > T          (or 最少)
-    近 N 期 XXX 全部, 連續 > T
+    (同義)
+    近 N 期 XXX 全部, 連續 > T    (= R3: 近 N 期 XXX 連續 N 期 > T)
     近 N 期 XXX > T
-    XXX 連續 N 期 > T             (= 近 N 期 XXX 連續 N 期 > T)
+    XXX 連續 N 期 > T             
   - 近 N 期 XXX 最大 < T          (or 最多)
-    近 N 期 XXX 全部, 連續 < T
+    (同義)
+    近 N 期 XXX 全部, 連續 < T    (= R3: 近 N 期 XXX 連續 N 期 < T)
     近 N 期 XXX < T
-    XXX 連續 N 期 < T             (= 近 N 期 XXX 連續 N 期 < T)
+    XXX 連續 N 期 < T            
 
 命名模板：
 
-  check_{metric}_{aggregation}_threshold
+  `check_{metric}_{aggregation}_threshold`
 
   ex:
     - 最新一期 XXX > T
-      check_xxx_latest_threshold
+      `check_xxx_latest_threshold`
     - 近 N 期 XXX 平均 > T
-      check_xxx_avg_threshold
+      `check_xxx_avg_threshold`
 
 通用規則使用欄位：
 
   metric
-  transform (optional)
-  aggregation
-  window (optional)
-  condition (>, <, ...)
+  transform   (optional)
+  aggregation (avg, min, max, ...)
+  window      (optional)
+  condition   (>, <, ...)
 
   ex:
     近 3 期「營收年增率」平均 ＞ 10%
@@ -62,7 +66,7 @@
     }
 
 
-## R2. Trend / Change (趨勢或變化)
+## R2. Trend (趨勢)
 ---
 核心語意：
 
@@ -70,7 +74,7 @@
 
 通用(母)規則：
 
-  在指定期間 N 內，XXX 是否呈現成長 / 衰退 / 轉正，或變動幅度是否達標
+  在指定期間 N 內，XXX 是否呈現成長 / 衰退 / 轉正
 
   P.S. XXX 基本都是指 XXX MoM/QoQ/YoY
 
@@ -79,48 +83,51 @@
   NOTE: 以下可等同 R3. 連續行為: 成長 / 衰退  (當近 N 期...連續 N 期)
 
   - 近 N 期 XXX 成長 > T          (每期成長幅度)
-    XXX 連續 N 期成長 > T         (= 近 N 期 XXX 連續 N 期成長 > T)
+    最新一期 XXX 成長 > T         (aka N=1)
     近 N 期 XXX 成長              (aka T=0)
+          
+    XXX 連續 N 期成長 > T         (= 近 N 期 XXX 連續 N 期成長 > T)
     XXX 連續 N 期成長             (aka T=0)
   - 近 N 期 XXX 衰退 < T          (限制負向變動)
+
     XXX 連續 N 期衰退 < T         (= 近 N 期 XXX 連續 N 期衰退 < T)
 
   - 近 N 期 XXX 由負轉正          (轉折點)
 
-  TODO: XXX 先做 MA 化
+  XXX 先做轉換
 
   - M-MA XXX 成長幅度 > T         (量化方向)
-    最新一期 MA XXX 成長幅度 > T
+    最新一期 M-MA XXX 成長幅度 > T
 
 命名模板：
 
-  check_{metric}_trend
+  `check_{metric}_trend`
 
   ex:
     - 近 N 期 XXX 成長
-      check_xxx_trend
+      `check_xxx_trend`
     - 近 N 期 XXX 由負轉正
-      check_xxx_turn_positive
+      `check_xxx_turn_positive`
     - M-MA XXX 成長幅度 > T
-      check_xxx_ma_growth_exceeds
+      `check_xxx_ma_growth_exceeds`
 
 通用規則使用欄位：
 
-    metric
-    transform
-    window
-    condition (growth / decline / turn_positive)
+  metric
+  transform
+  window
+  condition (growth / decline / turn_positive)
 
-    ex:
-      近 6 期「3-MA 營收 成長
+  ex:
+    「12-MA 營收」成長幅度 > 3%
 
-      {
-        "rule_type": "R2",
-        "metric": "revenue",
-        "transform": { "type": "ma", "window": 3 },
-        "window": 6,
-        "condition": { "type": "growth" }
-      }
+    {
+      "rule_type": "R2",
+      "metric": "revenue",
+      "transform": { "type": "ma", "window": 3 },
+      "window": 1,
+      "condition": { "type": "growth", "threshold": 3}
+    }
 
 
 ## R3. Consistency (連續性)
@@ -160,36 +167,36 @@
     XXX 連續 N 期成長             (其實就是 T = 0 + 連續成長期數 M = N)
   - 近 N 期 XXX 無連續 M 期衰退   (容錯型成長，雖然有跌，但很快就漲回來)
     近 N 期 XXX 連續衰退 < M 期
-    XXX 連續 N 期成長             (其實就是連續衰退期數 M = 0)
+    XXX 連續 N 期成長             (其實就是衰退期數 M = 0)
 
-  - 近 N 期 XXX 連續 M 期衰退
-    近 N 期 XXX 連續衰退 >= M 期
-    XXX 連續 N 期縮短             (or 衰退, 其實就是連續衰退期數 M = N)
-  - 近 N 期 XXX 無連續 M 期成長   (死貓跳，雖然有漲，但很快就跌回來)
-    近 N 期 XXX 連續成長 < M 期
-    XXX 連續 N 期縮短             (or 衰退, 其實就是連續成長期數 M = 0)
+  連續行為: 減少 / 增加  (P.S. 減少是好事時)
 
+  - 近 N 期 XXX 連續 M 期減少     (or 縮短)
+    近 N 期 XXX 連續減少 >= M 期
+    XXX 連續 N 期減少             (其實就是連續減少期數 M = N)
+  - 近 N 期 XXX 無連續 M 期增加   (容錯型減少，雖然有增，但很快就減回來)
+    近 N 期 XXX 連續增加 < M 期
+    XXX 連續 N 期減少             (其實就是增加期數 M = 0)
 
-
-  TODO: XXX 先做 MA 化
+  XXX 先做轉換
 
   - ...
     ...
     M-MA XXX 連續 N 期成長        (量化成長)
   - ...
-    M-MA XXX 連續成長 < N 期      (這是一個限制型規則，常見於尋找成長末端或初段)
+    M-MA XXX 連續成長 < N 期      (這是一個限制型規則，用在常見於尋找成長初段或排除末段)
 
 命名模板：
 
-  check_{metric}_consecutive_{condition}_n
+  `check_{metric}_consecutive_{condition}_n`
 
   ex:
   - XXX 連續 N 期成長
-    check_xxx_consecutive_growth_n
+    `check_xxx_consecutive_growth_n`
   - XXX 連續 N 期 > T
-    check_xxx_consecutive_above_threshold_n
+    `check_xxx_consecutive_above_threshold_n`
   - M-MA XXX 連續成長 < M 期
-    check_xxx_ma_m_consecutive_growth_below_n
+    `check_xxx_ma_m_consecutive_growth_below_n`
 
 通用規則使用欄位：
 
@@ -199,7 +206,7 @@
   consecutive_n
 
   ex:
-    M-MA 營收 連續 3 期成長
+    3-MA「營收」連續 3 期成長
 
     {
       "rule_type": "R3",
@@ -220,7 +227,7 @@
 
   在指定期間 N 內，XXX 是否為最近 M 期內的極值 (max / min)
 
-  P.S. M <= N
+  P.S. M >= N
 
 涵蓋子規則：
 
@@ -230,17 +237,13 @@
 
 命名模板：
 
-  check_{metric}_extremum_{type}_{window}
-
-    metric          // XXX
-    recent_window   // N period
-    compare_window  // M (optional)
+  `check_{metric}_extremum_{type}_{window}`
 
   ex:
     - XXX 創近 N 期新高
-      check_xxx_extremum_max
+      `check_xxx_extremum_max`
     - 近 N 期 XXX 為近 M 期最大
-      check_xxx_extremum_max
+      `check_xxx_extremum_max`
 
 通用規則使用欄位：
 
@@ -249,16 +252,16 @@
   extremum  (type + window)
 
   ex:
-    營收 創近 12 期新高
+    「營收 創近 12 期新高
 
-  {
-    "rule_type": "R4",
-    "metric": "revenue",
-    "extremum": {
-      "type": "max",
-      "window": 12
+    {
+      "rule_type": "R4",
+      "metric": "revenue",
+      "extremum": {
+        "type": "max",
+        "window": 12
+      }
     }
-  }
 
 
 ## R5. Relative Comparison (相對比較 / 差值 / 比例)
@@ -281,14 +284,7 @@
 
 命名模板：
 
-  check_{metric}_relative_{mode}
-
-    metric            // XXX
-    recent_window     // N period
-    aggregation       // latest, avg, min, max
-    condition         // >, <, >=, <=
-    reference_metric  // YYY
-    reference_type    // avg, latest, ratio, diff
+  `check_{metric}_relative_{mode}``
 
   ex:
   - 近 N 期 XXX > 近 M 期平均 XXX
@@ -304,7 +300,7 @@
   condition (>, ratio)
 
   ex:
-    近 3 期 營收 ＞ 近 12 期 平均營收
+    近 3 期「營收 ＞ 近 12 期 平均營收
 
     {
       "rule_type": "R5",
@@ -330,42 +326,56 @@
 
 涵蓋子規則：
 
-  - XXX 長短期差 > T              (乖離率概念)
-  - 近 N 期內 XXX 長短期黃金交叉  (動態相交)
+  - XXX 長短期 MA 差 > T              (乖離率概念)
+  - 近 N 期內 XXX 長短期 MA 黃金交叉  (動態相交)
 
 命名模板：
 
-  check_{metric}_{signal_type}
-
-    metric            // XXX
-    recent_window     // N period
-    condition         // >, <, >=, <=
-    threshold         // T (optional)
+  `check_{metric}_{signal_type}`
 
   ex:
-   - XXX 長短期差 ＞ T
-    check_xxx_long_short_diff_exceeds
-  - 長短期黃金交叉
-    check_xxx_golden_cross
+  - XXX 長短期 MA 差 ＞ T
+    `check_xxx_long_short_diff_exceeds`
+  - 長短期 MA 黃金交叉
+    `check_xxx_golden_cross`
 
 通用規則使用欄位：
 
   metric
   transform (optional)
-  extra (放 pattern 參數)
+  window    (optional)
+  condition (optional)
+  extra     (放 pattern 參數)
 
   ex:
-    營收 MA 黃金交叉
+    1. 「月營收年增率」長短期 MA 差 ＞ 8%
 
-  {
-    "rule_type": "R6",
-    "metric": "revenue",
-    "extra": {
-      "pattern": "ma_crossover",
-      "short_window": 3,
-      "long_window": 12
+    {
+      "rule_type": "R6",
+      "metric": "revenue yoy",
+      "condition": {
+        "type": ">",
+        "threshold": 0.08
+      },      
+      "extra": {
+        "pattern": "ma_diff",
+        "short_window": 3,
+        "long_window": 12
+      }
     }
-  }
+
+    2. 近 6 個月內「月營收年增率」長短期 MA 黃金交叉
+
+    {
+      "rule_type": "R6",
+      "metric": "revenue yoy",
+      "window": 6,
+      "extra": {
+        "pattern": "ma_crossover",
+        "short_window": 3,
+        "long_window": 12
+      }
+    }
 
 
 ## TODO: 待處理規則
@@ -378,37 +388,37 @@
 
 ## 通用規則架構 (Common Rule Schema)
 ---
-Rule {
-  "rule_type": "R1 | R2 | R3 | R4 | R5 | R6",
-  "metric": "XXX",
-  "transform": {
-    "type": "ma | ema | yoy | qoq | diff | none",
-    "window": N
-  },
-  "aggregation": "latest | avg | min | max | sum | count",
-  "window": N,
-  "condition": {
-    "type": "> | < | >= | <= | growth | decline | turn_positive | crossover",
-    "threshold": T
-  },
-  "consecutive_n": N,
-  "reference": {
-    "metric": "YYY",
-    "transform": { ... },
-    "aggregation": "...",
-    "window": N,
-    "mode": "diff | ratio | compare",
-    "threshold": T
-  },
-  "extremum": {
-    "type": "max | min",
-    "window": M
-  },
-  "extra": { }
-}
+    Rule {
+      "rule_type": "R1 | R2 | R3 | R4 | R5 | R6",
+      "metric": "XXX",
+      "transform": {
+        "type": "ma | ema | yoy | qoq | diff | none",
+        "window": N
+      },
+      "aggregation": "latest | avg | min | max | sum | count",
+      "window": N,
+      "condition": {
+        "type": "> | < | >= | <= | growth | decline | turn_positive | crossover",
+        "threshold": T
+      },
+      "consecutive_n": N,
+      "reference": {
+        "metric": "YYY",
+        "transform": { ... },
+        "aggregation": "...",
+        "window": N,
+        "mode": "diff | ratio | compare",
+        "threshold": T
+      },
+      "extremum": {
+        "type": "max | min",
+        "window": M
+      },
+      "extra": { }
+    }
 
 ## Engine Pipeline:
---
+---
 raw series
   ↓
 transform (ma / yoy / diff ...)
