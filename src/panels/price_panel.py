@@ -217,10 +217,12 @@ class PricePanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
-        self.show_volume = True
-
         # for setting styles
         self.style_helper = style_helper
+
+        # data
+        self.df = None
+        self.show_volume = True
 
         # drag/zoom state
         self.drag_mode = None  # 'pan', 'scale_x' or 'scale_y'
@@ -359,6 +361,9 @@ class PricePanel(ttk.Frame):
             self.drag_mode = 'scale_y'
             self.drag_start = (event.x, event.y)
             self.drag_ylim = self.ax.get_ylim()
+
+            if event.dblclick:
+                self._auto_scale_price()
             return
 
         # check for Scale Y Vol (left of volume axes)
@@ -370,6 +375,9 @@ class PricePanel(ttk.Frame):
                 self.drag_mode = 'scale_y_vol'
                 self.drag_start = (event.x, event.y)
                 self.drag_ylim_vol = self.ax_vol.get_ylim()
+
+                if event.dblclick:
+                    self._auto_scale_vol()
                 return
 
         # check for Scale X (below axes)
@@ -377,6 +385,63 @@ class PricePanel(ttk.Frame):
             self.drag_mode = 'scale_x'
             self.drag_start = (event.x, event.y)
             self.drag_xlim = self.ax.get_xlim()
+
+    def _auto_scale_price(self):
+        """Auto-scale price axis based on visible data"""
+        if self.df is None or self.df.empty:
+            return
+
+        # get visible range from price axis
+        x_min, x_max = self.ax.get_xlim()
+        total_len = len(self.df)
+
+        # convert x-axis limits (float indices) to dataframe integer indices
+        idx_start = max(0, int(round(x_min + 0.5)))
+        idx_end = min(total_len, int(round(x_max + 0.5)))
+
+        if idx_start >= idx_end:
+            return
+
+        visible_df = self.df.iloc[idx_start:idx_end]
+
+        min_p = visible_df['Low'].min()
+        max_p = visible_df['High'].max()
+
+        if not pd.isna(min_p) and not pd.isna(max_p):
+            padding = (max_p - min_p) * 0.05
+
+            if padding == 0:  # handle flat price or single data point
+                padding = max_p * 0.05 if max_p != 0 else 1.0
+
+            self.ax.set_ylim(min_p - padding, max_p + padding)
+
+            self.canvas.draw_idle()
+
+    def _auto_scale_vol(self):
+        """Auto-scale volume axis based on visible data"""
+        if self.df is None or self.df.empty or not self.ax_vol:
+            return
+
+        # get visible range from price axis
+        x_min, x_max = self.ax.get_xlim()
+        total_len = len(self.df)
+
+        idx_start = max(0, int(round(x_min + 0.5)))
+        idx_end = min(total_len, int(round(x_max + 0.5)))
+
+        if idx_start >= idx_end:
+            return
+
+        visible_df = self.df.iloc[idx_start:idx_end]
+
+        max_v = visible_df['Volume'].max()
+
+        if not pd.isna(max_v) and max_v > 0:
+            self.ax_vol.set_ylim(0, max_v * 1.1)
+        else:
+            self.ax_vol.set_ylim(0, 1)  # default range if no volume data
+
+        self.canvas.draw_idle()
 
     def _on_drag_move(self, event):
         """Handle mouse drag move
@@ -532,6 +597,8 @@ class PricePanel(ttk.Frame):
         Args:
             df (pd.DataFrame): Price (OHLC) and volume data
         """
+        self.df = df
+
         # clear existing plot
         self.ax.clear()
         self.ax_vol and self.ax_vol.clear()
@@ -583,36 +650,17 @@ class PricePanel(ttk.Frame):
         self.ax_vol and self.ax_vol.xaxis.set_major_locator(locator)
         self.ax_vol and self.ax_vol.xaxis.set_major_formatter(formatter)
 
-        # set initial view (default to last 100 candles) and auto-scale Y
-        initial_zoom = 100
+        # set initial view
+        initial_zoom = 100  # default to last 100 candles
         total_len = len(df)
         view_size = min(total_len, initial_zoom)
 
-        # set x-axis range
+        # set x-axis range based on the initial view
         self.ax.set_xlim(total_len - view_size - 0.5, total_len - 0.5)
 
-        # calculate limits based on visible data
-        visible_df = df.iloc[-view_size:]
-
-        # 1. price Y-axis scaling
-        min_p = visible_df['Low'].min()
-        max_p = visible_df['High'].max()
-
-        if not pd.isna(min_p) and not pd.isna(max_p):
-            padding = (max_p - min_p) * 0.05
-
-            if padding == 0:  # handle flat price or single data point
-                padding = max_p * 0.05 if max_p != 0 else 1.0
-            self.ax.set_ylim(min_p - padding, max_p + padding)
-
-        # 2. volume Y-axis scaling
-        if self.ax_vol:
-            max_v = visible_df['Volume'].max()
-
-            if not pd.isna(max_v) and max_v > 0:
-                self.ax_vol.set_ylim(0, max_v * 1.1)
-            else:
-                self.ax_vol.set_ylim(0, 1)  # default range if no volume data
+        # auto-scale axes based on the initial view
+        self._auto_scale_price()
+        self.ax_vol and self._auto_scale_vol()
 
         # NOTE: reapply styling that were reset by ax.clear()
         self._set_axes_style()
