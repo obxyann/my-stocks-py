@@ -227,6 +227,7 @@ class PricePanel(ttk.Frame):
         self.drag_start = None
         self.drag_xlim = None
         self.drag_ylim = None
+        self.drag_ylim_vol = None
         self.zoom_scale = 1.1
 
         # create control bar at top
@@ -360,6 +361,17 @@ class PricePanel(ttk.Frame):
             self.drag_ylim = self.ax.get_ylim()
             return
 
+        # check for Scale Y Vol (left of volume axes)
+        if self.ax_vol:
+            bbox_vol = self.ax_vol.bbox
+            if (event.x < bbox_vol.xmin) and (
+                bbox_vol.ymin <= event.y <= bbox_vol.ymax
+            ):
+                self.drag_mode = 'scale_y_vol'
+                self.drag_start = (event.x, event.y)
+                self.drag_ylim_vol = self.ax_vol.get_ylim()
+                return
+
         # check for Scale X (below axes)
         if (bbox.xmin <= event.x <= bbox.xmax) and (event.y < bbox.ymin):
             self.drag_mode = 'scale_x'
@@ -423,6 +435,24 @@ class PricePanel(ttk.Frame):
             new_ylim = (y_mid - new_range / 2, y_mid + new_range / 2)
 
             self.ax.set_ylim(new_ylim)
+
+            self.canvas.draw_idle()
+
+        elif self.drag_mode == 'scale_y_vol':
+            dy = event.y - self.drag_start[1]
+            bbox = self.ax_vol.bbox
+
+            # sensitivity: 4x zoom for full height drag
+            scale_factor = 4 ** (dy / bbox.height)
+
+            y_min, y_max = self.drag_ylim_vol
+            y_mid = (y_min + y_max) / 2
+            y_range = y_max - y_min
+
+            new_range = y_range / scale_factor
+            new_ylim = (y_mid - new_range / 2, y_mid + new_range / 2)
+
+            self.ax_vol.set_ylim(new_ylim)
 
             self.canvas.draw_idle()
 
