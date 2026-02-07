@@ -298,26 +298,11 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
 
     results = []
 
-    # determine strategy based on ma_n_months
-    if ma_n_months in (3, 12):
-        # use pre-calculated columns
-        use_precalc = True
-
-        col_name = f'revenue_ma{ma_n_months}'
-
-        # to check consecutive growth for M months
-        # we need M+1 data points
-        needed_points = cont_m_months + 1
-    else:
-        # calculate MA on the fly
-        use_precalc = False
-
-        col_name = None
-
-        # to calculate the first N-month MA, we need N data points
-        # we need additional M data points of MA to check for consecutive M growth
-        # so total data points needed = N + M
-        needed_points = ma_n_months + cont_m_months
+    # calculate MA on the fly
+    # to calculate the first N-month MA, we need N data points
+    # we need additional M data points of MA to check for consecutive M growth
+    # so total data points needed = N + M
+    needed_points = ma_n_months + cont_m_months
 
     for _, row in target_df.iterrows():
         code = row['code']
@@ -331,15 +316,12 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
             continue
 
         # get target MA values
-        if use_precalc:
-            values = df_rev[col_name]
-        else:
-            # calculate MA on the fly
-            # df_rev is sorted ascending by date
-            ma_series = df_rev['revenue'].rolling(window=ma_n_months).mean()
+        # calculate MA on the fly
+        # df_rev is sorted ascending by date
+        ma_series = df_rev['revenue'].rolling(window=ma_n_months).mean()
 
-            # we only need the last (cont_m_months + 1) valid MA values
-            values = ma_series.tail(cont_m_months + 1)
+        # we only need the last (cont_m_months + 1) valid MA values
+        values = ma_series.tail(cont_m_months + 1)
 
         # skip if not enough data
         if len(values) < cont_m_months + 1:
