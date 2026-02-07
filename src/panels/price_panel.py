@@ -446,11 +446,7 @@ class PricePanel(ttk.Frame):
             scale_factor = 4 ** (dy / bbox.height)
 
             y_min, y_max = self.drag_ylim_vol
-            y_mid = (y_min + y_max) / 2
-            y_range = y_max - y_min
-
-            new_range = y_range / scale_factor
-            new_ylim = (y_mid - new_range / 2, y_mid + new_range / 2)
+            new_ylim = (0, y_max / scale_factor)
 
             self.ax_vol.set_ylim(new_ylim)
 
@@ -572,6 +568,9 @@ class PricePanel(ttk.Frame):
                     diff = current_width - new_width
                     patch.set_width(new_width)
                     patch.set_x(patch.get_x() + diff / 2)
+
+            # ensure volume lower limit is always 0
+            self.ax_vol.set_ylim(bottom=0)
 
         # set custom locator and formatter
         # NOTE: df.index must be DatetimeIndex used in mpf.plot
