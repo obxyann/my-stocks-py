@@ -103,8 +103,8 @@ class StockApp(ttk.Frame):
         ax1.tick_params(axis='y', labelcolor='#FFFFFF')
 
         # spines of axes
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
+        ax1.spines['top'].set_color('#535353')  # .set_visible(False)
+        ax1.spines['right'].set_color('#535353')  # .set_visible(False)
 
         ax1.spines['bottom'].set_color('#535353')
         ax1.spines['left'].set_color('#535353')

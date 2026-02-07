@@ -266,7 +266,7 @@ class PricePanel(ttk.Frame):
 
         # create matplotlib figure
         if self.show_volume:
-            self.fig = Figure(figsize=(7.5, 4), dpi=100) # , constrained_layout=True)
+            self.fig = Figure(figsize=(7.5, 4), dpi=100)  # , constrained_layout=True)
             # with gridspec for price and volume subplots
             self.gs = self.fig.add_gridspec(2, 1, height_ratios=[4, 1])
             self.ax = self.fig.add_subplot(self.gs[0])
@@ -297,8 +297,8 @@ class PricePanel(ttk.Frame):
         """Set chart style"""
         # define custom market colors
         mc = mpf.make_marketcolors(
-            up='#CB4B16',
-            down='#0C8F4E',
+            up='#CC6666',
+            down='#75AB45',
             inherit=True,  # red for up, green for down
         )
 
@@ -319,7 +319,9 @@ class PricePanel(ttk.Frame):
         self.ax_vol and self.style_helper.set_axes_style(self.ax_vol, label1='Volume')
 
         self.ax.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
-        self.ax_vol and self.ax_vol.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
+        self.ax_vol and self.ax_vol.grid(
+            True, linestyle=':', alpha=0.2, color='#FFFFFF'
+        )
 
         # hide x-axis tick labels on price chart (only show on volume chart)
         self.ax.tick_params(axis='x', rotation=0, labelbottom=False)
