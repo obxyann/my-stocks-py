@@ -217,6 +217,8 @@ class PricePanel(ttk.Frame):
     def __init__(self, parent, style_helper):
         super().__init__(parent)
 
+        self.show_volume = True
+
         # for setting styles
         self.style_helper = style_helper
 
@@ -262,12 +264,17 @@ class PricePanel(ttk.Frame):
         # container for chart
         chart_frame = ttk.Frame(self)
 
-        # create matplotlib figure with constrained_layout for better compatibility
-        self.fig = Figure(figsize=(7.5, 4), dpi=100, constrained_layout=True)
-        # with gridspec for price and volume subplots
-        self.gs = self.fig.add_gridspec(2, 1, height_ratios=[4, 1])
-        self.ax = self.fig.add_subplot(self.gs[0])
-        self.ax_vol = self.fig.add_subplot(self.gs[1], sharex=self.ax)
+        # create matplotlib figure
+        if self.show_volume:
+            self.fig = Figure(figsize=(7.5, 4), dpi=100) # , constrained_layout=True)
+            # with gridspec for price and volume subplots
+            self.gs = self.fig.add_gridspec(2, 1, height_ratios=[4, 1])
+            self.ax = self.fig.add_subplot(self.gs[0])
+            self.ax_vol = self.fig.add_subplot(self.gs[1], sharex=self.ax)
+        else:
+            self.fig = Figure(figsize=(7.5, 4), dpi=100)
+            self.ax = self.fig.add_subplot(111)
+            self.ax_vol = None
 
         # set style
         self._set_chart_style()
@@ -282,8 +289,7 @@ class PricePanel(ttk.Frame):
         self._setup_events()
 
         # adjust layout
-        # self.fig.tight_layout()
-        # self.gs.tight_layout(self.fig)
+        self.fig.tight_layout()
 
         return chart_frame
 
@@ -303,21 +309,21 @@ class PricePanel(ttk.Frame):
         )
 
         self.style_helper.set_chart_style(self.fig, self.ax)
-        self.style_helper.set_chart_style(self.fig, self.ax_vol)
+        self.ax_vol and self.style_helper.set_chart_style(self.fig, self.ax_vol)
 
         self._set_axes_style()
 
     def _set_axes_style(self):
         """Set axes style"""
         self.style_helper.set_axes_style(self.ax, label1='Price')
-        self.style_helper.set_axes_style(self.ax_vol, label1='Volume')
+        self.ax_vol and self.style_helper.set_axes_style(self.ax_vol, label1='Volume')
 
         self.ax.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
-        self.ax_vol.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
+        self.ax_vol and self.ax_vol.grid(True, linestyle=':', alpha=0.2, color='#FFFFFF')
 
         # hide x-axis tick labels on price chart (only show on volume chart)
         self.ax.tick_params(axis='x', rotation=0, labelbottom=False)
-        self.ax_vol.tick_params(axis='x', rotation=0)
+        self.ax_vol and self.ax_vol.tick_params(axis='x', rotation=0)
 
     def _setup_events(self):
         """Setup pan and zoom events"""
@@ -499,7 +505,7 @@ class PricePanel(ttk.Frame):
         """
         # clear existing plot
         self.ax.clear()
-        self.ax_vol.clear()
+        self.ax_vol and self.ax_vol.clear()
 
         # check data
         if df is None or df.empty:
@@ -513,7 +519,7 @@ class PricePanel(ttk.Frame):
             type='candle',
             style=self.mpf_style,
             ax=self.ax,
-            volume=self.ax_vol,  # display volume on separate axes
+            volume=self.ax_vol or False,  # display volume on separate axes
             mav=(10, 20, 60),
             warn_too_much_data=len(df) + 1,  # disable waring
         )
@@ -526,8 +532,8 @@ class PricePanel(ttk.Frame):
         self.ax.xaxis.set_major_locator(locator)
         self.ax.xaxis.set_major_formatter(formatter)
 
-        self.ax_vol.xaxis.set_major_locator(locator)
-        self.ax_vol.xaxis.set_major_formatter(formatter)
+        self.ax_vol and self.ax_vol.xaxis.set_major_locator(locator)
+        self.ax_vol and self.ax_vol.xaxis.set_major_formatter(formatter)
 
         # set initial view to last 100 candles and auto-scale Y
         if len(df) > 100:
@@ -550,8 +556,7 @@ class PricePanel(ttk.Frame):
         self._set_axes_style()
 
         # adjust layout
-        # self.fig.tight_layout()
-        # self.gs.tight_layout(self.fig)
+        self.fig.tight_layout()
 
         self.canvas.draw_idle()
 
