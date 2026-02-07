@@ -306,6 +306,7 @@ class PricePanel(ttk.Frame):
         self.mpf_style = mpf.make_mpf_style(
             base_mpf_style='nightclouds',
             marketcolors=mc,
+            # rc={'patch.linewidth': 0},
         )
 
         self.style_helper.set_chart_style(self.fig, self.ax)
@@ -525,6 +526,22 @@ class PricePanel(ttk.Frame):
             mav=(10, 20, 60),
             warn_too_much_data=len(df) + 1,  # disable waring
         )
+
+        # manually adjust volume bar width and remove border
+        # this is more compatible with different mplfinance versions
+        if self.ax_vol:
+            for patch in self.ax_vol.patches:
+                # remove border
+                patch.set_linewidth(0)
+                patch.set_edgecolor('none')
+
+                # adjust width (shrink to 0.5 and center it)
+                current_width = patch.get_width()
+                new_width = 0.6
+                if current_width > new_width:
+                    diff = current_width - new_width
+                    patch.set_width(new_width)
+                    patch.set_x(patch.get_x() + diff / 2)
 
         # set custom locator and formatter
         # NOTE: df.index must be DatetimeIndex used in mpf.plot
