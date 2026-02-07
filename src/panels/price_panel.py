@@ -583,24 +583,38 @@ class PricePanel(ttk.Frame):
         self.ax_vol and self.ax_vol.xaxis.set_major_locator(locator)
         self.ax_vol and self.ax_vol.xaxis.set_major_formatter(formatter)
 
-        # set initial view to last 100 candles and auto-scale Y
-        if len(df) > 100:
-            # last 100 candles
-            # Note: x-axis is integer index 0..len-1
-            total_len = len(df)
-            self.ax.set_xlim(total_len - 100 - 0.5, total_len - 0.5)
+        # set initial view (default to last 100 candles) and auto-scale Y
+        initial_zoom = 100
+        total_len = len(df)
+        view_size = min(total_len, initial_zoom)
 
-            # calculate y limits with padding based on visible data
-            visible_df = df.iloc[-100:]
-            min_price = visible_df['Low'].min()
-            max_price = visible_df['High'].max()
-            padding = (max_price - min_price) * 0.05
+        # set x-axis range
+        self.ax.set_xlim(total_len - view_size - 0.5, total_len - 0.5)
 
-            self.ax.set_ylim(min_price - padding, max_price + padding)
-        else:
-            self.ax.set_xlim(-0.5, len(df) - 0.5)
+        # calculate limits based on visible data
+        visible_df = df.iloc[-view_size:]
 
-        # NOTE: Reapply styling that were reset by ax.clear()
+        # 1. price Y-axis scaling
+        min_p = visible_df['Low'].min()
+        max_p = visible_df['High'].max()
+
+        if not pd.isna(min_p) and not pd.isna(max_p):
+            padding = (max_p - min_p) * 0.05
+
+            if padding == 0:  # handle flat price or single data point
+                padding = max_p * 0.05 if max_p != 0 else 1.0
+            self.ax.set_ylim(min_p - padding, max_p + padding)
+
+        # 2. volume Y-axis scaling
+        if self.ax_vol:
+            max_v = visible_df['Volume'].max()
+
+            if not pd.isna(max_v) and max_v > 0:
+                self.ax_vol.set_ylim(0, max_v * 1.1)
+            else:
+                self.ax_vol.set_ylim(0, 1)  # default range if no volume data
+
+        # NOTE: reapply styling that were reset by ax.clear()
         self._set_axes_style()
 
         # adjust layout
