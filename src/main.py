@@ -207,8 +207,8 @@ class StockApp(ttk.Frame):
         self.stock_list = StockListPanel(paned, on_select_callback=self.on_view_stock)
         self.stock_view = StockViewPanel(paned, style_helper=self)
 
-        paned.add(self.stock_list, weight=1)
-        paned.add(self.stock_view, weight=4)
+        paned.add(self.stock_list, weight=2)
+        paned.add(self.stock_view, weight=5)
 
         return paned
 
@@ -282,10 +282,10 @@ def test(app):
         app: StockApp instance
     """
     # stock list dummy data
-    columns_stocks = ('code', 'name')
+    columns_stocks = ('code', 'name', 'score')
     data_stocks = [
-        ('2330', '台積電'),
-        ('2317', '鴻海'),
+        ('2330', '台積電', 10.5),
+        ('2317', '鴻海', 8.2),
     ]
     df_stocks = pd.DataFrame(data_stocks, columns=columns_stocks)
 
@@ -347,7 +347,7 @@ def main():
     """Main entry point of the application"""
     root = tk.Tk()
     root.title('Stock Analysis Tool')
-    root.geometry('960x720')
+    root.geometry('1024x800')
 
     # initialize database
     db = initialize_database()

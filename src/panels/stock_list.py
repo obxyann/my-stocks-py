@@ -52,16 +52,18 @@ class StockListPanel(ttk.Frame):
         # container for widgets
         table_frame = ttk.Frame(self)
 
-        # table: | Code | Name |
-        columns = ('code', 'name')
+        # table: | Code | Name | Score |
+        columns = ('code', 'name', 'score')
 
         table = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
 
         table.heading('code', text='Code')
         table.heading('name', text='Name')
+        table.heading('score', text='Score')
 
         table.column('code', width=40)
-        table.column('name', width=100)
+        table.column('name', width=80)
+        table.column('score', width=50)
 
         # scrollbar: | table ||
         scrollbar = AutoScrollbar(table_frame, orient='vertical', command=table.yview)
@@ -140,15 +142,20 @@ class StockListPanel(ttk.Frame):
                 df = pd.read_csv(file_path, dtype=str)
 
                 # validate columns
-                required_cols = list(self.table['columns'])
+                required_cols = ['code', 'name']
+                all_cols = list(self.table['columns'])
 
                 if not set(required_cols).issubset(df.columns):
                     messagebox.showinfo('Message', 'CSV 格式不正確')
                     print(f'Error: CSV file must contain columns: {required_cols}')
                     return
 
+                # handle optional columns
+                if 'score' not in df.columns:
+                    df['score'] = '0'
+
                 # keep only required columns and in correct order
-                df = df[required_cols]
+                df = df[all_cols]
 
                 self.set_data(df)
 
