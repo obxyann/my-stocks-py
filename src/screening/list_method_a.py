@@ -103,7 +103,7 @@ def list_method_test(db, test_case=1, input_df=None):
         return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
 
     if test_case == 2:
-        print('# 12 個月平均營收連續 2 個月成長')
+        print('# 12 個月平均(MA)營收連續 2 個月成長')
         return list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
     if test_case == 3:
@@ -115,11 +115,11 @@ def list_method_test(db, test_case=1, input_df=None):
         return list_revenue_yoy_above(db, cont_n_months=1, threshold=40, input_df=input_df)
 
     if test_case == 5:
-        print('# 3 個月平均累積營收年增率(YoY)連續 1 個月成長')
+        print('# 3 個月平均(MA)累積營收年增率(YoY)連續 1 個月成長')
         return list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
 
     if test_case == 6:
-        print('# 12 個月平均累積營收年增率(YoY)成長幅度 > 2%')
+        print('# 12 個月平均(MA)累積營收年增率(YoY)成長幅度 > 2%')
         return list_accum_revenue_yoy_ma_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
 
     print('# No test case')
@@ -138,7 +138,7 @@ def list_method_steady(db, input_df=None):
     - 近 1 季純益率平均 > 0%
     - 近 4 季營益率最少 > 0%
     """
-    print('# 12 個月平均營收連續 2 個月成長')
+    print('# 12 個月平均(MA)營收連續 2 個月成長')
     df = list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
     print('# 營收年增率(YoY)連續 1 個月 > 40%')
@@ -217,7 +217,7 @@ def list_method_short(db, mode=1, input_df=None):
         print('# 營收月增率(MoM)連續 1 個月 > 0%')
         df = list_revenue_mom_above(db, cont_n_months=1, threshold=0, input_df=input_df)
 
-        print('# 3 個月平均累積營收年增率(YoY)連續 1 個月成長')
+        print('# 3 個月平均(MA)累積營收年增率(YoY)連續 1 個月成長')
         df = list_accum_revenue_yoy_ma_growth(
             db, ma_n_months=3, cont_m_months=1, input_df=df
         )
