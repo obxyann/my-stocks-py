@@ -254,7 +254,7 @@ def list_opr_margin_min_max_ratio_above(
     return result_df
 
 
-# R01a: 近 N 季營業利益率(opr_margin)為近 M 季最大
+# R01b: 近 N 季營業利益率(opr_margin)為近 M 季最大
 def list_opr_margin_is_max(
     db, recent_n_quarters=1, lookback_m_quarters=4, input_df=None
 ):

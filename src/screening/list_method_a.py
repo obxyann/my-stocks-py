@@ -1,4 +1,4 @@
-"""Method A screening method - Revenue New High"""
+"""Method A screening method"""
 
 from screening.list_metrics import (
     # 近 N 季稅後純益率(net_margin)平均 ＞ P%
@@ -53,46 +53,6 @@ def list_method_test(db, test_case=1, input_df=None):
     # fmt: off
 
     ###########
-    # Revenue #
-    ###########
-
-    if test_case == 1:
-        # 近 2 個月營收創近 1 年(12 個月)新高
-        return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
-
-    if test_case == 2:
-        # 12 個月平均營收連續 2 個月成長
-        return list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
-
-    if test_case == 3:
-        # 營收月增率連續 2 個月 ＞ 0%
-        return list_revenue_mom_above(db, cont_n_months=2, threshold=0, input_df=input_df)
-
-    if test_case == 4:
-        # 營收年增率連續 1 個月 ＞ 40%
-        return list_revenue_yoy_above(db, cont_n_months=1, threshold=40, input_df=input_df)
-
-    if test_case == 5:
-        # 3 個月平均累積營收年增率連續 1 個月成長
-        return list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
-
-    if test_case == 6:
-        # 12 個月平均累積營收年增率成長幅度 ＞ 2%
-        return list_accum_revenue_yoy_ma_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
-
-    #########
-    # Price #
-    #########
-
-    if test_case == 7:
-        # 近 6 個月股價漲幅 ＞ 0%
-        return list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=input_df)
-
-    if test_case == 8:
-        # 最新股價 ＞ 近 2 個月月均價
-        return list_price_above_avg(db, recent_n_months=2, input_df=input_df)
-
-    ###########
     # Metrics #
     ###########
 
@@ -123,47 +83,86 @@ def list_method_test(db, test_case=1, input_df=None):
     # Default fallback (e.g. if test_case is out of range)
     return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
 
+
+    #########
+    # Price #
+    #########
+
+    if test_case == 7:
+        # 近 6 個月股價漲幅 ＞ 20%
+        return list_price_growth_above(db, recent_n_months=6, threshold=20, input_df=input_df)
+
+    if test_case == 8:
+        # 最新股價 ＞ 近 2 個月月均價
+        return list_price_above_avg(db, recent_n_months=2, input_df=input_df)
+
+
+    ###########
+    # Revenue #
+    ###########
+
+    if test_case == 1:
+        # 近 2 個月營收創近 1 年新高
+        return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
+
+    if test_case == 2:
+        # 12 個月平均營收連續 2 個月成長
+        return list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
+
+    if test_case == 3:
+        # 營收月增率連續 2 個月 ＞ 0%
+        return list_revenue_mom_above(db, cont_n_months=2, threshold=0, input_df=input_df)
+
+    if test_case == 4:
+        # 營收年增率連續 1 個月 ＞ 40%
+        return list_revenue_yoy_above(db, cont_n_months=1, threshold=40, input_df=input_df)
+
+    if test_case == 5:
+        # 3 個月平均累積營收年增率連續 1 個月成長
+        return list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
+
+    if test_case == 6:
+        # 12 個月平均累積營收年增率成長幅度 ＞ 2%
+        return list_accum_revenue_yoy_ma_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
+
     # fmt: on
 
 
 """
-------------------------
-*穩定型成長股 (營收選股)
-------------------------
-    12 個月平均營收連續 2[1~6] 個月成長
-    營收年增率連續 1[1~6] 個月 > 40[0%~40%]
-    近 8[2~8] 季營益率最小/最大 > 60[30%~90%]
-        保留近1季為近8季最大
-        保留近 2[1~4] 季YoY成長
-        保留近 3[1~7] 季QoQ成長
-    近 1[1~8] 季純益率平均 > 0[-10%~15%]
-    近 4[1~8] 季營益率最少 > 0[0%~40%]
+## 穩定型成長股 (營收選股 - 營收成長趨勢、獲利指標持穩或上升）
+
+- 12 個月平均營收連續 2 個月成長
+- 營收年增率連續 1 個月 > 40%
+- 近 8 季營益率最小/最大 > 60%
+    保留(或)近 1 季為近 8 季最大
+    保留(或)近 2 季YoY成長
+    保留(或)近 3 季QoQ成長
+- 近 1 季純益率平均 > 0%
+- 近 4 季營益率最少 > 0%
 """
-
-
 def list_method_steady(db, input_df=None):
-    # 12 個月平均營收連續 2[1~6] 個月成長
+    # 12 個月平均營收連續 2 個月成長
     df = list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
-    # 營收年增率連續 1[1~6] 個月 > 40[0%~40%]
+    # 營收年增率連續 1 個月 > 40%
     df = list_revenue_yoy_above(db, cont_n_months=1, threshold=40, input_df=df)
 
-    # 近 8[2~8] 季營益率最小/最大 > 60[30%~90%]
+    # 近 8 季營益率最小/最大 > 60%
     df1 = list_opr_margin_min_max_ratio_above(
         db, recent_n_quarters=8, threshold=60, input_df=df
     )
 
-    # 保留近1季為近8季最大
+    # (+) 近 1 季營益率為近 8 季最大
     df2 = list_opr_margin_is_max(
         db, recent_n_quarters=1, lookback_m_quarters=8, input_df=df
     )
 
-    # 保留近 2[1~4] 季YoY成長
+    # (+) 近 2 季營益率YoY成長
     df3 = list_opr_margin_yoy_growth(
         db, recent_n_quarters=2, cont_m_quarters=2, input_df=df
     )
 
-    # 保留近 3[1~7] 季QoQ成長
+    # (+) 近 3 季營益率QoQ成長
     df4 = list_opr_margin_qoq_growth(
         db, recent_n_quarters=3, cont_m_quarters=3, input_df=df
     )
@@ -172,71 +171,74 @@ def list_method_steady(db, input_df=None):
     df = add_lists(df, df3)
     df = add_lists(df, df4)
 
-    # 近 1[1~8] 季純益率平均 > 0[-10%~15%]
+    # 近 1 季純益率平均 > 0%
     df = list_net_margin_avg_above(db, recent_n_quarters=1, threshold=0, input_df=df)
 
-    # 近 4[1~8] 季營益率最少 > 0[0%~40%]
+    # 近 4 季營益率最少 > 0%
     df = list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0, input_df=df)
 
     return df
 
 
 """
-------------------------------------------
-*長期強勢成長股（營收創新高、股價多頭趨勢）
-------------------------------------------
-    近 2[1~6] 個月營收創近 1[1~4] 年新高
-    近 6[1~24] 個月股價漲幅 > 0[-25%~200%]
+長期強勢成長股（營收創新高、股價多頭趨勢）
+--
+
+- 近 2 個月營收創近 1 年新高
+- 近 6 個月股價漲幅 > 25% (or 0%)
 """
-
-
 def list_method_long(db, input_df=None):
-    # 近 2[1~6] 個月營收創近 1[1~4] 年新高
+    # 近 2 個月營收創近 1 年新高
     df = list_revenue_hit_new_high(
         db, recent_n_months=2, lookback_m_months=12, input_df=input_df
     )
 
-    # 6[1~24] 個月股價漲幅 > 0[-25%~200%]
-    df = list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=df)
+    # 6 個月股價漲幅 > 25%
+    df = list_price_growth_above(db, recent_n_months=6, threshold=25, input_df=df)
 
     return df
 
 
 """
-------------------------------------
-*短期強勢成長股（營收上升、股價走強）
-------------------------------------
-    營收月增率連續 1[1~6] 個月 > 0[~-10%~20%]
-    3 個月累積營收年增率連續 1[1~6] 個月成長
-    最新股價 > 近 2[1~11] 個月月均價
+短期強勢成長股（營收上升、股價走強）
+---
+- 營收月增率連續 1 個月 > 0%
+- 3 個月累積營收年增率連續 1 個月成長
+- 近 6 個月股價漲幅 > 0% 
+- 最新股價 > 近 2 個月月均價
+or
+- 營收月增率連續 1 個月 > 0%
+- 3 個月累積營收年增率連續 1 個月成長
+- 最新股價 > 近 2 個月月均價
     or
-    營收月增率連續 2[1~6] 個月 > 0[~-10%~20%]
-    最新股價 > 近 2[1~11] 個月月均價
+- 營收月增率連續 2 個月 > 0%
+- 最新股價 > 近 2 個月月均價
     or
-    近 6[1~24] 個月股價漲幅 > 0[-25%~200%]
+- 近 6 個月股價漲幅 > 0%
 """
-
-
 def list_method_short(db, mode=1, input_df=None):
     if mode == 1:
-        # 營收月增率連續 1[1~6] 個月 > 0[~-10%~20%]
+        # 營收月增率連續 1 個月 > 0%
         df = list_revenue_mom_above(db, cont_n_months=1, threshold=0, input_df=input_df)
 
-        # 3 個月累積營收年增率連續 1[1~6] 個月成長
+        # 3 個月累積營收年增率連續 1 個月成長
         df = list_accum_revenue_yoy_ma_growth(
             db, ma_n_months=3, cont_m_months=1, input_df=df
         )
 
-        # 最新股價 > 近 2[1~11] 個月月均價
+       # 近 6 個月股價漲幅 > 0%
+        df = list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=df)
+
+        # 最新股價 > 近 2 個月月均價
         df = list_price_above_avg(db, recent_n_months=2, input_df=df)
     elif mode == 2:
-        # 營收月增率連續 2[1~6] 個月 > 0[~-10%~20%]
+        # 營收月增率連續 2 個月 > 0%
         df = list_revenue_mom_above(db, cont_n_months=2, threshold=0, input_df=df)
 
-        # 最新股價 > 近 2[1~11] 個月月均價
+        # 最新股價 > 近 2 個月月均價
         df = list_price_above_avg(db, recent_n_months=2, input_df=df)
     else:
-        # 近 6[1~24] 個月股價漲幅 > 0[-25%~200%]
+        # 近 6 個月股價漲幅 > 0%
         df = list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=df)
 
     return df
