@@ -5,9 +5,7 @@ import pandas as pd
 from screening.helper import get_target_stocks
 
 
-# R01: 近 N 個月營收創近 M 月新高
-#      (or 營收連續 N 個月創近 M 月新高)
-#      (or 近 N 月營收為近 M 月最大)
+# R01: 近 N 個月營收(revenue)創近 M 月新高
 def list_revenue_hit_new_high(
     db, recent_n_months=3, lookback_m_months=12, input_df=None
 ):
@@ -107,7 +105,7 @@ def list_revenue_hit_new_high(
     return result_df
 
 
-# R02: 營收月增率(revenue_mom)連續 N 個月 > P%
+# R02: 營收月增率(revenue_mom)連續 N 個月 > T%
 def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue MoM above threshold consecutively
 
@@ -186,7 +184,7 @@ def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# R02: 營收年增率(revenue_yoy)連續 N 個月 > P%
+# R02: 營收年增率(revenue_yoy)連續 N 個月 > T%
 def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue YoY above threshold consecutively
 
@@ -266,7 +264,7 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# R03: N 個月平均營收連續 M 個月成長
+# R03: N 個月平均(MA)營收(revenue)連續 M 個月成長
 def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
     """Get stocks with consecutive growth in revenue moving average
 
@@ -369,7 +367,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
     return result_df
 
 
-# R03: N 個月平均累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+# R03: N 個月平均(MA)累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
 def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_df=None):
     """Get stocks with consecutive growth in accumulated (YTD) revenue YoY
     moving average
@@ -473,7 +471,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
     return result_df
 
 
-# R04: N 個月平均累積營收年增率(revenue_ytd_yoy)成長幅度 > P%
+# R04: N 個月平均(MA)累積營收年增率(revenue_ytd_yoy)成長幅度 > T%
 def list_accum_revenue_yoy_ma_growth_above(
     db, ma_n_months=3, threshold=0.0, input_df=None
 ):

@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from screening.helper import get_target_stocks
 
 
-# R05: 近 N 個月股價漲幅 > P%
+# R05: 近 N 個月股價漲幅 > T%
 def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None):
     """Get stocks with recent price growth rate above threshold
 

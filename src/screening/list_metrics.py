@@ -5,7 +5,7 @@ import pandas as pd
 from screening.helper import get_target_stocks
 
 
-# R07: 近 N 季稅後純益率(net_margin)平均 > P%
+# R07: 近 N 季稅後純益率(net_margin)平均 > T%
 def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with average net margin above threshold
 
@@ -84,7 +84,7 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R08: 近 N 季營業利益率(opr_margin)最少 ＞ P%
+# R08: 近 N 季營業利益率(opr_margin)最少 > T%
 def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with minimum operating margin over threshold
 
@@ -162,7 +162,7 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R09: 近 N 季營業利益率(opr_margin)最小/最大 ＞ P%
+# R09: 近 N 季營業利益率(opr_margin)最小/最大 > T%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):

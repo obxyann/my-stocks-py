@@ -1,5 +1,7 @@
 """Helper functions for screening methods"""
 
+import pandas as pd
+
 
 def get_target_stocks(db, input_df):
     """Helper to setup input stocks
@@ -12,8 +14,6 @@ def get_target_stocks(db, input_df):
     Returns:
         pd.DataFrame: DataFrame with columns ['code', 'name', 'score']
     """
-    import pandas as pd
-
     if input_df is not None and not input_df.empty:
         # return copy of input_df to avoid modifying original
         return input_df[['code', 'name', 'score']].copy()
