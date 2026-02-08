@@ -155,18 +155,20 @@ class StockListPanel(ttk.Frame):
             return
 
         # insert data
-        for _, row in df.iterrows():
-            # format score to remove decimal if it exists
-            values = list(row)
-            if 'score' in df.columns:
-                score_idx = list(df.columns).index('score')
-                try:
-                    # round and convert to int for display
-                    values[score_idx] = int(round(float(values[score_idx])))
-                except (ValueError, TypeError):
-                    pass
+        display_df = df.copy()
 
-            self.table.insert('', 'end', values=tuple(values))
+        if 'score' in display_df.columns:
+            # format score to remove decimal
+            def _fmt_score(x):
+                try:
+                    return int(round(float(x)))
+                except (ValueError, TypeError):
+                    return x
+
+            display_df['score'] = display_df['score'].apply(_fmt_score)
+
+        for row in display_df.itertuples(index=False, name=None):
+            self.table.insert('', 'end', values=row)
 
         # reset scroll position to top
         self.table.yview_moveto(0)
