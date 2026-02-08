@@ -57,9 +57,13 @@ class StockListPanel(ttk.Frame):
 
         table = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
 
-        table.heading('code', text='Code')
+        table.heading(
+            'code', text='Code', command=lambda: self._sort_column('code', False)
+        )
         table.heading('name', text='Name')
-        table.heading('score', text='Score')
+        table.heading(
+            'score', text='Score', command=lambda: self._sort_column('score', True)
+        )
 
         table.column('code', width=40)
         table.column('name', width=80)
@@ -96,6 +100,35 @@ class StockListPanel(ttk.Frame):
             code = str(values[0])
             self.on_select_callback(code)
 
+    def _sort_column(self, col, reverse):
+        """Sort treeview by column content
+
+        Args:
+            col (str): Column ID to sort
+            reverse (bool): Sort order (True for descending)
+        """
+        # get all items
+        data = [(self.table.set(k, col), k) for k in self.table.get_children('')]
+
+        # handle numeric sorting for 'score'
+        if col == 'score':
+            try:
+                # convert to float for numeric comparison
+                data.sort(key=lambda t: float(t[0]), reverse=reverse)
+            except (ValueError, TypeError):
+                # fallback to string sort if conversion fails
+                data.sort(reverse=reverse)
+        else:
+            # default string sort
+            data.sort(reverse=reverse)
+
+        # rearrange items in treeview
+        for index, (val, k) in enumerate(data):
+            self.table.move(k, '', index)
+
+        # switch direction for next click
+        self.table.heading(col, command=lambda: self._sort_column(col, not reverse))
+
     def set_data(self, df):
         """Set data to stock list
 
@@ -123,7 +156,17 @@ class StockListPanel(ttk.Frame):
 
         # insert data
         for _, row in df.iterrows():
-            self.table.insert('', 'end', values=tuple(row))
+            # format score to remove decimal if it exists
+            values = list(row)
+            if 'score' in df.columns:
+                score_idx = list(df.columns).index('score')
+                try:
+                    # round and convert to int for display
+                    values[score_idx] = int(round(float(values[score_idx])))
+                except (ValueError, TypeError):
+                    pass
+
+            self.table.insert('', 'end', values=tuple(values))
 
         # reset scroll position to top
         self.table.yview_moveto(0)
