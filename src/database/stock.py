@@ -944,7 +944,7 @@ class StockDatabase:
 
         return df
 
-    def get_recent_prices_by_code(self, stock_code, limit):
+    def get_recent_prices_by_code(self, stock_code, limit=1):
         """Get the latest N records of daily prices data for specific stock
 
         Args:
@@ -974,7 +974,7 @@ class StockDatabase:
 
         return df
 
-    def get_recent_monthly_avg_prices_by_code(self, stock_code, limit):
+    def get_recent_monthly_avg_prices_by_code(self, stock_code, limit=1):
         """Get the latest N records of monthly average prices for specific stock
 
         Args:
@@ -2452,7 +2452,7 @@ class StockDatabase:
 
         return df
 
-    def get_recent_financial_metrics_by_code(self, stock_code, limit):
+    def get_recent_financial_metrics_by_code(self, stock_code, limit=1):
         """Get the latest N records of financial metrics for specific stock
 
         Args:

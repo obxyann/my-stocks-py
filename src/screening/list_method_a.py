@@ -21,6 +21,8 @@ from screening.list_price import (
     list_price_above_avg,
     # 近 N 個月股價(price)漲幅 > T%
     list_price_growth_above,
+    # 近 N 日成交量平均 > T 張
+    list_volume_avg_above,
 )
 from screening.list_revenue import (
     # N 個月平均(MA)累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
@@ -58,27 +60,27 @@ def list_method_test(db, test_case=1, input_df=None):
     # Metrics #
     ###########
 
-    if test_case == 9:
-        print('# 近 8 季營益率最小/最大 > 60%')
+    if test_case == 1:
+        print('# 近 8 季營業利益率(opr_margin)最小/最大 > 60%')
         return list_opr_margin_min_max_ratio_above(db, recent_n_quarters=8, threshold=60, input_df=input_df)
 
-    if test_case == 10:
-        print('# 近 1 季營業利益率為近 8 季最大')
+    if test_case == 2:
+        print('# 近 1 季營業利益率(opr_margin)為近 8 季最大')
         return list_opr_margin_is_max(db, recent_n_quarters=1, lookback_m_quarters=8, input_df=input_df)
 
-    if test_case == 11:
+    if test_case == 3:
         print('# 近 2 季營業利益率年增率(YoY)連續 2 季成長')
         return list_opr_margin_yoy_growth(db, recent_n_quarters=2, cont_m_quarters=2, input_df=input_df)
 
-    if test_case == 12:
+    if test_case == 4:
         print('# 近 3 季營業利益率季增率(QoQ)連續 3 季成長')
         return list_opr_margin_qoq_growth(db, recent_n_quarters=3, cont_m_quarters=3, input_df=input_df)
 
-    if test_case == 13:
+    if test_case == 5:
         print('# 近 1 季稅後純益率平均 > 0%')
         return list_net_margin_avg_above(db, recent_n_quarters=1, threshold=0, input_df=input_df)
 
-    if test_case == 14:
+    if test_case == 6:
         print('# 近 4 季營業利益率最少 > 0%')
         return list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0, input_df=input_df)
 
@@ -86,43 +88,48 @@ def list_method_test(db, test_case=1, input_df=None):
     # Price #
     #########
 
-    if test_case == 7:
+    if test_case == 11:
         print('# 近 6 個月股價漲幅 > 20%')
         return list_price_growth_above(db, recent_n_months=6, threshold=20, input_df=input_df)
 
-    if test_case == 8:
+    if test_case == 12:
         print('# 最新股價 > 近 2 個月月均價')
         return list_price_above_avg(db, recent_n_months=2, input_df=input_df)
+
+    if test_case == 13:
+        print('# 近 5 日成交量平均 > 500 張')
+        return list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=input_df)
 
     ###########
     # Revenue #
     ###########
 
-    if test_case == 1:
+    if test_case == 21:
         print('# 近 2 個月營收創近 1 年新高')
         return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
 
-    if test_case == 2:
+    if test_case == 22:
         print('# 12 個月平均(MA)營收連續 2 個月成長')
         return list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
-    if test_case == 3:
+    if test_case == 23:
         print('# 營收月增率(MoM)連續 2 個月 > 0%')
         return list_revenue_mom_above(db, cont_n_months=2, threshold=0, input_df=input_df)
 
-    if test_case == 4:
+    if test_case == 24:
         print('# 營收年增率(YoY)連續 1 個月 > 40%')
         return list_revenue_yoy_above(db, cont_n_months=1, threshold=40, input_df=input_df)
 
-    if test_case == 5:
+    if test_case == 25:
         print('# 3 個月平均(MA)累積營收年增率(YoY)連續 1 個月成長')
         return list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
 
-    if test_case == 6:
+    if test_case == 26:
         print('# 12 個月平均(MA)累積營收年增率(YoY)成長幅度 > 2%')
         return list_accum_revenue_yoy_ma_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
 
     print('# No test case')
+
     return pd.DataFrame(columns=['code', 'name', 'score'])
 
 

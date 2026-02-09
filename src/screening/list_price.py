@@ -223,3 +223,79 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     )
 
     return result_df
+
+
+# R07: 近 N 日成交量平均 > T 張
+def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
+    """Get stocks with average volume above threshold
+
+    Find stocks whose average volume exceeds the specified threshold
+    in last N days.
+
+    Args:
+        db (StockDatabase): Database instance
+        recent_n_days (int): Number of recent days to average
+        threshold (float): Threshold value
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if recent_n_days < 1:
+        raise ValueError('recent_n_days must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent prices
+        df_prices = db.get_recent_prices_by_code(code, limit=recent_n_days)
+
+        # skip if not enough data
+        if len(df_prices) < recent_n_days:
+            continue
+
+        # get net margin series, drop None/NaN
+        volumes = df_prices['volume'].dropna()
+
+        # skip if empty
+        if volumes.empty:
+            continue
+
+        # calculate average
+        val_avg = volumes.mean()
+
+        if val_avg > threshold:
+            # calculate score:
+            # = exceeding amount
+            score = val_avg - threshold
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
