@@ -17,40 +17,49 @@
 涵蓋子規則：
 
   - 近 N 期 XXX 平均 > T
-    最新一期 XXX > T              (aka N=1)
   - 近 N 期 XXX 平均 < T
-    最新一期 XXX < T              (aka N=1)
-  - 近 N 期 XXX 最小/最大 > T     (P.S. 最小 ÷ 最大 or 最少 ÷ 最多)
+  - 近 N 期 XXX 最小/最大 > T       (P.S. 最小 ÷ 最大 or 最少 ÷ 最多)
 
-  NOTE: 以下 '最小 > T' 或 '最大 > T' 可等同 R3. 連續行為: 門檻
+  NOTE: 以下 '最小 > T' 或 '最大 < T' 可等同 R3. 連續行為: 門檻
 
-  - 近 N 期 XXX 最小 > T          (or 最少)
+  - 近 N 期 XXX 最小 > T            (or 最少)
     (同義)
-    近 N 期 XXX 全部, 連續 > T    (= R3: 近 N 期 XXX 連續 N 期 > T)
-    近 N 期 XXX > T
-    XXX 連續 N 期 > T             
-  - 近 N 期 XXX 最大 < T          (or 最多)
+    > 近 N 期 XXX > T               (aka 全部)
+    > 近 N 期 XXX 連續 > T          (= R3: 近 N 期 XXX 連續 N 期 > T)
+    > XXX 連續 N 期 > T             (= R3: 近 N 期 XXX 連續 N 期 > T)
+  - 近 N 期 XXX 最大 < T            (or 最多)
     (同義)
-    近 N 期 XXX 全部, 連續 < T    (= R3: 近 N 期 XXX 連續 N 期 < T)
-    近 N 期 XXX < T
-    XXX 連續 N 期 < T            
+    > 近 N 期 XXX < T               (aka 全部)
+    > 近 N 期 XXX 連續 < T          (= R3: 近 N 期 XXX 連續 N 期 < T)
+    > XXX 連續 N 期 < T             (= R3: 近 N 期 XXX 連續 N 期 < T)
+
+  當 N = 1 時
+
+  - 最新一期 XXX > T
+    (同義)
+    > 近 1 期 XXX 平均 > T
+    > 近 1 期 XXX 最小 > T
+  - 最新一期 XXX < T 
+    (同義)
+    > 近 1 期 XXX 平均 < T
+    > 近 1 期 XXX 最大 < T
 
 命名模板：
 
-  `check_{metric}_{aggregation}_threshold`
+  `list_{metric}_{aggregation}_{condition}|threshold`
 
   ex:
     - 最新一期 XXX > T
-      `check_xxx_latest_threshold`
+      `list_xxx_latest_above`
     - 近 N 期 XXX 平均 > T
-      `check_xxx_avg_threshold`
+      `list_xxx_avg_threshold`
 
 通用規則使用欄位：
 
   metric
-  transform   (optional)
-  aggregation (avg, min, max, ...)
-  window      (optional)
+  transform   (optional, default: none)
+  aggregation (avg, min, max, ..., default: latest)
+  window      (optional, default: 1)
   condition   (>, <, ...)
 
   ex:
@@ -76,7 +85,7 @@
 
   在指定期間 N 內，XXX 是否呈現成長 / 衰退 / 轉正
 
-  P.S. XXX 基本都是指 XXX MoM/QoQ/YoY
+  P.S. 都是指 XXX 與前期或去年同期 (aka MoM/QoQ/YoY) 比較
 
 涵蓋子規則：
 
@@ -101,15 +110,15 @@
 
 命名模板：
 
-  `check_{metric}_trend`
+  `list_{metric}_trend`
 
   ex:
     - 近 N 期 XXX 成長
-      `check_xxx_trend`
+      `list_xxx_trend`
     - 近 N 期 XXX 由負轉正
-      `check_xxx_turn_positive`
+      `list_xxx_turn_positive`
     - M-MA XXX 成長幅度 > T
-      `check_xxx_ma_growth_exceeds`
+      `list_xxx_ma_growth_exceeds`
 
 通用規則使用欄位：
 
@@ -150,33 +159,33 @@
   連續行為: 門檻
 
   - 近 N 期 XXX 連續 M 期 > T
-    XXX 連續 N 期 > T             (其實就是 M = N)
-    近 N 期 XXX > T               (其實就是 M = N)
-    近 N 期 XXX 最小 > T          (其實就是 M = N)
+    XXX 連續 N 期 > T             (aka M = N)
+    近 N 期 XXX > T               (aka M = N)
+    近 N 期 XXX 最小 > T          (aka M = N)
   - 近 N 期 XXX 連續 M 期 < T
-    XXX 連續 N 期 < T             (其實就是 M = N)
-    近 N 期 XXX < T               (其實就是 M = N)
-    近 N 期 XXX 最大 < T          (其實就是 M = N)
+    XXX 連續 N 期 < T             (aka M = N)
+    近 N 期 XXX < T               (aka M = N)
+    近 N 期 XXX 最大 < T          (aka M = N)
 
   連續行為: 成長 / 衰退
 
   - 近 N 期 XXX 連續 M 期成長 > T
-    近 N 期 XXX 連續 M 期成長     (其實就是 T = 0)
-    近 N 期 XXX 連續成長 >= M 期  (其實就是 T = 0)
-    XXX 連續 N 期成長 > T         (其實就是連續成長期數 M = N)
-    XXX 連續 N 期成長             (其實就是 T = 0 + 連續成長期數 M = N)
+    近 N 期 XXX 連續 M 期成長     (aka T = 0)
+    近 N 期 XXX 連續成長 >= M 期  (aka T = 0)
+    XXX 連續 N 期成長 > T         (aka連續成長期數 M = N)
+    XXX 連續 N 期成長             (aka T = 0 + 連續成長期數 M = N)
   - 近 N 期 XXX 無連續 M 期衰退   (容錯型成長，雖然有跌，但很快就漲回來)
     近 N 期 XXX 連續衰退 < M 期
-    XXX 連續 N 期成長             (其實就是衰退期數 M = 0)
+    XXX 連續 N 期成長             (aka 衰退期數 M = 0)
 
   連續行為: 減少 / 增加  (P.S. 減少是好事時)
 
   - 近 N 期 XXX 連續 M 期減少     (or 縮短)
     近 N 期 XXX 連續減少 >= M 期
-    XXX 連續 N 期減少             (其實就是連續減少期數 M = N)
+    XXX 連續 N 期減少             (aka連續減少期數 M = N)
   - 近 N 期 XXX 無連續 M 期增加   (容錯型減少，雖然有增，但很快就減回來)
     近 N 期 XXX 連續增加 < M 期
-    XXX 連續 N 期減少             (其實就是增加期數 M = 0)
+    XXX 連續 N 期減少             (aka增加期數 M = 0)
 
   XXX 先做轉換
 
@@ -188,15 +197,15 @@
 
 命名模板：
 
-  `check_{metric}_consecutive_{condition}_n`
+  `list_{metric}_consecutive_{condition}_n`
 
   ex:
   - XXX 連續 N 期成長
-    `check_xxx_consecutive_growth_n`
+    `list_xxx_consecutive_growth_n`
   - XXX 連續 N 期 > T
-    `check_xxx_consecutive_above_threshold_n`
+    `list_xxx_consecutive_above_threshold_n`
   - M-MA XXX 連續成長 < M 期
-    `check_xxx_ma_m_consecutive_growth_below_n`
+    `list_xxx_ma_m_consecutive_growth_below_n`
 
 通用規則使用欄位：
 
@@ -233,17 +242,17 @@
 
  - 近 N 期 XXX 創近 M 期新高
    近 N 期 XXX 為近 M 期最大
-   XXX 創近 N 期新高              (其實就是 N = M)
+   XXX 創近 N 期新高              (aka N = M)
 
 命名模板：
 
-  `check_{metric}_extremum_{type}_{window}`
+  `list_{metric}_extremum_{type}_{window}`
 
   ex:
     - XXX 創近 N 期新高
-      `check_xxx_extremum_max`
+      `list_xxx_extremum_max`
     - 近 N 期 XXX 為近 M 期最大
-      `check_xxx_extremum_max`
+      `list_xxx_extremum_max`
 
 通用規則使用欄位：
 
@@ -284,13 +293,13 @@
 
 命名模板：
 
-  `check_{metric}_relative_{mode}``
+  `list_{metric}_relative_{mode}``
 
   ex:
   - 近 N 期 XXX > 近 M 期平均 XXX
-    check_xxx_relative_avg_compare
+    list_xxx_relative_avg_compare
   - 近 N 期 XXX 佔 YYY ＞ T
-    check_xxx_ratio_exceeds
+    list_xxx_ratio_exceeds
 
 通用規則使用欄位：
 
@@ -331,13 +340,13 @@
 
 命名模板：
 
-  `check_{metric}_{signal_type}`
+  `list_{metric}_{signal_type}`
 
   ex:
   - XXX 長短期 MA 差 ＞ T
-    `check_xxx_long_short_diff_exceeds`
+    `list_xxx_long_short_diff_exceeds`
   - 長短期 MA 黃金交叉
-    `check_xxx_golden_cross`
+    `list_xxx_golden_cross`
 
 通用規則使用欄位：
 
