@@ -5,14 +5,14 @@ import pandas as pd
 from screening.helper import get_target_stocks
 
 
-# R01: 近 N 個月營收(revenue)創近 M 月新高
+# R01: 近 N 個月營收創近 M 月新高
 def list_revenue_hit_new_high(
     db, recent_n_months=3, lookback_m_months=12, input_df=None
 ):
     """Get stocks with recent revenue reaching a new high
 
-    Find stocks whose revenue over the last N months exceeds the maximum
-    revenue observed in the past M months.
+    Find stocks whose revenue over the last N months
+    exceeds the maximum revenue observed in the past M months.
 
     Args:
         db (StockDatabase): Database instance
@@ -105,16 +105,16 @@ def list_revenue_hit_new_high(
     return result_df
 
 
-# R02: 營收月增率(revenue_mom)連續 N 個月 > T%
-def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
+# R02: 營收月增率連續 M 個月 > T%
+def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue MoM above threshold consecutively
 
-    Find stocks whose revenue MoM exceeds the specified threshold
-    for N consecutive months.
+    Find stocks whose revenue MoM
+    exceeds the specified threshold for M consecutive months.
 
     Args:
         db (StockDatabase): Database instance
-        cont_n_months (int): Number of consecutive months to check
+        cont_m_months (int): Number of consecutive months to check
         threshold (float): Threshold percentage (e.g. 5.0 for 5%)
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -125,8 +125,8 @@ def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if cont_n_months < 1:
-        raise ValueError('cont_n_months must be >= 1')
+    if cont_m_months < 1:
+        raise ValueError('cont_m_months must be >= 1')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -140,10 +140,10 @@ def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_m_months)
 
         # skip if not enough data
-        if len(df_rev) < cont_n_months:
+        if len(df_rev) < cont_m_months:
             continue
 
         # get revenue MoM series
@@ -184,16 +184,16 @@ def list_revenue_mom_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# R02: 營收年增率(revenue_yoy)連續 N 個月 > T%
-def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
+# R02: 營收年增率連續 M 個月 > T%
+def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue YoY above threshold consecutively
 
-    Find stocks whose revenue YoY exceeds the specified threshold
-    for N consecutive months.
+    Find stocks whose revenue YoY
+    exceeds the specified threshold for M consecutive months.
 
     Args:
         db (StockDatabase): Database instance
-        cont_n_months (int): Number of consecutive months to check
+        cont_m_months (int): Number of consecutive months to check
         threshold (float): Threshold percentage (e.g. 5.0 for 5%)
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -204,8 +204,8 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if cont_n_months < 1:
-        raise ValueError('consec_n_months must be >= 1')
+    if cont_m_months < 1:
+        raise ValueError('cont_m_months must be >= 1')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -219,10 +219,10 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
 
         # get recent revenue data
         # sorted by date ascending (old -> new)
-        df_rev = db.get_recent_revenue_by_code(code, limit=cont_n_months)
+        df_rev = db.get_recent_revenue_by_code(code, limit=cont_m_months)
 
         # skip if not enough data
-        if len(df_rev) < cont_n_months:
+        if len(df_rev) < cont_m_months:
             continue
 
         # get revenue YoY series
@@ -264,7 +264,7 @@ def list_revenue_yoy_above(db, cont_n_months=3, threshold=0.0, input_df=None):
     return result_df
 
 
-# R03: N 個月平均(MA)營收(revenue)連續 M 個月成長
+# R03: N 個月平均(MA)營收連續 M 個月成長
 def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
     """Get stocks with consecutive growth in revenue moving average
 
@@ -367,7 +367,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
     return result_df
 
 
-# R03: N 個月平均(MA)累積營收年增率(revenue_ytd_yoy)連續 M 個月成長
+# R03: N 個月平均(MA)累積營收年增率連續 M 個月成長
 def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_df=None):
     """Get stocks with consecutive growth in accumulated (YTD) revenue YoY
     moving average
@@ -471,7 +471,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
     return result_df
 
 
-# R04: N 個月平均(MA)累積營收年增率(revenue_ytd_yoy)成長幅度 > T%
+# R04: N 個月平均(MA)累積營收年增率成長幅度 > T%
 def list_accum_revenue_yoy_ma_growth_above(
     db, ma_n_months=3, threshold=0.0, input_df=None
 ):

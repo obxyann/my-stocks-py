@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from screening.helper import get_target_stocks
 
 
-# R05: 近 N 個月股價漲幅 > T%
+# R05: 近 N 個月股價(price)漲幅 > T%
 def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None):
     """Get stocks with recent price growth rate above threshold
 
@@ -124,7 +124,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     return result_df
 
 
-# R06: 最新股價 > 近 N 個月月均價
+# R06: 最新股價(price) > 近 N 個月月均價
 def list_price_above_avg(db, recent_n_months=1, input_df=None):
     """Get stocks with latest price above recent average price
 
@@ -225,7 +225,7 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     return result_df
 
 
-# R07: 近 N 日成交量平均 > T 張
+# R07: 近 N 日成交量(volume)平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 

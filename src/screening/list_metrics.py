@@ -5,7 +5,7 @@ import pandas as pd
 from screening.helper import get_target_stocks
 
 
-# R07: 近 N 季稅後純益率(net_margin)平均 > T%
+# R07: 近 N 季稅後純益率平均 > T%
 def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with average net margin above threshold
 
@@ -84,7 +84,7 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R08: 近 N 季營業利益率(opr_margin)最少 > T%
+# R08: 近 N 季營業利益率最少 > T%
 def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with minimum operating margin over threshold
 
@@ -162,7 +162,7 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R09: 近 N 季營業利益率(opr_margin)最小/最大 > T%
+# R09: 近 N 季營業利益率最小/最大 > T%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):
@@ -254,7 +254,7 @@ def list_opr_margin_min_max_ratio_above(
     return result_df
 
 
-# R01b: 近 N 季營業利益率(opr_margin)為近 M 季最大
+# R01b: 近 N 季營業利益率為近 M 季最大
 def list_opr_margin_is_max(
     db, recent_n_quarters=1, lookback_m_quarters=4, input_df=None
 ):
@@ -352,18 +352,19 @@ def list_opr_margin_is_max(
     return result_df
 
 
-# R10: 近 N 季營業利益率季增率(opr_margin_qoq)連續 M 季成長
+# TBD: unused
+# R10: 營業利益率季增率連續 M 季成長
+#      or 近 M 季營業利益率季增率成長
 def list_opr_margin_qoq_growth(
-    db, recent_n_quarters=4, cont_m_quarters=3, input_df=None
+    db, cont_m_quarters=3, input_df=None
 ):
     """Get stocks with with consecutive growth in operating margin QoQ
 
-    Find stocks whose N-month operating margin QoQ
+    Find stocks whose N quarters operating margin QoQ
     increases quarter over quarter for M consecutive quarters.
 
     Args:
         db (StockDatabase): Database instance
-        recent_n_quarters (int): Number of recent quarters to check
         cont_m_quarters (int): Number of consecutive quarters to check
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -374,10 +375,8 @@ def list_opr_margin_qoq_growth(
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if recent_n_quarters < 1:
-        raise ValueError('recent_n_quarters must be >= 1')
-    if cont_m_quarters > recent_n_quarters:
-        raise ValueError('cont_m_quarters must be <= recent_n_quarters')
+    if cont_m_quarters < 1:
+        raise ValueError('cont_m_quarters must be >= 1')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -400,7 +399,7 @@ def list_opr_margin_qoq_growth(
         if len(df_metrics) < need_points:
             continue
 
-        # get opr margin QoQ values
+        # get opr margin QoQ series
         qoqs = df_metrics['opr_margin_qoq']
 
         # skip if any value is missing
@@ -436,18 +435,19 @@ def list_opr_margin_qoq_growth(
     return result_df
 
 
-# R10: 近 N 季營業利益率年增率(opr_margin_yoy)連續 M 季成長
+# TBD: unused
+# R10: 營業利益率年增率連續 M 季成長
+#      or 近 M 季營業利益率年增率成長
 def list_opr_margin_yoy_growth(
-    db, recent_n_quarters=4, cont_m_quarters=3, input_df=None
+    db, cont_m_quarters=3, input_df=None
 ):
     """Get stocks with with consecutive growth in operating margin YoY
 
-    Find stocks whose N-month operating margin YoY
+    Find stocks whose N quarters operating margin YoY
     increases quarter over quarter for M consecutive quarters.
 
     Args:
         db (StockDatabase): Database instance
-        recent_n_quarters (int): Number of recent quarters to check
         cont_m_quarters (int): Number of consecutive quarters to check
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -458,10 +458,8 @@ def list_opr_margin_yoy_growth(
         pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
     """
     # check input parameters
-    if recent_n_quarters < 1:
-        raise ValueError('recent_n_quarters must be >= 1')
-    if cont_m_quarters > recent_n_quarters:
-        raise ValueError('cont_m_quarters must be <= recent_n_quarters')
+    if cont_m_quarters < 1:
+        raise ValueError('cont_m_quarters must be >= 1')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -498,6 +496,172 @@ def list_opr_margin_yoy_growth(
             # calculate score:
             # = exceeding amount
             score = yoys.iloc[-1] - yoys.iloc[0]
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# R11: 營業利益率季增率連續 M 季 > T%
+#      or 近 M 季營業利益率季增率 > T%
+def list_opr_margin_qoq_above(
+    db, cont_m_quarters=3, threshold=0.0, input_df=None
+):
+    """Get stocks with operating margin QoQ above threshold for continuous M quarters
+
+    Find stocks whose N quarters operating margin QoQ
+    exceeds the specified threshold for M consecutive quarters.
+
+    Args:
+        db (StockDatabase): Database instance
+        cont_m_quarters (int): Number of consecutive quarters to check
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use stocks from list_industrial() as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if cont_m_quarters < 1:
+        raise ValueError('cont_m_quarters must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent financial metrics
+        # NOTE: ensure sorted by date ascending (old -> new)
+        df_metrics = db.get_recent_financial_metrics_by_code(
+            code, limit=cont_m_quarters
+        )
+
+        # skip if not enough data
+        if len(df_metrics) < cont_m_quarters:
+            continue
+
+        # get opr margin QoQ series
+        vals = df_metrics['opr_margin_qoq']
+
+        # skip if any value is missing
+        if vals.isna().any():
+            continue
+
+        # convert to percentage
+        vals_pct = vals * 100
+
+        # check all > threshold
+        if (vals_pct > threshold).all():
+            # calculate score:
+            # = average exceeding amount
+            score = (vals_pct - threshold).mean()
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# R11: 營業利益率年增率連續 M 季 > T%
+#      or 近 M 季營業利益率年增率 > T%
+def list_opr_margin_yoy_above(
+    db, cont_m_quarters=3, threshold=0.0, input_df=None
+):
+    """Get stocks with operating margin YoY above threshold for continuous M quarters
+
+    Find stocks whose operating margin YoY exceeds the specified threshold
+    for M consecutive quarters.
+
+    Args:
+        db (StockDatabase): Database instance
+        cont_m_quarters (int): Number of consecutive quarters to check
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use stocks from list_industrial() as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if cont_m_quarters < 1:
+        raise ValueError('cont_m_quarters must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent financial metrics
+        # NOTE: ensure sorted by date ascending (old -> new)
+        df_metrics = db.get_recent_financial_metrics_by_code(
+            code, limit=cont_m_quarters
+        )
+
+        # skip if not enough data
+        if len(df_metrics) < cont_m_quarters:
+            continue
+
+        # get opr margin YoY series
+        vals = df_metrics['opr_margin_yoy']
+
+        # skip if any value is missing
+        if vals.isna().any():
+            continue
+
+        # convert to percentage
+        vals_pct = vals * 100
+
+        # check all > threshold
+        if (vals_pct > threshold).all():
+            # calculate score:
+            # = average exceeding amount
+            score = (vals_pct - threshold).mean()
 
             # accumulate existing score
             final_score = row['score'] + score
