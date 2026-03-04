@@ -225,7 +225,7 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     return result_df
 
 
-# R07: 近 N 日成交量(volume)平均 > T 張
+# F07: 近 N 日成交量(volume)平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 

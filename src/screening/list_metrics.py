@@ -254,14 +254,14 @@ def list_opr_margin_min_max_ratio_above(
     return result_df
 
 
-# R01b: 近 N 季營業利益率為近 M 季最大
+# R01: 近 N 季營業利益率為近 M 季最大
 def list_opr_margin_is_max(
     db, recent_n_quarters=1, lookback_m_quarters=4, input_df=None
 ):
     """Get stocks with recent operating margin is the max
 
-    Find stocks whose operating margin over the last N quarters exceeds the
-    maximum operating margin observed in the past M quarters.
+    Find stocks whose operating margin over the last N quarters
+    exceeds the maximum operating margin observed in the past M quarters.
 
     Args:
         db (StockDatabase): Database instance
@@ -352,14 +352,12 @@ def list_opr_margin_is_max(
     return result_df
 
 
-# R10: 營業利益率季增率連續 M 季 > T%
+# R02: 營業利益率季增率連續 M 季 > T%
 #      or 近 M 季營業利益率季增率 > T%
-def list_opr_margin_qoq_above(
-    db, cont_m_quarters=3, threshold=0.0, input_df=None
-):
-    """Get stocks with operating margin QoQ above threshold for continuous M quarters
+def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=None):
+    """Get stocks with operating margin QoQ above threshold consecutively
 
-    Find stocks whose N quarters operating margin QoQ
+    Find stocks whose operating margin QoQ
     exceeds the specified threshold for M consecutive quarters.
 
     Args:
@@ -437,10 +435,8 @@ def list_opr_margin_qoq_above(
 
 # R10: 營業利益率年增率連續 M 季 > T%
 #      or 近 M 季營業利益率年增率 > T%
-def list_opr_margin_yoy_above(
-    db, cont_m_quarters=3, threshold=0.0, input_df=None
-):
-    """Get stocks with operating margin YoY above threshold for continuous M quarters
+def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=None):
+    """Get stocks with operating margin YoY above threshold consecutively
 
     Find stocks whose operating margin YoY exceeds the specified threshold
     for M consecutive quarters.

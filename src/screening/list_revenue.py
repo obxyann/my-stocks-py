@@ -62,7 +62,7 @@ def list_revenue_hit_new_high(
 
         # split into early period and recent period
         early_vals = revenues.iloc[:-recent_n_months]
-        recent_vals = revenues.iloc[-recent_n_months:]
+        recent_vals  = revenues.iloc[-recent_n_months:]
 
         # get max value in each period
         early_max = early_vals.max()
@@ -106,6 +106,7 @@ def list_revenue_hit_new_high(
 
 
 # R02: 營收月增率連續 M 個月 > T%
+#      or 近 M 個月營收月增率 > T%
 def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue MoM above threshold consecutively
 
@@ -185,6 +186,7 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
 
 
 # R02: 營收年增率連續 M 個月 > T%
+#      or 近 M 個月營收年增率 > T%
 def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue YoY above threshold consecutively
 
@@ -547,6 +549,199 @@ def list_accum_revenue_yoy_ma_growth_above(
             # calculate score:
             # = exceeding amount
             score = growth_rate - threshold
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# F01: 最新一期 N 個月平均(MA)營收創近 M 月新高
+def list_revenue_ma_hit_new_high(
+    db, ma_n_months=3, lookback_m_months=12, input_df=None
+):
+    """Get stocks whose latest N-month MA revenue reaching a new high
+
+    Find stocks whose N-month moving average of revenue is the highest
+    among the moving averages in the past M months.
+
+    Args:
+        db (StockDatabase): Database instance
+        ma_n_months (int): Moving average window size
+        lookback_m_months (int): Number of months to look back
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    if ma_n_months < 2:
+        raise ValueError('ma_n_months must be >= 2')
+    if lookback_m_months < 2:
+        raise ValueError('lookback_m_months must be >= 2')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # calc needed points
+    # We need M periods of MA. Each N-month MA requires N data points.
+    # To get M consecutive N-month MAs, we need N + M - 1 data points.
+    needed_points = ma_n_months + lookback_m_months - 1
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent revenue data
+        # NOTE: ensure sorted by date ascending (old -> new)
+        df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
+
+        # skip if not enough data
+        if len(df_rev) < needed_points:
+            continue
+
+        # calculate MA on the fly
+        # df_rev is sorted ascending by date
+        ma_series = df_rev['revenue'].rolling(window=ma_n_months).mean()
+
+        # we need the last 'lookback_m_months' MA values
+        values = ma_series.tail(lookback_m_months)
+
+        # skip if not enough data
+        if len(values) < lookback_m_months:
+            continue
+
+        # skip if any value is missing
+        if values.isna().any():
+            continue
+
+        # exclude the newest value to find the max of previous
+        early_vals = values.iloc[:-1]
+        recent_vals = values.iloc[-1]
+
+        early_max = early_vals.max()
+
+        if pd.isna(early_max):
+            continue
+
+        # check if recent val exceeds early max
+        if recent_vals > early_max:
+            # calculate score:
+            # = percentage exceeded
+            if early_max == 0:
+                score = 0
+            else:
+                score = (recent_vals - early_max) / abs(early_max) * 100
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# F02: 近 N 月平均營收大於 M 月平均營收
+def list_revenue_ma_greater_than(db, ma_n_months=3, ma_m_months=12, input_df=None):
+    """Get stocks whose recent N-month average revenue is greater than M-month average revenue
+
+    Find stocks where the latest N-month moving average revenue
+    is greater than the latest M-month moving average revenue.
+
+    Args:
+        db (StockDatabase): Database instance
+        ma_n_months (int): First moving average window size (N)
+        ma_m_months (int): Second moving average window size (M)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    if ma_n_months < 2:
+        raise ValueError('ma_n_months must be >= 2')
+    if ma_m_months < 2:
+        raise ValueError('ma_m_months must be >= 2')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # calc needed points
+    needed_points = max(ma_n_months, ma_m_months)
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent revenue data
+        # NOTE: ensure sorted by date ascending (old -> new)
+        df_rev = db.get_recent_revenue_by_code(code, limit=needed_points)
+
+        # skip if not enough data
+        if len(df_rev) < needed_points:
+            continue
+
+        revenues = df_rev['revenue']
+
+        # calculate latest N-month MA and M-month MA
+        n_month_vals = revenues.tail(ma_n_months)
+        m_month_vals = revenues.tail(ma_m_months)
+
+        if len(n_month_vals) < ma_n_months or len(m_month_vals) < ma_m_months:
+            continue
+
+        n_month_ma = n_month_vals.mean()
+        m_month_ma = m_month_vals.mean()
+
+        if pd.isna(n_month_ma) or pd.isna(m_month_ma):
+            continue
+
+        # check if N-month MA > M-month MA
+        if n_month_ma > m_month_ma:
+            # calculate score:
+            # = percentage exceeded
+            if m_month_ma == 0:
+                score = 0
+            else:
+                score = (n_month_ma - m_month_ma) / abs(m_month_ma) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
