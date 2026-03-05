@@ -36,6 +36,9 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     # because we don't know the exact latest date of price in database
@@ -97,13 +100,13 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
             continue
 
         # calculate growth rate
-        growth_rate = (latest_val - base_val) / base_val * 100
+        growth_rate = (latest_val - base_val) / base_val
 
         # check growth rate
         if growth_rate > threshold:
             # calculate score:
-            # = exceeding amount
-            score = growth_rate - threshold
+            # = exceeding amount (decimal to percentage)
+            score = (growth_rate - threshold) * 100
 
             # accumulate existing score
             final_score = row['score'] + score

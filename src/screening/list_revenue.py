@@ -138,6 +138,9 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -158,14 +161,11 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
         if vals.isna().any():
             continue
 
-        # convert to percentage, e.g. 0.05 -> 5.0(%)
-        vals_pct = vals * 100
-
         # check if all > threshold
-        if (vals_pct > threshold).all():
+        if (vals > threshold).all():
             # calculate score:
-            # = sum of exceeding amount
-            score = (vals_pct - threshold).sum()
+            # = average exceeding amount (decimal to percentage)
+            score = (vals - threshold).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -217,6 +217,9 @@ def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -237,14 +240,11 @@ def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
         if vals.isna().any():
             continue
 
-        # convert to percentage, e.g. 0.05 -> 5.0(%)
-        vals_pct = vals * 100
-
         # check if all > threshold
-        if (vals_pct > threshold).all():
+        if (vals > threshold).all():
             # calculate score:
-            # = sum of exceeding amount
-            score = (vals_pct - threshold).sum()
+            # = average exceeding amount (decimal to percentage)
+            score = (vals - threshold).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -498,6 +498,9 @@ def list_accum_revenue_yoy_ma_growth_above(
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     # to calculate the N-month MA, we need N data points
@@ -532,18 +535,18 @@ def list_accum_revenue_yoy_ma_growth_above(
         prev_val = vals.iloc[0]
         curr_val = vals.iloc[1]
 
-        # calculate growth rate
+        # calculate growth rate (in decimal)
         if prev_val == 0:
             # TODO: reconsider this
             growth_rate = 0.0
         else:
-            growth_rate = (curr_val - prev_val) / abs(prev_val) * 100
+            growth_rate = (curr_val - prev_val) / abs(prev_val)
 
         # check growth rate
         if growth_rate > threshold:
             # calculate score:
-            # = exceeding amount
-            score = growth_rate - threshold
+            # = exceeding amount (decimal to percentage)
+            score = (growth_rate - threshold) * 100
 
             # accumulate existing score
             final_score = row['score'] + score

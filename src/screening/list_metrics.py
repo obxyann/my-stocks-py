@@ -33,6 +33,9 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -55,15 +58,14 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         if vals.isna().any():
             continue
 
-        # convert to percentage and calculate average
-        # e.g. 0.05 -> 5.0(%)
-        val_avg = (vals * 100).mean()
+        # calculate average
+        val_avg = vals.mean()
 
         # check average
         if val_avg >= threshold:
             # calculate score:
-            # = exceeding amount
-            score = val_avg - threshold
+            # = exceeding amount (decimal to percentage)
+            score = (val_avg - threshold) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -114,6 +116,9 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -136,14 +141,14 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         if vals.isna().any():
             continue
 
-        # convert to percentage and get minimum
-        val_min = (vals * 100).min()
+        # get minimum
+        val_min = vals.min()
 
         # check minimum
         if val_min >= threshold:
             # calculate score:
-            # = exceeding amount
-            score = val_min - threshold
+            # = exceeding amount (decimal to percentage)
+            score = (val_min - threshold) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -198,6 +203,9 @@ def list_opr_margin_min_max_ratio_above(
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -220,11 +228,8 @@ def list_opr_margin_min_max_ratio_above(
         if vals.isna().any():
             continue
 
-        # convert to percentage
-        vals_pct = vals * 100
-
-        val_min = vals_pct.min()
-        val_max = vals_pct.max()
+        val_min = vals.min()
+        val_max = vals.max()
 
         # skip if max is not positive
         # (cannot divide or implies all negative/zero)
@@ -237,8 +242,8 @@ def list_opr_margin_min_max_ratio_above(
         # check ratio
         if ratio >= threshold:
             # calculate score:
-            # = exceeding amount
-            score = ratio - threshold
+            # = exceeding amount (decimal to percentage)
+            score = (ratio - threshold) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -336,6 +341,7 @@ def list_opr_margin_is_max(
                 # TODO: reconsider this
                 score = 0
             else:
+                # (decimal to percentage)
                 score = (recent_max - early_max) / abs(early_max) * 100
 
             # accumulate existing score
@@ -388,6 +394,9 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -410,14 +419,11 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         if vals.isna().any():
             continue
 
-        # convert to percentage
-        vals_pct = vals * 100
-
         # check if all > threshold
-        if (vals_pct > threshold).all():
+        if (vals > threshold).all():
             # calculate score:
-            # = average exceeding amount
-            score = (vals_pct - threshold).mean()
+            # = average exceeding amount (decimal to percentage)
+            score = (vals - threshold).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -469,6 +475,9 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
     if target_df.empty:
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
+    # convert threshold to decimal for comparison
+    threshold = threshold / 100
+
     results = []
 
     for _, row in target_df.iterrows():
@@ -491,14 +500,11 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         if vals.isna().any():
             continue
 
-        # convert to percentage
-        vals_pct = vals * 100
-
         # check if all > threshold
-        if (vals_pct > threshold).all():
+        if (vals > threshold).all():
             # calculate score:
-            # = average exceeding amount
-            score = (vals_pct - threshold).mean()
+            # = average exceeding amount (decimal to percentage)
+            score = (vals - threshold).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
