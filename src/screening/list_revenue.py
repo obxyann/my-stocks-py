@@ -674,7 +674,7 @@ def list_revenue_ma_hit_new_high(
     return result_df
 
 
-# F02: (最新一期) N 月平均(MA)營收大於 M 月平均(MA)營收
+# F02: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
 def list_revenue_ma_greater_than(db, ma_n_months=3, ma_m_months=12, input_df=None):
     """Get stocks with latest N-month average revenue is greater than
     M-month average revenue

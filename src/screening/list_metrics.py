@@ -171,7 +171,7 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R08: 近 N 季營業利益率最小/最大 > T%
+# R09: 近 N 季營業利益率最小/最大 > T%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):
