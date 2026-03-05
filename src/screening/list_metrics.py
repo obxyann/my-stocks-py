@@ -9,8 +9,8 @@ from screening.helper import get_target_stocks
 def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with average net margin above threshold
 
-    Find stocks whose average net margin exceeds the specified threshold
-    in last N quarters.
+    Find stocks whose average net margin
+    exceeds the specified threshold in last N quarters.
 
     Args:
         db (StockDatabase): Database instance
@@ -39,26 +39,28 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         code = row['code']
 
         # get recent financial metrics
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=recent_n_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < recent_n_quarters:
+        if len(metrics_df) < recent_n_quarters:
             continue
 
-        # get net margin series, drop None/NaN
-        margins = df_metrics['net_margin'].dropna()
+        # get data series
+        vals = metrics_df['net_margin']
 
-        # skip if empty
-        if margins.empty:
+        # skip if any value is missing
+        if vals.isna().any():
             continue
 
         # convert to percentage and calculate average
         # e.g. 0.05 -> 5.0(%)
-        val_avg = (margins * 100).mean()
+        val_avg = (vals * 100).mean()
 
-        if val_avg > threshold:
+        # check average
+        if val_avg >= threshold:
             # calculate score:
             # = exceeding amount
             score = val_avg - threshold
@@ -88,8 +90,8 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
 def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with minimum operating margin over threshold
 
-    Find stocks whose minimum operating margin exceeds the specified threshold
-    in last N quarters.
+    Find stocks whose minimum operating margin
+    exceeds the specified threshold in last N quarters.
 
     Args:
         db (StockDatabase): Database instance
@@ -118,25 +120,27 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         code = row['code']
 
         # get recent financial metrics
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=recent_n_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < recent_n_quarters:
+        if len(metrics_df) < recent_n_quarters:
             continue
 
-        # get opr margin series, drop None/NaN
-        margins = df_metrics['opr_margin'].dropna()
+        # get data series
+        vals = metrics_df['opr_margin']
 
-        # skip if empty
-        if margins.empty:
+        # skip if any value is missing
+        if vals.isna().any():
             continue
 
-        # convert to percentage and get min
-        val_min = (margins * 100).min()
+        # convert to percentage and get minimum
+        val_min = (vals * 100).min()
 
-        if val_min > threshold:
+        # check minimum
+        if val_min >= threshold:
             # calculate score:
             # = exceeding amount
             score = val_min - threshold
@@ -162,14 +166,15 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# R09: 近 N 季營業利益率最小/最大 > T%
+# R08: 近 N 季營業利益率最小/最大 > T%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):
-    """Get stocks with (min operating margin/max operating margin) over
-    threshold
+    """Get stocks with min / max of operating margin over threshold
 
-    This metric is often used to assess the stability of margin.
+    Find stocks whose stability (min / max) of operating margin
+    exceeds the specified threshold in last N quarters.
+
     A ratio close to 100% indicates very stable margins.
 
     Args:
@@ -199,26 +204,27 @@ def list_opr_margin_min_max_ratio_above(
         code = row['code']
 
         # get recent financial metrics
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=recent_n_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < recent_n_quarters:
+        if len(metrics_df) < recent_n_quarters:
             continue
 
-        # get opr margin series, drop None/NaN
-        margins = df_metrics['opr_margin'].dropna()
+        # get data series
+        vals = metrics_df['opr_margin']
 
-        # skip if empty
-        if margins.empty:
+        # skip if any value is missing
+        if vals.isna().any():
             continue
 
         # convert to percentage
-        series_percent = margins * 100
+        vals_pct = vals * 100
 
-        val_min = series_percent.min()
-        val_max = series_percent.max()
+        val_min = vals_pct.min()
+        val_max = vals_pct.max()
 
         # skip if max is not positive
         # (cannot divide or implies all negative/zero)
@@ -228,7 +234,8 @@ def list_opr_margin_min_max_ratio_above(
         # calculate ratio in percentage
         ratio = (val_min / val_max) * 100
 
-        if ratio > threshold:
+        # check ratio
+        if ratio >= threshold:
             # calculate score:
             # = exceeding amount
             score = ratio - threshold
@@ -254,7 +261,8 @@ def list_opr_margin_min_max_ratio_above(
     return result_df
 
 
-# R01: 近 N 季營業利益率為近 M 季最大
+# R01: 近 N 季營業利益率為近 M 季最大  (P.S. 近 N 季中_有任何一季_)
+#      近 N 季營業利益率創近 M 季新高  (P.S. 近 N 季中_有任何一季_)
 def list_opr_margin_is_max(
     db, recent_n_quarters=1, lookback_m_quarters=4, input_df=None
 ):
@@ -292,37 +300,36 @@ def list_opr_margin_is_max(
         code = row['code']
 
         # get recent financial metrics
-        # NOTE: ensure sorted by date ascending (old -> new)
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=lookback_m_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < lookback_m_quarters:
+        if len(metrics_df) < lookback_m_quarters:
             continue
 
-        # get opr margin series
-        margins = df_metrics['opr_margin']
+        # get data series
+        vals = metrics_df['opr_margin']
 
         # skip if any value is missing
-        if margins.isna().any():
+        if vals.isna().any():
             continue
 
         # split into early period and recent period
-        early_vals = margins.iloc[:-recent_n_quarters]
-        recent_vals = margins.iloc[-recent_n_quarters:]
+        early_vals = vals.iloc[:-recent_n_quarters]
+        recent_vals = vals.iloc[-recent_n_quarters:]
 
         # get max value in each period
         early_max = early_vals.max()
         recent_max = recent_vals.max()
 
         # skip if early period has no valid value
-        # NOTE: normaly this should not happen, we had guranteed
-        #       enough data > recent_n_quarters
-        if pd.isna(early_max):
+        if pd.isna(early_max) or pd.isna(recent_max):
             continue
 
-        if recent_max >= early_max:
+        # check if recent max exceeds early max
+        if recent_max > early_max:
             # calculate score:
             # = percentage exceeded
             if early_max == 0:
@@ -353,7 +360,7 @@ def list_opr_margin_is_max(
 
 
 # R02: 營業利益率季增率連續 M 季 > T%
-#      or 近 M 季營業利益率季增率 > T%
+#      近 M 季營業利益率季增率 > T%  (P.S. 全部)
 def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=None):
     """Get stocks with operating margin QoQ above threshold consecutively
 
@@ -387,17 +394,17 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         code = row['code']
 
         # get recent financial metrics
-        # NOTE: ensure sorted by date ascending (old -> new)
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=cont_m_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < cont_m_quarters:
+        if len(metrics_df) < cont_m_quarters:
             continue
 
-        # get opr margin QoQ series
-        vals = df_metrics['opr_margin_qoq']
+        # get data series
+        vals = metrics_df['opr_margin_qoq']
 
         # skip if any value is missing
         if vals.isna().any():
@@ -406,7 +413,7 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         # convert to percentage
         vals_pct = vals * 100
 
-        # check all > threshold
+        # check if all > threshold
         if (vals_pct > threshold).all():
             # calculate score:
             # = average exceeding amount
@@ -433,13 +440,13 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
     return result_df
 
 
-# R10: 營業利益率年增率連續 M 季 > T%
-#      or 近 M 季營業利益率年增率 > T%
+# R02: 營業利益率年增率連續 M 季 > T%
+#      近 M 季營業利益率年增率 > T%  (P.S. 全部)
 def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=None):
     """Get stocks with operating margin YoY above threshold consecutively
 
-    Find stocks whose operating margin YoY exceeds the specified threshold
-    for M consecutive quarters.
+    Find stocks whose operating margin YoY
+    exceeds the specified threshold for M consecutive quarters.
 
     Args:
         db (StockDatabase): Database instance
@@ -468,17 +475,17 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         code = row['code']
 
         # get recent financial metrics
-        # NOTE: ensure sorted by date ascending (old -> new)
-        df_metrics = db.get_recent_financial_metrics_by_code(
+        # NOTE: already sorted by date ascending (old -> new)
+        metrics_df = db.get_recent_financial_metrics_by_code(
             code, limit=cont_m_quarters
         )
 
         # skip if not enough data
-        if len(df_metrics) < cont_m_quarters:
+        if len(metrics_df) < cont_m_quarters:
             continue
 
-        # get opr margin YoY series
-        vals = df_metrics['opr_margin_yoy']
+        # get data series
+        vals = metrics_df['opr_margin_yoy']
 
         # skip if any value is missing
         if vals.isna().any():
@@ -487,7 +494,7 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         # convert to percentage
         vals_pct = vals * 100
 
-        # check all > threshold
+        # check if all > threshold
         if (vals_pct > threshold).all():
             # calculate score:
             # = average exceeding amount

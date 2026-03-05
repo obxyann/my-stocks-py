@@ -8,12 +8,12 @@ from dateutil.relativedelta import relativedelta
 from screening.helper import get_target_stocks
 
 
-# R05: 近 N 個月股價(price)漲幅 > T%
+# R05: 近 N 個月股價漲幅 > T%  (P.S. N 個月期間)
 def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None):
     """Get stocks with recent price growth rate above threshold
 
-    Find stocks whose price growth rate exceeds the specified
-    threshold in the last N months.
+    Find stocks whose price growth rate
+    exceeds the specified threshold in the last N months.
 
     Args:
         db (StockDatabase): Database instance
@@ -50,17 +50,17 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         code = row['code']
 
         # get daily prices
-        # NOTE: ensure sorted by date ascending (old -> new)
-        df_prices = db.get_prices_by_code(code, start_date=start_date_str)
+        # NOTE: already sorted by date ascending (old -> new)
+        price_df = db.get_prices_by_code(code, start_date=start_date_str)
 
         # skip if not enough data
-        if len(df_prices) < 2:
+        if len(price_df) < 2:
             continue
 
         # latest price and date
-        latest_row = df_prices.iloc[-1]
+        latest_row = price_df.iloc[-1]
 
-        latest_price = latest_row['close_price']
+        latest_val = latest_row['close_price']
         latest_date_str = latest_row['trade_date']
 
         try:
@@ -76,10 +76,10 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         # but if holiday, maybe checks nearby
         # let's find index where date is closest
 
-        df_prices['date_obj'] = pd.to_datetime(df_prices['trade_date'])
+        price_df['date_obj'] = pd.to_datetime(price_df['trade_date'])
 
         # filter for dates <= target_date
-        past_candidates = df_prices[df_prices['date_obj'] <= target_date]
+        past_candidates = price_df[price_df['date_obj'] <= target_date]
 
         if past_candidates.empty:
             # if no data before target date, maybe the stock is too new
@@ -90,18 +90,20 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
 
         # take the last one of the candidates (closest to target_date from the left)
         base_row = past_candidates.iloc[-1]
-        base_price = base_row['close_price']
 
-        if base_price <= 0:
+        base_val = base_row['close_price']
+
+        if base_val <= 0:
             continue
 
-        # calculate growth
-        growth = (latest_price - base_price) / base_price * 100
+        # calculate growth rate
+        growth_rate = (latest_val - base_val) / base_val * 100
 
-        if growth > threshold:
+        # check growth rate
+        if growth_rate > threshold:
             # calculate score:
-            # = growth percentage itself
-            score = growth
+            # = exceeding amount
+            score = growth_rate - threshold
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -124,7 +126,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     return result_df
 
 
-# R06: 最新股價(price) > 近 N 個月月均價
+# R06: 最新股價 > 近 N 個月月均價
 def list_price_above_avg(db, recent_n_months=1, input_df=None):
     """Get stocks with latest price above recent average price
 
@@ -163,33 +165,35 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
 
         # get latest price
         # by fetching a small window of daily prices for the latest price
-        # NOTE: ensure sorted by date ascending (old -> new)
+        # NOTE: already sorted by date ascending (old -> new)
         last_month_date = datetime.now() - relativedelta(days=30)
 
-        df_daily = db.get_prices_by_code(
+        price_df = db.get_prices_by_code(
             code, start_date=last_month_date.strftime('%Y-%m-%d')
         )
 
-        if df_daily.empty:
+        if price_df.empty:
             continue
 
-        latest_price = df_daily.iloc[-1]['close_price']
+        latest_val = price_df.iloc[-1]['close_price']
 
         # get monthly averages
-        # NOTE: ensure sorted by date ascending (old -> new)
-        df_monthly = db.get_monthly_avg_prices_by_code(code, start_date=start_date_str)
+        # NOTE: already sorted by date ascending (old -> new)
+        price_avg_df = db.get_monthly_avg_prices_by_code(
+            code, start_date=start_date_str
+        )
 
-        if df_monthly.empty:
+        if price_avg_df.empty:
             continue
 
         # take last N records
-        # Note: df_monthly is sorted by year, month
+        # Note: price_avg_df is sorted by year, month
         # if we have fewer than N records, use what we have?
         # usually "recent N months" implies strict N
         # But if the stock is young, maybe N is too large
         # Let's use up to last N records
 
-        target_months = df_monthly.tail(recent_n_months)
+        target_months = price_avg_df.tail(recent_n_months)
 
         if target_months.empty:
             continue
@@ -199,10 +203,10 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
         if pd.isna(avg_price) or avg_price <= 0:
             continue
 
-        if latest_price > avg_price:
+        if latest_val > avg_price:
             # calculate score
             # = percentage above average
-            diff_percent = (latest_price - avg_price) / avg_price * 100
+            diff_percent = (latest_val - avg_price) / avg_price * 100
 
             # accumulate existing score
             final_score = row['score'] + diff_percent
@@ -225,12 +229,12 @@ def list_price_above_avg(db, recent_n_months=1, input_df=None):
     return result_df
 
 
-# F07: 近 N 日成交量(volume)平均 > T 張
+# R07: 近 N 日成交量平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 
-    Find stocks whose average volume exceeds the specified threshold
-    in last N days.
+    Find stocks whose average volume
+    exceeds the specified threshold in last N days.
 
     Args:
         db (StockDatabase): Database instance
@@ -259,22 +263,24 @@ def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
         code = row['code']
 
         # get recent prices
-        df_prices = db.get_recent_prices_by_code(code, limit=recent_n_days)
+        # NOTE: already sorted by date ascending (old -> new)
+        price_df = db.get_recent_prices_by_code(code, limit=recent_n_days)
 
         # skip if not enough data
-        if len(df_prices) < recent_n_days:
+        if len(price_df) < recent_n_days:
             continue
 
-        # get net margin series, drop None/NaN
-        volumes = df_prices['volume'].dropna()
+        # get data series
+        vals = price_df['volume']
 
-        # skip if empty
-        if volumes.empty:
+        # skip if any value is missing
+        if vals.isna().any():
             continue
 
         # calculate average
-        val_avg = volumes.mean()
+        val_avg = vals.mean()
 
+        # check average
         if val_avg > threshold:
             # calculate score:
             # = exceeding amount
