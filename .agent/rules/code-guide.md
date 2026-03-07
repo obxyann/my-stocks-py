@@ -40,7 +40,7 @@ trigger: always_on
 ## Database (SQLite Usage)
 
 - Engine: Use `sqlite3` standard library
-- Schema: Refer to `docs/DB-Schema.txt` for table structures
+- Schema: Refer to `docs/Database Schema.md` for table structures
 - Architecture:
    * Basic logic resides in `database/stock.py`, which provides database operations
    * Maintenance tasks are handled by `db_manager.py` (CLI tool)
