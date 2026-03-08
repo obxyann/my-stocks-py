@@ -89,7 +89,7 @@ def list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# H07: 近 N 季稅後純益率平均 > T%
+# H06: 近 N 季稅後純益率平均 > T%
 def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=None):
     """Get stocks with average net margin above threshold
 
@@ -172,7 +172,7 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
     return result_df
 
 
-# H08: 近 N 季營業利益率最小/最大 > T%
+# H07: 近 N 季營業利益率最小/最大 > T%
 def list_opr_margin_min_max_ratio_above(
     db, recent_n_quarters=4, threshold=0.0, input_df=None
 ):

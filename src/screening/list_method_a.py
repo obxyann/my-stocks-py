@@ -7,9 +7,9 @@ from screening.list_metrics import (
     # H02: 近 N 季營業利益率最少 > T%
     #      近 N 季營業利益率 > T%
     list_opr_margin_min_above,
-    # H07: 近 N 季稅後純益率平均 > T%
+    # H06: 近 N 季稅後純益率平均 > T%
     list_net_margin_avg_above,
-    # H08: 近 N 季營業利益率最小/最大 > T%
+    # H07: 近 N 季營業利益率最小/最大 > T%
     list_opr_margin_min_max_ratio_above,
     # H01: 近 N 季營業利益率為近 M 季最大  (P.S. 近 N 季中_有任何一季_)
     #      近 N 季營業利益率創近 M 季新高  (P.S. 近 N 季中_有任何一季_)
@@ -22,9 +22,9 @@ from screening.list_metrics import (
     list_opr_margin_yoy_above,
 )
 from screening.list_price import (
-    # H05: 近 N 個月股價漲幅 > T%
+    # H04: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
     list_price_growth_above,
-    # H06: 最新股價 > 近 N 個月月均價
+    # H05: 最新股價 > 近 N 個月月均價
     list_price_above_avg,
     # F07: 近 N 日成交量平均 > T 張
     list_volume_avg_above,
@@ -101,7 +101,7 @@ def list_method_test(db, test_case=1, input_df=None):
     #########
 
     if test_case == 11:
-        print('# 近 6 個月股價漲幅 > 20%')
+        print('# 近 6 個月股價成長幅度 > 20%')
         return list_price_growth_above(db, recent_n_months=6, threshold=20, input_df=input_df)
 
     if test_case == 12:
@@ -205,14 +205,14 @@ def list_method_long(db, input_df=None):
     """長期強勢成長股（營收創新高、股價多頭趨勢）
 
     - 近 2 個月營收創近 1 年新高
-    - 近 6 個月股價漲幅 > 25% (or 0%)
+    - 近 6 個月股價成長幅度 > 25% (or 0%)
     """
     print('# 近 2 個月營收創近 1 年新高')
     df = list_revenue_hit_new_high(
         db, recent_n_months=2, lookback_m_months=12, input_df=input_df
     )
 
-    print('# 6 個月股價漲幅 > 25%')
+    print('# 6 個月股價成長幅度 > 25%')
     df = list_price_growth_above(db, recent_n_months=6, threshold=25, input_df=df)
 
     print('# Done')
@@ -224,7 +224,7 @@ def list_method_short(db, mode=1, input_df=None):
 
     - 營收月增率連續 1 個月 > 0%
     - 3 個月累積營收年增率連續 1 個月成長
-    - 近 6 個月股價漲幅 > 0%
+    - 近 6 個月股價成長幅度 > 0%
     - 最新股價 > 近 2 個月月均價
     or
     - 營收月增率連續 1 個月 > 0%
@@ -234,7 +234,7 @@ def list_method_short(db, mode=1, input_df=None):
     - 營收月增率連續 2 個月 > 0%
     - 最新股價 > 近 2 個月月均價
     or
-    - 近 6 個月股價漲幅 > 0%
+    - 近 6 個月股價成長幅度 > 0%
     """
     if mode == 1:
         print('# 營收月增率連續 1 個月 > 0%')
@@ -245,7 +245,7 @@ def list_method_short(db, mode=1, input_df=None):
             db, ma_n_months=3, cont_m_months=1, input_df=df
         )
 
-        print('# 近 6 個月股價漲幅 > 0%')
+        print('# 近 6 個月股價成長幅度 > 0%')
         df = list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=df)
 
         print('# 最新股價 > 近 2 個月月均價')
@@ -257,7 +257,7 @@ def list_method_short(db, mode=1, input_df=None):
         print('# 最新股價 > 近 2 個月月均價')
         df = list_price_above_avg(db, recent_n_months=2, input_df=df)
     else:
-        print('# 近 6 個月股價漲幅 > 0%')
+        print('# 近 6 個月股價成長幅度 > 0%')
         df = list_price_growth_above(db, recent_n_months=6, threshold=0, input_df=df)
 
     print('# Done')
