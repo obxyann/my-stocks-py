@@ -308,3 +308,97 @@ def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     )
 
     return result_df
+
+
+# F01: 近 N 日內有 K 日股價創近 M 日新高
+def list_price_hit_new_high_days(
+    db, recent_n_days=5, target_k_days=2, lookback_m_days=60, input_df=None
+):
+    """Get stocks with recent price reaching a new high for some days
+
+    Find stocks whose prices over the last N days has K days
+    are the highest among the prices in the past M days.
+
+    Args:
+        db (StockDatabase): Database instance
+        recent_n_days (int): Number of recent days to check
+        target_k_days (int): Minimum number of days hitting new highs
+        lookback_m_days (int): Number of dayss to look back
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if recent_n_days < 1:
+        raise ValueError('recent_n_days must be >= 1')
+    if target_k_days < 1:
+        raise ValueError('target_k_days must be >= 1')
+    if lookback_m_days < 1:
+        raise ValueError('lookback_m_days must be >= 1')
+    if target_k_days > recent_n_days:
+        raise ValueError('target_k_days cannot be greater than recent_n_days')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # get enough historical data
+    need_days = recent_n_days + lookback_m_days
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent prices
+        # NOTE: already sorted by date ascending (old -> new)
+        price_df = db.get_recent_prices_by_code(code, limit=need_days)
+
+        # skip if not enough data
+        if len(price_df) < lookback_m_days:
+            continue
+
+        # get data series
+        vals = price_df['close_price']
+
+        # calculate M-day rolling max
+        rolling_max = vals.rolling(window=lookback_m_days).max()
+
+        # check if close matches rolling max
+        is_new_high = (vals == rolling_max) & (rolling_max.notna())
+
+        # look at the last N days
+        recent_is_new_high = is_new_high.tail(recent_n_days)
+
+        new_high_days_count = recent_is_new_high.sum()
+
+        # check new_high_days_count
+        if new_high_days_count >= target_k_days:
+            # calculate score:
+            # = extra new high days over K
+            score = new_high_days_count - target_k_days + 1
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
