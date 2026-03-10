@@ -26,7 +26,9 @@ from screening.list_price import (
     list_price_growth_above,
     # H05: 最新股價 > 近 N 個月月均價
     list_price_above_avg,
-    # F07: 近 N 日成交量平均 > T 張
+    # F01: 近 N 日內有 K 日股價創近 M 日新高
+    list_price_hit_new_high_days,
+    # F06: 近 N 日成交量平均 > T 張
     list_volume_avg_above,
 )
 from screening.list_revenue import (
@@ -45,7 +47,7 @@ from screening.list_revenue import (
     list_accum_revenue_yoy_ma_growth,
     # H04: (最新一期) N 個月平均(MA)累積營收年增率成長幅度 > T%  (P.S. 年增率遞增幅度)
     list_accum_revenue_yoy_ma_growth_above,
-    # F11: (最新一期) N 個月平均(MA)營收創近 M 月新高
+    # F01: (最新一期) N 個月平均(MA)營收創近 M 月新高
     list_revenue_ma_hit_new_high,
     # F12: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
     list_revenue_ma_greater_than,
@@ -109,6 +111,10 @@ def list_method_test(db, test_case=1, input_df=None):
         return list_price_above_avg(db, recent_n_months=2, input_df=input_df)
 
     if test_case == 13:
+        print('# 近 5 日內有 2 日股價創近 200 日新高')
+        return list_price_hit_new_high_days(db, recent_n_days=5, target_k_days=2, lookback_m_days=200, input_df=input_df)
+
+    if test_case == 14:
         print('# 近 5 日成交量平均 > 500 張')
         return list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=input_df)
 
@@ -306,7 +312,7 @@ def list_method_revenue_price_turbo(db, input_df=None):
     )
 
     print('# 近 5 日內有 2 日股價創 200 日新高')
-    # df = list_price_hit_new_high(db, recent_n_months=5, cont_m_months=2, input_df=df)
+    df = list_price_hit_new_high_days(db, recent_n_days=5, target_k_days=2, lookback_m_days=200, input_df=input_df)
 
     print('# 五日成交均量大於 500 張')
     df = list_volume_avg_above(db, recent_n_months=5, threshold=500 * 1000, input_df=df)

@@ -569,7 +569,7 @@ def list_accum_revenue_yoy_ma_growth_above(
     return result_df
 
 
-# F11: (最新一期) N 個月平均(MA)營收創近 M 月新高
+# F01: (最新一期) N 個月平均(MA)營收創近 M 月新高
 def list_revenue_ma_hit_new_high(
     db, ma_n_months=3, lookback_m_months=12, input_df=None
 ):
