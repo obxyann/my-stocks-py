@@ -19,7 +19,7 @@ from utils.ass import wait
 
 
 def import_csv_to_db(csv_dir=None, db_path=None):
-    """Import CSV data to database"""
+    """Import CSV files to database"""
     if csv_dir is None:
         csv_dir = 'storage'
     else:
@@ -129,7 +129,10 @@ def import_csv_to_db(csv_dir=None, db_path=None):
 
 
 def download(refetch=False, output_dir=None):
-    """Download fresh data and import to database"""
+    """Download data to CSV files
+
+       if refetch is false, only download those not exists 
+    """
     if refetch:
         action = 'Downloading fresh'
     else:
@@ -155,6 +158,7 @@ def download(refetch=False, output_dir=None):
         dest_dir = os.path.join(output_dir, 'monthly')
         download_hist_monthly_revenues('2013-01-01', dest_dir, refetch)  # fmt: skip
 
+        # force to refresh (update) last month even it exists
         print('\nRefreshing last monthly revenues...')
         download_last_monthly_revenues(dest_dir)
         # print('Done')
@@ -167,12 +171,13 @@ def download(refetch=False, output_dir=None):
         print('')
         download_hist_quarterly_reports('cash', '2013-01-01', dest_dir, refetch)  # fmt: skip
 
+        # force to refresh (update) last quarter even it exists
         print('\nRefreshing last quarterly reports...')
-        download_last_quarterly_reports('income', output_dir)
+        download_last_quarterly_reports('income', dest_dir)
         wait(2, 10)
-        download_last_quarterly_reports('balance', output_dir)
+        download_last_quarterly_reports('balance', dest_dir)
         wait(2, 10)
-        download_last_quarterly_reports('cash', output_dir)
+        download_last_quarterly_reports('cash', dest_dir)
         # print('Done')
 
         print('\nAll done!')
