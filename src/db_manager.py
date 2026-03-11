@@ -21,7 +21,7 @@ from utils.ass import wait
 def import_csv_to_db(csv_dir=None, db_path=None):
     """Import CSV files to database"""
     if csv_dir is None:
-        csv_dir = 'storage'
+        csv_dir = 'downloads'
     else:
         csv_dir = csv_dir.rstrip('/\\')
 
@@ -50,6 +50,8 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             count = db.import_business_type_csv_to_stocks(csv_folder)
             print(f'Successfully imported {count} records')
 
+        '''
+        TBD: obsolete
         # import {XXXX}_prices.csv
         print('\nImporting OHLC prices to database...')
 
@@ -60,6 +62,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         else:
             count = db.import_ohlc_prices_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records')
+        '''
 
         # import prices_{YYYYMMDD}.csv
         print('\nImporting daily prices to database...')
@@ -88,7 +91,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
                 db.update_monthly_revenue()
                 print('Successfully')
 
-        # import xx_reports_{YYYY}Q{Q}.csv
+        # import xxx_reports_{YYYY}Q{Q}.csv
         print('\nImporting quarterly reports to database:')
 
         csv_folder = os.path.join(csv_dir, 'quarterly')
@@ -139,7 +142,7 @@ def download(refetch=False, output_dir=None):
         action = 'Downloading'
 
     if output_dir is None:
-        output_dir = 'storage'
+        output_dir = 'downloads'
     else:
         output_dir = output_dir.rstrip('/\\')
 
