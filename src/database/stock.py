@@ -858,6 +858,143 @@ class StockDatabase:
 
         return total_imported_records
 
+    def import_db_price_csv_to_database(self, csv_folder='downloads/db/price'):
+        """Import price data from specific CSV files to database
+
+        Args:
+            csv_folder (str): Path to the folder containing CSV files
+
+        Returns:
+            int: Number of records imported
+        """
+        # create table if not exists
+        self.ensure_daily_prices_table()
+
+        if not os.path.isdir(csv_folder):
+            raise FileNotFoundError(f'CSV folder not found: {csv_folder}')
+
+        # NOTE: '__db_prices' is not a real table name, just for tracking the
+        #       last updated time of different data sources for 'daily_prices'
+        updated_time = self.get_table_updated_time('__db_prices')
+
+        last_mod_time = None  # track latest modification time of all files
+
+        total_imported_records = 0
+
+        file_mapping = {
+            'close.csv': 'close_price',
+            'high.csv': 'high_price',
+            'low.csv': 'low_price',
+            'open.csv': 'open_price',
+            'volume.csv': 'volume',
+        }
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            for filename, col_name in file_mapping.items():
+                csv_path = os.path.join(csv_folder, filename)
+
+                if not os.path.exists(csv_path):
+                    continue
+
+                # compare file modification time with table updated time
+                csv_mod_time = datetime.fromtimestamp(modification_time(csv_path))
+
+                if updated_time and csv_mod_time <= updated_time:
+                    print(f'{csv_path} is old')
+                    continue
+
+                print(f'Reading {csv_path}')
+
+                try:
+                    df = pd.read_csv(csv_path)
+
+                except Exception as e:
+                    use_color(Colors.ERROR)
+                    print(f'Error: Failed reading {filename}: {e}')
+                    use_color(Colors.RESET)
+
+                    continue
+
+                if 'date' not in df.columns:
+                    use_color(Colors.ERROR)
+                    print(f"Error: Missing mandatory column 'date' in {filename}")
+                    use_color(Colors.RESET)
+
+                    continue
+
+                # melt data from wide to long format
+                df_long = df.melt(id_vars=['date'], var_name='code', value_name='val')
+
+                # ensure 'val' is numeric, replacing invalid with NaN
+                df_long['val'] = pd.to_numeric(df_long['val'], errors='coerce')
+
+                # remove rows with NaN val
+                long_df = df_long.dropna(subset=['val'])
+
+                if long_df.empty:
+                    continue
+
+                # format 'trade_date'
+                try:
+                    long_df['trade_date'] = pd.to_datetime(long_df['date']).dt.strftime(
+                        '%Y-%m-%d'
+                    )
+                except Exception as e:
+                    use_color(Colors.ERROR)
+                    print(f'Error: Date parsing failed in {filename}: {e}')
+                    use_color(Colors.RESET)
+
+                    continue
+
+                # ensure 'code' in string format
+                long_df['code'] = long_df['code'].astype(str)
+
+                # prepare SQL
+                columns = 'code, trade_date, open_price, high_price, low_price, close_price, volume'
+
+                # only use 'code', 'trade_date' and col_name values, others set as '0'
+                o_val = '?' if col_name == 'open_price' else '0'
+                h_val = '?' if col_name == 'high_price' else '0'
+                l_val = '?' if col_name == 'low_price' else '0'
+                c_val = '?' if col_name == 'close_price' else '0'
+                v_val = '?' if col_name == 'volume' else '0'
+
+                placeholders = f'?, ?, {o_val}, {h_val}, {l_val}, {c_val}, {v_val}'
+
+                # only update col_name
+                update_assignments = f'{col_name} = excluded.{col_name}'
+
+                # upsert data
+                sql = f"""
+                    INSERT INTO daily_prices ({columns})
+                    VALUES ({placeholders})
+                    ON CONFLICT(code, trade_date)
+                    DO UPDATE SET {update_assignments}
+                    """
+
+                # Note: df_long[['code', 'trade_date', 'val']] order matches ?, ?, ?
+                data = long_df[['code', 'trade_date', 'val']].values.tolist()
+
+                cursor.executemany(sql, data)
+
+                # update last_mod_time if file is newer
+                if last_mod_time is None or csv_mod_time > last_mod_time:
+                    last_mod_time = csv_mod_time
+
+                total_imported_records += len(long_df)
+
+            conn.commit()
+
+        # update table time
+        if last_mod_time:
+            self.set_table_updated_time('__db_prices', last_mod_time)
+
+            self.update_table_time('daily_prices', last_mod_time)
+
+        return total_imported_records
+
     def get_prices_by_code(self, stock_code, start_date='2013-01-01', end_date=None):
         """Get daily prices for specific stock
 
@@ -1726,8 +1863,8 @@ class StockDatabase:
                     sql = f"""
                         INSERT INTO {to_table} ({columns})
                         VALUES ({placeholders})
-                        ON CONFLICT(code, year, quarter) DO UPDATE SET
-                        {update_assignments}
+                        ON CONFLICT(code, year, quarter) 
+                        DO UPDATE SET {update_assignments}
                         """
 
                 data = df.values.tolist()
@@ -2004,6 +2141,7 @@ class StockDatabase:
             update_cols = [
                 c for c in df_core.columns if c not in ('code', 'year', 'quarter')
             ]
+
             update_assignments = ', '.join(
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
@@ -2012,9 +2150,9 @@ class StockDatabase:
             sql = f"""
                 INSERT INTO financial_core ({columns})
                 VALUES ({placeholders})
-                ON CONFLICT(code, year, quarter) DO UPDATE SET
-                {update_assignments}
-            """
+                ON CONFLICT(code, year, quarter)
+                DO UPDATE SET {update_assignments}
+                """
 
             # handle None/NaN
             data = df_core.where(pd.notnull(df_core), None).values.tolist()
@@ -2385,8 +2523,9 @@ class StockDatabase:
             columns = ', '.join(cols_map)
             placeholders = ', '.join(['?'] * len(cols_map))
 
-            # update exclusions
+            # exclude PK from UPDATE set
             update_cols = [c for c in cols_map if c not in ('code', 'year', 'quarter')]
+
             update_assignments = ', '.join(
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
@@ -2395,9 +2534,9 @@ class StockDatabase:
             sql = f"""
                 INSERT INTO financial_metrics ({columns})
                 VALUES ({placeholders})
-                ON CONFLICT(code, year, quarter) DO UPDATE SET
-                {update_assignments}
-            """
+                ON CONFLICT(code, year, quarter) 
+                DO UPDATE SET {update_assignments}
+                """
 
             cursor = conn.cursor()
 
