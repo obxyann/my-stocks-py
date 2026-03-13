@@ -362,7 +362,7 @@ class StockDatabase:
                 UPDATE stocks
                 SET business_type = ?
                 WHERE code = ?
-            """
+                """
 
             data = []
             for _, row in df.iterrows():
@@ -591,6 +591,8 @@ class StockDatabase:
         }
 
         with self.get_connection() as conn:
+            cursor = conn.cursor()
+
             for file in files:
                 match = pattern.search(file)
                 if not match:
@@ -689,8 +691,6 @@ class StockDatabase:
 
                 data = df.values.tolist()
 
-                cursor = conn.cursor()
-
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -747,6 +747,8 @@ class StockDatabase:
         }
 
         with self.get_connection() as conn:
+            cursor = conn.cursor()
+
             for file in files:
                 match = pattern.match(file)
                 if not match:
@@ -837,8 +839,6 @@ class StockDatabase:
                     """
 
                 data = df.values.tolist()
-
-                cursor = conn.cursor()
 
                 cursor.executemany(sql, data)
 
@@ -974,7 +974,6 @@ class StockDatabase:
                     DO UPDATE SET {update_assignments}
                     """
 
-                # Note: df_long[['code', 'trade_date', 'val']] order matches ?, ?, ?
                 data = long_df[['code', 'trade_date', 'val']].values.tolist()
 
                 cursor.executemany(sql, data)
@@ -1219,6 +1218,8 @@ class StockDatabase:
         }
 
         with self.get_connection() as conn:
+            cursor = conn.cursor()
+
             for file in files:
                 match = pattern.search(file)
                 if not match:
@@ -1309,8 +1310,6 @@ class StockDatabase:
 
                 data = df.values.tolist()
 
-                cursor = conn.cursor()
-
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -1336,7 +1335,7 @@ class StockDatabase:
             try:
                 # prepare SQL
                 # use SQL Window Functions to do incremental updates w/o pandas loading
-                update_query = """
+                query = """
                     WITH calc_ly_and_ytd AS (
                         SELECT
                             code,
@@ -1429,8 +1428,7 @@ class StockDatabase:
 
                 cursor = conn.cursor()
 
-                # execute
-                cursor.execute(update_query)
+                cursor.execute(query)
 
             except sqlite3.OperationalError as e:
                 use_color(Colors.WARNING)
@@ -1463,7 +1461,7 @@ class StockDatabase:
                 # fmt: on
 
                 # prepare SQL
-                update_query = """
+                sql = """
                     UPDATE monthly_revenue
                     SET revenue_ly = ?,
                         revenue_ytd = ?,
@@ -1491,12 +1489,11 @@ class StockDatabase:
                     {np.inf: None, -np.inf: None, np.nan: None}
                 )
 
-                update_data = list(df_update.itertuples(index=False, name=None))
+                data = list(df_update.itertuples(index=False, name=None))
 
                 cursor = conn.cursor()
 
-                # update data
-                cursor.executemany(update_query, update_data)
+                cursor.executemany(sql, data)
 
             conn.commit()
 
@@ -1581,8 +1578,6 @@ class StockDatabase:
             return
 
         with self.get_connection() as conn:
-            cursor = conn.cursor()
-
             # schema content
             schema_content = """
                     code TEXT NOT NULL,
@@ -1632,6 +1627,8 @@ class StockDatabase:
                     PRIMARY KEY (code, year, quarter)
                     -- , FOREIGN KEY (code) REFERENCES stocks (code)
             """
+
+            cursor = conn.cursor()
 
             # create tables
             for table_name in ['financial_core', 'financial_ytd']:
@@ -1738,6 +1735,8 @@ class StockDatabase:
             col_mapping = default_mapping
 
         with self.get_connection() as conn:
+            cursor = conn.cursor()
+
             for file in files:
                 match = pattern.search(file)
                 if not match:
@@ -1869,9 +1868,6 @@ class StockDatabase:
 
                 data = df.values.tolist()
 
-                cursor = conn.cursor()
-
-                # insert or upsert data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -2043,6 +2039,7 @@ class StockDatabase:
                 use_color(Colors.WARNING)
                 print('Warning: No data found')
                 use_color(Colors.RESET)
+                
                 return
 
             if verify_data:
@@ -2538,9 +2535,11 @@ class StockDatabase:
                 DO UPDATE SET {update_assignments}
                 """
 
+            data = df_upsert.values.tolist()
+
             cursor = conn.cursor()
 
-            cursor.executemany(sql, df_upsert.values.tolist())
+            cursor.executemany(sql, data)
 
             conn.commit()
 
