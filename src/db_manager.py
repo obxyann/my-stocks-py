@@ -47,7 +47,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         if not os.path.isdir(csv_folder):
             print(f'Folder not found: {csv_folder}')
         else:
-            count = db.import_business_type_csv_to_stocks(csv_folder)
+            count = db.import_business_type_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records')
 
         '''

@@ -69,6 +69,8 @@ class StockDatabase:
     def set_table_updated_time(self, table_name, updated_at=None):
         """Set last updated time for specific table
 
+        NOTE: Always replace the last updated time.
+
         Args:
             table_name (str): Name of the table
             updated_at (datetime): Updated time, use current time if not provided
@@ -129,7 +131,7 @@ class StockDatabase:
     def update_table_time(self, table_name, updated_at=None):
         """Update last updated time for specific table
 
-        Only sets time when it is newer than the last updated time.
+        NOTE: Only sets time when it is newer than the last updated time.
 
         Args:
             table_name (str): Name of the table
@@ -172,7 +174,7 @@ class StockDatabase:
         self.stocks_table_initialized = True
 
     def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
-        """Import stock list from CSV to database
+        """Import stock list from CSV file to database
 
         Args:
             csv_path (str): Path to CSV file
@@ -198,7 +200,7 @@ class StockDatabase:
 
         print(f'Reading {csv_path}')
 
-        # define column mapping
+        # define column mapping (CSV -> database)
         col_mapping = {
             'Code': 'code',
             'Name': 'name',
@@ -257,14 +259,15 @@ class StockDatabase:
 
             # prepare SQL
             columns = ', '.join(avail_cols)
+
             placeholders = ', '.join(['?'] * len(avail_cols))
 
-            # insert data
             sql = f"""
-                INSERT INTO stocks ({columns}) 
+                INSERT INTO stocks ({columns})
                 VALUES ({placeholders})
                 """
 
+            # prepare data
             data = df.values.tolist()
 
             with self.get_connection() as conn:
@@ -273,6 +276,7 @@ class StockDatabase:
                 # clear existing data
                 cursor.execute('DELETE FROM stocks')
 
+                # insert data
                 cursor.executemany(sql, data)
 
                 conn.commit()
@@ -289,14 +293,14 @@ class StockDatabase:
 
             return 0
 
-    def import_business_type_csv_to_stocks(self, csv_folder='storage/quarterly'):
-        """Import business type data from CSV to the 'stocks' table.
+    def import_business_type_csv_to_database(self, csv_folder='storage/quarterly'):
+        """Import business type data from CSV file to database
 
         Args:
-            csv_folder (str): Folder containing business_type.csv or income_reports_YYYYQN.csv.
+            csv_folder (str): Folder containing business_type.csv or income_reports_YYYYQN.csv
 
         Returns:
-            int: Number of records processed.
+            int: Number of records imported
         """
         # create table if not exists
         self.ensure_stocks_table()
@@ -320,7 +324,7 @@ class StockDatabase:
 
                 year, quarter = int(match.group(1)), int(match.group(2))
 
-                # Use year * 10 + quarter to find the latest
+                # use year * 10 + quarter to find the latest
                 val = year * 10 + quarter
                 if val > latest_val:
                     latest_val = val
@@ -357,20 +361,23 @@ class StockDatabase:
             # replace NaNs with None for SQLite compatibility
             df = df.where(pd.notnull(df), None)
 
-            # update data
+            # prepare SQL
             sql = """
                 UPDATE stocks
                 SET business_type = ?
                 WHERE code = ?
                 """
 
+            # prepare data
             data = []
+
             for _, row in df.iterrows():
                 data.append((row['Sector'], row['Code']))
 
             with self.get_connection() as conn:
                 cursor = conn.cursor()
 
+                # update data
                 cursor.executemany(sql, data)
 
                 conn.commit()
@@ -554,7 +561,7 @@ class StockDatabase:
         self.daily_price_table_initialized = True
 
     def import_daily_prices_csv_to_database(self, csv_folder='storage/daily'):
-        """Import daily prices from CSV to database
+        """Import daily prices from CSV files to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -580,7 +587,7 @@ class StockDatabase:
 
         total_imported_records = 0
 
-        # define column mapping
+        # define column mapping (CSV -> database)
         col_mapping = {
             'Code': 'code',
             'Open': 'open_price',
@@ -681,16 +688,18 @@ class StockDatabase:
 
                 # prepare SQL
                 columns = ', '.join(avail_cols)
+
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                # insert or replace data
                 sql = f"""
                     INSERT OR REPLACE INTO daily_prices ({columns})
                     VALUES ({placeholders})
                     """
 
+                # prepare data
                 data = df.values.tolist()
 
+                # insert or replace data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -710,7 +719,7 @@ class StockDatabase:
         return total_imported_records
 
     def import_ohlc_prices_csv_to_database(self, csv_folder='storage/ohlc'):
-        """Import OHLC prices from CSV to database
+        """Import OHLC prices from CSV files to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -736,7 +745,7 @@ class StockDatabase:
 
         total_imported_records = 0
 
-        # define column mapping
+        # define column mapping (CSV -> database)
         col_mapping = {
             'Date': 'trade_date',
             'Open': 'open_price',
@@ -830,16 +839,18 @@ class StockDatabase:
 
                 # prepare SQL
                 columns = ', '.join(avail_cols)
+
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                # insert or replace data
                 sql = f"""
                     INSERT OR REPLACE INTO daily_prices ({columns})
                     VALUES ({placeholders})
                     """
 
+                # prepare data
                 data = df.values.tolist()
 
+                # insert or replace data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -859,7 +870,7 @@ class StockDatabase:
         return total_imported_records
 
     def import_db_price_csv_to_database(self, csv_folder='downloads/db/price'):
-        """Import price data from specific CSV files to database
+        """Import prices from CSV files to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -881,6 +892,7 @@ class StockDatabase:
 
         total_imported_records = 0
 
+        # define file mapping (filename -> column)
         file_mapping = {
             'close.csv': 'close_price',
             'high.csv': 'high_price',
@@ -907,6 +919,7 @@ class StockDatabase:
 
                 print(f'Reading {csv_path}')
 
+                # read CSV
                 try:
                     df = pd.read_csv(csv_path)
 
@@ -936,17 +949,10 @@ class StockDatabase:
                 if long_df.empty:
                     continue
 
-                # format 'trade_date'
-                try:
-                    long_df['trade_date'] = pd.to_datetime(long_df['date']).dt.strftime(
-                        '%Y-%m-%d'
-                    )
-                except Exception as e:
-                    use_color(Colors.ERROR)
-                    print(f'Error: Date parsing failed in {filename}: {e}')
-                    use_color(Colors.RESET)
-
-                    continue
+                # format 'trade_date' in correct string format
+                long_df['trade_date'] = pd.to_datetime(long_df['date']).dt.strftime(
+                    '%Y-%m-%d'
+                )
 
                 # ensure 'code' in string format
                 long_df['code'] = long_df['code'].astype(str)
@@ -966,7 +972,7 @@ class StockDatabase:
                 # only update col_name
                 update_assignments = f'{col_name} = excluded.{col_name}'
 
-                # upsert data
+                # upsert
                 sql = f"""
                     INSERT INTO daily_prices ({columns})
                     VALUES ({placeholders})
@@ -974,8 +980,10 @@ class StockDatabase:
                     DO UPDATE SET {update_assignments}
                     """
 
+                # prepare data
                 data = long_df[['code', 'trade_date', 'val']].values.tolist()
 
+                # upsert data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -1028,7 +1036,7 @@ class StockDatabase:
     def get_monthly_avg_prices_by_code(
         self, stock_code, start_date='2013-01-01', end_date=None
     ):
-        """Get monthly average prices and volumes for specific stock
+        """Get monthly average prices for specific stock
 
         Args:
             stock_code (str): Stock code
@@ -1041,6 +1049,7 @@ class StockDatabase:
         """
         # convert date string to datetime
         start = parse_date_string(start_date)
+
         # get year, month parts
         start_year, start_month = start.year, start.month
 
@@ -1049,14 +1058,15 @@ class StockDatabase:
             end = parse_date_string(end_date)
         else:
             end = datetime.today()
+
         end_year, end_month = end.year, end.month
 
-        # convert to comparable period (YYYYMM)
-        start_period = start_year * 100 + start_month
-        end_period = end_year * 100 + end_month
+        # convert to comparable time (YYYYMM)
+        start_time = start_year * 100 + start_month
+        end_time = end_year * 100 + end_month
 
         with self.get_connection() as conn:
-            # retrieve and calculate monthly averages
+            # calculate monthly averages and retrieve data
             df = pd.read_sql_query(
                 """
                 SELECT
@@ -1068,20 +1078,20 @@ class StockDatabase:
                 FROM daily_prices
                 WHERE code = ?
                   AND CAST(strftime('%Y%m', trade_date) AS INTEGER) BETWEEN ? AND ?
-                  -- or  
+                  -- or
                   -- AND (CAST(strftime('%Y', trade_date) AS INTEGER) * 100 +
                   --     CAST(strftime('%m', trade_date) AS INTEGER)) BETWEEN ? AND ?
                 GROUP BY year, month
                 ORDER BY year, month
                 """,
                 conn,
-                params=(stock_code, start_period, end_period),
+                params=(stock_code, start_time, end_time),
             )
 
         return df
 
     def get_recent_prices_by_code(self, stock_code, limit=1):
-        """Get the latest N records of daily prices data for specific stock
+        """Get the latest N records of daily prices for specific stock
 
         Args:
             stock_code (str): Stock code
@@ -1091,7 +1101,7 @@ class StockDatabase:
             pandas.DataFrame: Daily prices data
         """
         with self.get_connection() as conn:
-            # retrieve data (latest N, then sort by date ascending)
+            # retrieve data
             df = pd.read_sql_query(
                 """
                 SELECT *
@@ -1122,8 +1132,7 @@ class StockDatabase:
                 ['code', 'year', 'month', 'price', 'volume']
         """
         with self.get_connection() as conn:
-            # calculate monthly averages and
-            # retrieve data (latest N, then sort by date ascending)
+            # calculate monthly averages and retrieve data
             df = pd.read_sql_query(
                 """
                 SELECT *
@@ -1186,7 +1195,7 @@ class StockDatabase:
         self.monthly_revenue_table_initialized = True
 
     def import_monthly_revenue_csv_to_database(self, csv_folder='storage/monthly'):
-        """Import monthly revenue from CSV to database
+        """Import monthly revenue from CSV files to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -1210,7 +1219,7 @@ class StockDatabase:
 
         total_imported_records = 0
 
-        # define column mapping
+        # define column mapping (CSV -> database)
         col_mapping = {
             'Code': 'code',
             'Revenue': 'revenue',
@@ -1300,16 +1309,18 @@ class StockDatabase:
 
                 # prepare SQL
                 columns = ', '.join(avail_cols)
+
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
-                # insert or replace data
                 sql = f"""
-                    INSERT OR REPLACE INTO monthly_revenue ({columns}) 
+                    INSERT OR REPLACE INTO monthly_revenue ({columns})
                     VALUES ({placeholders})
                     """
 
+                # prepare data
                 data = df.values.tolist()
 
+                # insert or replace data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -1333,7 +1344,6 @@ class StockDatabase:
         """Update calculated fields in monthly_revenue table"""
         with self.get_connection() as conn:
             try:
-                # prepare SQL
                 # use SQL Window Functions to do incremental updates w/o pandas loading
                 query = """
                     WITH calc_ly_and_ytd AS (
@@ -1372,7 +1382,7 @@ class StockDatabase:
                             LAG(val_revenue_ytd, 12) OVER (
                                 PARTITION BY code
                                 ORDER BY year, month
-                            ) AS val_revenue_ytd_ly                            
+                            ) AS val_revenue_ytd_ly
                         FROM calc_ly_and_ytd
                     ),
                     calc_mom_yoy AS (
@@ -1472,6 +1482,7 @@ class StockDatabase:
                     WHERE code = ? AND year = ? AND month = ?
                     """
 
+                # prepare data
                 cols = [
                     'revenue_ly',
                     'revenue_ytd',
@@ -1493,6 +1504,7 @@ class StockDatabase:
 
                 cursor = conn.cursor()
 
+                # update data
                 cursor.executemany(sql, data)
 
             conn.commit()
@@ -1510,6 +1522,7 @@ class StockDatabase:
         """
         # convert date string to datetime
         start = parse_date_string(start_date)
+
         # get year, month parts
         start_year, start_month = start.year, start.month
 
@@ -1518,11 +1531,12 @@ class StockDatabase:
             end = parse_date_string(end_date)
         else:
             end = datetime.today()
+
         end_year, end_month = end.year, end.month
 
-        # convert to comparable period (YYYYMM)
-        start_period = start_year * 100 + start_month
-        end_period = end_year * 100 + end_month
+        # convert to comparable time (YYYYMM)
+        start_time = start_year * 100 + start_month
+        end_time = end_year * 100 + end_month
 
         with self.get_connection() as conn:
             # retrieve data
@@ -1535,7 +1549,7 @@ class StockDatabase:
                 ORDER BY year, month
                 """,
                 conn,
-                params=(stock_code, start_period, end_period),
+                params=(stock_code, start_time, end_time),
             )
 
         return df
@@ -1551,7 +1565,7 @@ class StockDatabase:
             pandas.DataFrame: Recent revenue data
         """
         with self.get_connection() as conn:
-            # retrieve data (latest N, then sort by date ascending)
+            # retrieve data
             df = pd.read_sql_query(
                 """
                 SELECT * FROM (
@@ -1580,52 +1594,52 @@ class StockDatabase:
         with self.get_connection() as conn:
             # schema content
             schema_content = """
-                    code TEXT NOT NULL,
-                    year INTEGER NOT NULL,
-                    quarter INTEGER NOT NULL,
-                    -- balance
-                    curr_assets INTEGER,
-                    non_curr_assets INTEGER,
-                    total_assets INTEGER,
-                    curr_liabs INTEGER,
-                    non_curr_liabs INTEGER,
-                    total_liabs INTEGER,
-                    total_equity INTEGER,
-                    book_value REAL,
-                    -- balance details
-                    accts_receiv INTEGER,
-                    notes_receiv INTEGER,
-                    accts_notes_receiv INTEGER,
-                    inventory INTEGER,
-                    prepaid INTEGER,
-                    accts_pay INTEGER,
-                    notes_pay INTEGER,
-                    accts_notes_pay INTEGER,
-                    st_loans INTEGER,
-                    lt_liabs_due_1y INTEGER,
-                    lt_loans INTEGER,
-                    bonds_pay INTEGER,
-                    ret_earnings INTEGER,
-                    -- income
-                    opr_revenue INTEGER,
-                    opr_costs INTEGER,
-                    gross_profit INTEGER,
-                    opr_expenses INTEGER,
-                    opr_profit INTEGER,
-                    non_opr_income INTEGER,
-                    pre_tax_income INTEGER,
-                    income_tax INTEGER,
-                    net_income INTEGER,
-                    eps REAL,
-                    -- cash
-                    opr_cash_flow INTEGER,
-                    inv_cash_flow INTEGER,
-                    fin_cash_flow INTEGER,
-                    cash_equivs INTEGER,
-                    divs_paid INTEGER,
-                    --
-                    PRIMARY KEY (code, year, quarter)
-                    -- , FOREIGN KEY (code) REFERENCES stocks (code)
+                code TEXT NOT NULL,
+                year INTEGER NOT NULL,
+                quarter INTEGER NOT NULL,
+                -- balance
+                curr_assets INTEGER,
+                non_curr_assets INTEGER,
+                total_assets INTEGER,
+                curr_liabs INTEGER,
+                non_curr_liabs INTEGER,
+                total_liabs INTEGER,
+                total_equity INTEGER,
+                book_value REAL,
+                -- balance details
+                accts_receiv INTEGER,
+                notes_receiv INTEGER,
+                accts_notes_receiv INTEGER,
+                inventory INTEGER,
+                prepaid INTEGER,
+                accts_pay INTEGER,
+                notes_pay INTEGER,
+                accts_notes_pay INTEGER,
+                st_loans INTEGER,
+                lt_liabs_due_1y INTEGER,
+                lt_loans INTEGER,
+                bonds_pay INTEGER,
+                ret_earnings INTEGER,
+                -- income
+                opr_revenue INTEGER,
+                opr_costs INTEGER,
+                gross_profit INTEGER,
+                opr_expenses INTEGER,
+                opr_profit INTEGER,
+                non_opr_income INTEGER,
+                pre_tax_income INTEGER,
+                income_tax INTEGER,
+                net_income INTEGER,
+                eps REAL,
+                -- cash
+                opr_cash_flow INTEGER,
+                inv_cash_flow INTEGER,
+                fin_cash_flow INTEGER,
+                cash_equivs INTEGER,
+                divs_paid INTEGER,
+                --
+                PRIMARY KEY (code, year, quarter)
+                -- , FOREIGN KEY (code) REFERENCES stocks (code)
             """
 
             cursor = conn.cursor()
@@ -1648,7 +1662,7 @@ class StockDatabase:
         col_mapping=None,
         only_ci=True,
     ):
-        """Import financial reports from CSV to database
+        """Import financial reports from CSV files to database
 
         Args:
             csv_folder (str): Path to the folder containing CSV files
@@ -1682,7 +1696,7 @@ class StockDatabase:
 
         total_imported_records = 0
 
-        # define column mapping
+        # define column mapping (CSV -> database)
         # NOTE: 1. below with '(i)' mark -> only disclosed in individual financial statements
         #       2. below with '(?)' mark -> only disclosed in some (3rd) data providers
         #          or get more fields to calculate
@@ -1840,6 +1854,7 @@ class StockDatabase:
 
                 # prepare SQL
                 columns = ', '.join(avail_cols)
+
                 placeholders = ', '.join(['?'] * len(avail_cols))
 
                 # update part: exclude code, year, quarter from SET
@@ -1848,7 +1863,7 @@ class StockDatabase:
                 ]
 
                 if not update_cols:
-                    # insert data
+                    # insert
                     sql = f"""
                         INSERT OR IGNORE INTO {to_table} ({columns})
                         VALUES ({placeholders})
@@ -1858,16 +1873,18 @@ class StockDatabase:
                         [f'{col}=excluded.{col}' for col in update_cols]
                     )
 
-                    # upsert data
+                    # upsert
                     sql = f"""
                         INSERT INTO {to_table} ({columns})
                         VALUES ({placeholders})
-                        ON CONFLICT(code, year, quarter) 
+                        ON CONFLICT(code, year, quarter)
                         DO UPDATE SET {update_assignments}
                         """
 
+                # prepare data
                 data = df.values.tolist()
 
+                # insert or upsert data
                 cursor.executemany(sql, data)
 
                 # update last_mod_time if file is newer
@@ -2028,6 +2045,7 @@ class StockDatabase:
                     """,
                     conn,
                 )
+
             except Exception as e:
                 use_color(Colors.ERROR)
                 print(f'Error: {e}')
@@ -2039,7 +2057,7 @@ class StockDatabase:
                 use_color(Colors.WARNING)
                 print('Warning: No data found')
                 use_color(Colors.RESET)
-                
+
                 return
 
             if verify_data:
@@ -2132,6 +2150,7 @@ class StockDatabase:
 
             # prepare SQL
             columns = ', '.join(df_core.columns)
+
             placeholders = ', '.join(['?'] * len(df_core.columns))
 
             # exclude PK from UPDATE set
@@ -2143,7 +2162,7 @@ class StockDatabase:
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
 
-            # upset data
+            # upset
             sql = f"""
                 INSERT INTO financial_core ({columns})
                 VALUES ({placeholders})
@@ -2151,11 +2170,12 @@ class StockDatabase:
                 DO UPDATE SET {update_assignments}
                 """
 
-            # handle None/NaN
+            # prepare data (handle None/NaN)
             data = df_core.where(pd.notnull(df_core), None).values.tolist()
 
             cursor = conn.cursor()
 
+            # upset data
             cursor.executemany(sql, data)
 
             conn.commit()
@@ -2176,6 +2196,7 @@ class StockDatabase:
         """
         # convert date string to datetime
         start = parse_date_string(start_date)
+
         # get year, quarter parts
         start_year = start.year
         start_quarter = (start.month - 1) // 3 + 1
@@ -2185,12 +2206,13 @@ class StockDatabase:
             end = parse_date_string(end_date)
         else:
             end = datetime.today()
+
         end_year = end.year
         end_quarter = (end.month - 1) // 3 + 1
 
-        # convert to comparable period (YYYYQ)
-        start_period = start_year * 10 + start_quarter
-        end_period = end_year * 10 + end_quarter
+        # convert to comparable time (YYYYQ)
+        start_time = start_year * 10 + start_quarter
+        end_time = end_year * 10 + end_quarter
 
         # pick target table
         from_table = 'financial_ytd' if year_to_date else 'financial_core'
@@ -2206,7 +2228,7 @@ class StockDatabase:
                 ORDER BY year, quarter
                 """,
                 conn,
-                params=(stock_code, start_period, end_period),
+                params=(stock_code, start_time, end_time),
             )
 
         return df
@@ -2226,7 +2248,7 @@ class StockDatabase:
         from_table = 'financial_ytd' if year_to_date else 'financial_core'
 
         with self.get_connection() as conn:
-            # retrieve data (latest N, then sort by period ascending)
+            # retrieve data
             df = pd.read_sql_query(
                 f"""
                 SELECT * FROM (
@@ -2267,14 +2289,14 @@ class StockDatabase:
                     days_sales_outstd REAL,
                     days_pay_outstd REAL,
                     ccc REAL,
-                    -- 
+                    --
                     curr_ratio REAL,
                     quick_ratio REAL,
                     debt_ratio REAL,
                     fin_debt_ratio REAL,
                     core_profit_ratio REAL,
                     asset_turn_ratio REAL,
-                    -- 
+                    --
                     gross_margin REAL,
                     opr_margin REAL,
                     pre_tax_margin REAL,
@@ -2322,10 +2344,10 @@ class StockDatabase:
         print('Calculating financial metrics...')
 
         with self.get_connection() as conn:
-            # read financial_core
+            # retrieve data
             df = pd.read_sql_query(
                 """
-                SELECT * 
+                SELECT *
                 FROM financial_core
                 ORDER BY code, year, quarter
                 """,
@@ -2518,6 +2540,7 @@ class StockDatabase:
         with self.get_connection() as conn:
             # prepare SQL
             columns = ', '.join(cols_map)
+
             placeholders = ', '.join(['?'] * len(cols_map))
 
             # exclude PK from UPDATE set
@@ -2527,18 +2550,20 @@ class StockDatabase:
                 [f'{col}=excluded.{col}' for col in update_cols]
             )
 
-            # upsert data
+            # upsert
             sql = f"""
                 INSERT INTO financial_metrics ({columns})
                 VALUES ({placeholders})
-                ON CONFLICT(code, year, quarter) 
+                ON CONFLICT(code, year, quarter)
                 DO UPDATE SET {update_assignments}
                 """
 
+            # prepare data
             data = df_upsert.values.tolist()
 
             cursor = conn.cursor()
 
+            # upsert data
             cursor.executemany(sql, data)
 
             conn.commit()
@@ -2558,6 +2583,7 @@ class StockDatabase:
         """
         # convert date string to datetime
         start = parse_date_string(start_date)
+
         # get year, quarter parts
         start_year = start.year
         start_quarter = (start.month - 1) // 3 + 1
@@ -2567,12 +2593,13 @@ class StockDatabase:
             end = parse_date_string(end_date)
         else:
             end = datetime.today()
+
         end_year = end.year
         end_quarter = (end.month - 1) // 3 + 1
 
-        # convert to comparable period (YYYYQ)
-        start_period = start_year * 10 + start_quarter
-        end_period = end_year * 10 + end_quarter
+        # convert to comparable time (YYYYQ)
+        start_time = start_year * 10 + start_quarter
+        end_time = end_year * 10 + end_quarter
 
         with self.get_connection() as conn:
             # retrieve data
@@ -2585,7 +2612,7 @@ class StockDatabase:
                 ORDER BY year, quarter
                 """,
                 conn,
-                params=(stock_code, start_period, end_period),
+                params=(stock_code, start_time, end_time),
             )
 
         return df
@@ -2601,7 +2628,7 @@ class StockDatabase:
             pandas.DataFrame: Recent financial metrics data
         """
         with self.get_connection() as conn:
-            # retrieve data (latest N, then sort by period ascending)
+            # retrieve data
             df = pd.read_sql_query(
                 """
                 SELECT * FROM (
