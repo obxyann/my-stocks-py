@@ -2649,8 +2649,8 @@ class StockDatabase:
     # Database info #
     #################
 
-    def get_database_info(self):
-        """Get database information
+    def get_info(self):
+        """Get information of database
 
         Returns:
             dict: Database statistics
@@ -2775,8 +2775,8 @@ class StockDatabase:
             'financial_core': financial_core,
         }
 
-    def purge_database(self):
-        """Purge unnecessary records from database
+    def clean(self):
+        """Clean unnecessary records from database
 
         Removes records from data tables where the stock code no longer exists
         in the stocks table.

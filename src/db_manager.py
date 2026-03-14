@@ -51,7 +51,6 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             print(f'Successfully imported {count} records')
 
         '''
-        TBD: obsolete
         # import {XXXX}_prices.csv
         print('\nImporting OHLC prices to database...')
 
@@ -63,6 +62,17 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             count = db.import_ohlc_prices_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records')
         '''
+
+        # import close.csv, high.csv, low.csv, open.csv, volume.csv
+        print('\nImporting history prices to database...')
+
+        csv_folder = os.path.join(csv_dir, 'db/price')
+
+        if not os.path.isdir(csv_folder):
+            print(f'Folder not found: {csv_folder}')
+        else:
+            count = db.import_db_price_csv_to_database(csv_folder)
+            print(f'Successfully imported {count} records')
 
         # import prices_{YYYYMMDD}.csv
         print('\nImporting daily prices to database...')
@@ -134,7 +144,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
 def download(refetch=False, output_dir=None):
     """Download data to CSV files
 
-       if refetch is false, only download those not exists 
+       if refetch is false, only download those not exists
     """
     if refetch:
         action = 'Downloading fresh'
@@ -197,16 +207,16 @@ def show_db_info(db_path=None):
     try:
         db = StockDatabase(db_path) if db_path else StockDatabase()
 
-        info = db.get_database_info()
+        info = db.get_info()
 
         print(f'Database path: {info["database_path"]}')
         print(f'Tables: {info["tables"]}')
 
-        print(f'\nTotal stocks: {info["stock_list"]["total_count"]}')
+        print(f'\nTotal stocks: {info["stocks"]["total_count"]}')
         print('Market distribution:')
-        for market, count in info['stock_list']['market_stats'].items():
+        for market, count in info['stocks']['market_stats'].items():
             print(f'  {market}: {count}')
-        print(f'Last updated: {info["stock_list"]["last_updated"]}')
+        print(f'Last updated: {info["stocks"]["last_updated"]}')
 
         print(f'\nTotal daily prices: {info["daily_prices"]["total_count"]}')
         print(f'  min date: {info["daily_prices"]["min_date"]}')
@@ -249,6 +259,24 @@ def search_stocks(keyword, db_path=None):
         return False
 
 
+def clean_up_db(db_path=None):
+    """Clean up database"""
+    try:
+        db = StockDatabase(db_path) if db_path else StockDatabase()
+
+        print('Clean up database...')
+
+        db.clean()
+
+        print('Done')
+
+        return True
+
+    except Exception as e:
+        print(f'Failed to clean database: {e}')
+        return False
+
+
 def main():
     """Main function for command line interface"""
     parser = argparse.ArgumentParser(description='Stock Database Manager')
@@ -272,6 +300,9 @@ def main():
     search_parser = subparsers.add_parser('search', help='search stocks')
     search_parser.add_argument('keyword', help='search keyword')
 
+    # clean command
+    subparsers.add_parser('clean', help='data cleaning up')
+
     args = parser.parse_args()
 
     if args.command == 'import':
@@ -282,6 +313,8 @@ def main():
         show_db_info(args.db_path)
     elif args.command == 'search':
         search_stocks(args.keyword, args.db_path)
+    elif args.command == 'clean':
+        clean_up_db(args.db_path)
     else:
         parser.print_help()
 
