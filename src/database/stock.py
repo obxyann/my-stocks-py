@@ -2774,3 +2774,44 @@ class StockDatabase:
             'monthly_revenue': monthly_revenue,
             'financial_core': financial_core,
         }
+
+    def purge_database(self):
+        """Purge unnecessary records from database
+
+        Removes records from data tables where the stock code no longer exists
+        in the stocks table.
+        """
+        tables = [
+            'daily_prices',
+            'monthly_revenue',
+            'financial_core',
+            'financial_ytd',
+            'financial_metrics',
+        ]
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            for table in tables:
+                # check if table exists
+                cursor.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type='table' AND name=?
+                    """,
+                    (table,),
+                )
+
+                if not cursor.fetchone():
+                    continue
+
+                # delete records with codes not in stocks table
+                cursor.execute(
+                    f"""
+                    DELETE FROM {table}
+                    WHERE code NOT IN (SELECT code FROM stocks)
+                    """
+                )
+
+            conn.commit()
