@@ -4,3 +4,4 @@
 # Storage related directories and files
 /downloads
 /storage
+/venv

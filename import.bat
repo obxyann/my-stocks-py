@@ -1,14 +1,14 @@
 @Echo off
-if not exist "C:\Python\Virtual_Env\stocks\" (
-	echo Virtual environment 'stocks' not created
+if not exist ".\venv\" (
+	echo Virtual environment not created
 	pause
 	exit /b
 )
-if not exist "C:\Python\Virtual_Env\stocks\Scripts\activate.bat" (
-	echo Virtual environment 'stocks' not setup correctly
+if not exist ".\venv\Scripts\activate.bat" (
+	echo Virtual environment not setup correctly
 	pause
 	exit /b
 )
-call C:\Python\Virtual_Env\stocks\Scripts\activate.bat
+call .\venv\Scripts\activate.bat
 python src\db_manager.py import
 pause
