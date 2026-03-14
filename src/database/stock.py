@@ -2697,7 +2697,14 @@ class StockDatabase:
                 """)
             daily_prices['total_count'] = cursor.fetchone()[0]
 
-            # 2. get min and max trade date
+            # 2 get total code count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT code)
+                FROM daily_prices
+                """)
+            daily_prices['distinct_code_count'] = cursor.fetchone()[0]
+
+            # 3. get min and max trade date
             cursor.execute("""
                 SELECT MIN(trade_date), MAX(trade_date)
                 FROM daily_prices
@@ -2708,7 +2715,7 @@ class StockDatabase:
             daily_prices['min_date'] = min_date
             daily_prices['max_date'] = max_date
 
-            # 3. get last update time from metadata
+            # 4. get last update time from metadata
             daily_prices['last_updated'] = self.get_table_updated_time('daily_prices')  # <- datetime # fmt: skip
 
             # for monthly revenue table
@@ -2720,7 +2727,14 @@ class StockDatabase:
                 """)
             monthly_revenue['total_count'] = cursor.fetchone()[0]
 
-            # 2. get min and max year-month
+            # 2. get total code count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT code)
+                FROM monthly_revenue
+                """)
+            monthly_revenue['distinct_code_count'] = cursor.fetchone()[0]
+
+            # 3. get min and max year-month
             cursor.execute("""
                 SELECT MIN(year * 100 + month), MAX(year * 100 + month)
                 FROM monthly_revenue
@@ -2735,7 +2749,7 @@ class StockDatabase:
                 f'{max_ym // 100}-{max_ym % 100:02d}' if max_ym is not None else None
             )
 
-            # 3. get last update time from metadata
+            # 4. get last update time from metadata
             monthly_revenue['last_updated'] = self.get_table_updated_time('monthly_revenue')  # <- datetime # fmt: skip
 
             # for financial_core table
@@ -2747,7 +2761,14 @@ class StockDatabase:
                 """)
             financial_core['total_count'] = cursor.fetchone()[0]
 
-            # 2. get min and max year-quarter
+            # 2. get total code count
+            cursor.execute("""
+                SELECT COUNT(DISTINCT code)
+                FROM financial_core
+                """)
+            financial_core['distinct_code_count'] = cursor.fetchone()[0]
+
+            # 3. get min and max year-quarter
             cursor.execute("""
                 SELECT MIN(year * 10 + quarter), MAX(year * 10 + quarter)
                 FROM financial_core
@@ -2762,7 +2783,7 @@ class StockDatabase:
                 f'{max_yq // 10}-Q{max_yq % 10}' if max_yq is not None else None
             )
 
-            # 3. get last update time from metadata
+            # 4. get last update time from metadata
             financial_core['last_updated'] = self.get_table_updated_time('financial_core')  # <- datetime # fmt: skip
 
         return {

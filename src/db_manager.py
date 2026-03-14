@@ -50,7 +50,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
             count = db.import_business_type_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records')
 
-        '''
+        """
         # import {XXXX}_prices.csv
         print('\nImporting OHLC prices to database...')
 
@@ -61,7 +61,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         else:
             count = db.import_ohlc_prices_csv_to_database(csv_folder)
             print(f'Successfully imported {count} records')
-        '''
+        """
 
         # import close.csv, high.csv, low.csv, open.csv, volume.csv
         print('\nImporting history prices to database...')
@@ -144,7 +144,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
 def download(refetch=False, output_dir=None):
     """Download data to CSV files
 
-       if refetch is false, only download those not exists
+    if refetch is false, only download those not exists
     """
     if refetch:
         action = 'Downloading fresh'
@@ -219,16 +219,19 @@ def show_db_info(db_path=None):
         print(f'Last updated: {info["stocks"]["last_updated"]}')
 
         print(f'\nTotal daily prices: {info["daily_prices"]["total_count"]}')
+        print(f'  distinct codes: {info["daily_prices"]["distinct_code_count"]}')
         print(f'  min date: {info["daily_prices"]["min_date"]}')
         print(f'  max date: {info["daily_prices"]["max_date"]}')
         print(f'Last updated: {info["daily_prices"]["last_updated"]}')
 
         print(f'\nTotal monthly revenues: {info["monthly_revenue"]["total_count"]}')
+        print(f'  distinct codes: {info["monthly_revenue"]["distinct_code_count"]}')
         print(f'  min month: {info["monthly_revenue"]["min_year_month"]}')
         print(f'  max month: {info["monthly_revenue"]["max_year_month"]}')
         print(f'Last updated: {info["monthly_revenue"]["last_updated"]}')
 
         print(f'\nTotal financial core: {info["financial_core"]["total_count"]}')
+        print(f'  distinct codes: {info["financial_core"]["distinct_code_count"]}')
         print(f'  min quarter: {info["financial_core"]["min_year_quarter"]}')
         print(f'  max quarter: {info["financial_core"]["max_year_quarter"]}')
         print(f'Last updated: {info["financial_core"]["last_updated"]}')
