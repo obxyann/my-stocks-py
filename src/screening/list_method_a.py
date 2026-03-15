@@ -315,10 +315,13 @@ def list_method_revenue_price_turbo(db, input_df=None):
     df = list_price_hit_new_high_days(db, recent_n_days=5, target_k_days=2, lookback_m_days=200, input_df=input_df)
 
     print('# 五日成交均量大於 500 張')
-    df = list_volume_avg_above(db, recent_n_months=5, threshold=500 * 1000, input_df=df)
+    df = list_volume_avg_above(db, recent_n_days=5, threshold=500 * 1000, input_df=df)
 
-    print('# 單月營收年增率前 10 強')
+    # print('# 單月營收年增率前 10 強')
     # df = list_revenue_yoy_top(db, recent_n_months=1, top_n=10, input_df=df)
+    # 改
+    print('# 營收年增率連續 1 個月 > 20%')
+    list_revenue_yoy_above(db, cont_m_months=1, threshold=20, input_df=input_df)
 
     print('# Done')
     return df

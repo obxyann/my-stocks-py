@@ -10,7 +10,8 @@ from screening.list_method_a import (
     list_method_short,
     list_method_sprint,
     list_method_steady,
-    list_method_test,
+    list_method_test,  
+    list_method_revenue_price_turbo,  
 )
 
 # global mapping of screening methods
@@ -22,4 +23,5 @@ SCREENING_METHODS = {
     '長期強勢': list_method_long,
     '短期強勢': list_method_short,
     '衝刺型': list_method_sprint,
+    '營收股價雙渦輪': list_method_revenue_price_turbo,
 }
