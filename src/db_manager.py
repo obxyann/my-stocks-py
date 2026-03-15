@@ -66,7 +66,7 @@ def import_csv_to_db(csv_dir=None, db_path=None):
         # import close.csv, high.csv, low.csv, open.csv, volume.csv
         print('\nImporting history prices to database...')
 
-        csv_folder = os.path.join(csv_dir, 'db/price')
+        csv_folder = os.path.join(csv_dir, 'db\\price')
 
         if not os.path.isdir(csv_folder):
             print(f'Folder not found: {csv_folder}')

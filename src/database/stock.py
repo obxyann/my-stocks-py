@@ -173,7 +173,7 @@ class StockDatabase:
 
         self.stocks_table_initialized = True
 
-    def import_stock_list_csv_to_database(self, csv_path='storage/stock_list.csv'):
+    def import_stock_list_csv_to_database(self, csv_path='downloads/stock_list.csv'):
         """Import stock list from CSV file to database
 
         Args:
@@ -293,7 +293,7 @@ class StockDatabase:
 
             return 0
 
-    def import_business_type_csv_to_database(self, csv_folder='storage/quarterly'):
+    def import_business_type_csv_to_database(self, csv_folder='downloads/quarterly'):
         """Import business type data from CSV file to database
 
         Args:
@@ -560,7 +560,7 @@ class StockDatabase:
 
         self.daily_price_table_initialized = True
 
-    def import_daily_prices_csv_to_database(self, csv_folder='storage/daily'):
+    def import_daily_prices_csv_to_database(self, csv_folder='downloads/daily'):
         """Import daily prices from CSV files to database
 
         Args:
@@ -718,7 +718,7 @@ class StockDatabase:
 
         return total_imported_records
 
-    def import_ohlc_prices_csv_to_database(self, csv_folder='storage/ohlc'):
+    def import_ohlc_prices_csv_to_database(self, csv_folder='downloads/ohlc'):
         """Import OHLC prices from CSV files to database
 
         Args:
@@ -1194,7 +1194,7 @@ class StockDatabase:
 
         self.monthly_revenue_table_initialized = True
 
-    def import_monthly_revenue_csv_to_database(self, csv_folder='storage/monthly'):
+    def import_monthly_revenue_csv_to_database(self, csv_folder='downloads/monthly'):
         """Import monthly revenue from CSV files to database
 
         Args:
@@ -1656,7 +1656,7 @@ class StockDatabase:
 
     def import_quarterly_reports_csv_to_database(
         self,
-        csv_folder='storage/quarterly',
+        csv_folder='downloads/quarterly',
         file_prefix='financial_reports',
         is_year_to_date=False,
         col_mapping=None,
