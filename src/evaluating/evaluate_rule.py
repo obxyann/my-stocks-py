@@ -18,30 +18,37 @@ config (dict):
         {'type': 'abs'}                      - Absolute value
         {'type': 'bias', 'baseline': series} - Bias ratio vs. baseline series
 
-    window_n   (int): Recent observation window (N periods)
-    lookback_m (int): Reference window (M periods), defaults to window_n if omitted
+    window_n   (int): Main observation window (recent N periods)
+    lookback_m (int, optional): Reference window (lookback M periods), defaults
+                                to window_n if omitted
 
-    aggregate (str): Method applied to windowed data into score result
+    aggregate (str): Method applied to windowed data
         - Scalars:
-          'latest' - Latest (most recent) value in the window
-          'mean'   - Mean (average) of the values
-          'max'    - Maximum value
-          'min'    - Minimum value
-          'sum'    - Summation of all values
-          'std'    - Standard deviation
+          'latest' - Latest (most recent) value (in window N)
+          'mean'   - Mean (average) of the values (in window N)
+          'max'    - Maximum value (in window N)
+          'min'    - Minimum value (in window N)
+          'sum'    - Summation of all values (in window N)
+          'std'    - Standard deviation (in window N)
         - Custom metrics:
-          'min_max_ratio' - Min/max ratio within window
-          'vs_past_mean'  - Recent mean growth rate vs. past (lookback) mean
-        - Booleans:
-          'all'    - All periods satisfy the condition
-          'any'    - At least one period satisfies the condition
-          'count'  - Hit rate (ratio of periods satisfying) (0.0 to 1.0)
-          'rank'   - New high or new low relative to lookback window
-          'cross'  - Crossover signal (golden / death cross)
+          'min_max_ratio' - Min/max ratio within window N
+          'vs_past_mean'  - Growth rate of recent mean (of window N) vs. past
+                            mean (of lookback M exclude window N)
+        - Consecutive inspection:
+          'all'   - All periods satisfy the condition (in window N)
+          'any'   - At least one period satisfies the condition (in window N)
+          'count' - Some periods satisfy the condition (in window N)
+                    If min_matches specified and matches count < min_matches,
+                    considered as failed (scores 0)
+        - Signals:          
+          'rank'  - New high or new low (in window N) relative to lookback window M
+          'cross' - Crossover signal (golden / death cross) (in window N)
 
     operator (str): Comparison operator
         '>', '>=', '<', '<=', '=='
-    threshold (float): Comparison value (use 0.1 for 10%), score 0 if failed
+    threshold (float): Comparison value (use 0.1 for 10%), scores 0 if failed
+    min_matches (int, optional): Minimum number of matches required to pass (only
+                                 used for 'count' aggregate)
     saturation (float, optional): Full-score threshold,
                                   Values exceeding this threshold scores 100,
                                   otherwise performs linear interpolation scoring
@@ -102,13 +109,13 @@ def _apply_transforms(series: pd.Series, transforms: list) -> pd.Series:
 
 # Data aggregation and score in special cases
 def _calculate_aggregate(
-    recent_data: pd.Series, look_data: pd.Series, config: dict
+    recent_data: pd.Series, lookback_data: pd.Series, config: dict
 ) -> Tuple[Optional[float], Optional[float]]:
     """Calculate aggregate value according to rule config.
 
     Args:
         recent_data (pd.Series): Series data for evaluation
-        look_data (pd.Series, optional): Reference series data
+        lookback_data (pd.Series, optional): Reference series data
         config (dict): Rule configuration dictionary, see 'Rule Config Schema'
 
     Returns:
@@ -147,7 +154,7 @@ def _calculate_aggregate(
 
     # 2. custom aggregation (requires subsequent linear scoring)
 
-    # range compression ratio (min / max within window)
+    # range compression ratio (min/max ratio within window)
     if agg_type == 'min_max_ratio':
         min_v, max_v = recent_data.min(), recent_data.max()
 
@@ -155,7 +162,7 @@ def _calculate_aggregate(
 
     # comparison with past mean (growth rate of recent mean vs. past mean)
     if agg_type == 'vs_past_mean':
-        past_only = look_data.iloc[: max(0, len(look_data) - n)]
+        past_only = lookback_data.iloc[: max(0, len(lookback_data) - n)]
 
         if past_only.empty or past_only.mean() == 0:
             return None, 0.0
@@ -167,9 +174,9 @@ def _calculate_aggregate(
 
         return val, None
 
-    # 3. boolean aggregation (calculates 0-100 score directly)
+    # 3. consecutive aggregation (calculates 0-100 score directly)
 
-    # consecutive, presence, or hit rate (all, any, count)
+    # consecutive, presence, or partial (all, any, count)
     if agg_type in ['all', 'any', 'count']:
         # if op == '>':
         #     matches = sum(x > threshold for x in recent_data)
@@ -193,17 +200,25 @@ def _calculate_aggregate(
             return None, 100.0 if matches > 0 else 0.0
 
         elif agg_type == 'count':
+            min_matches = config.get('min_matches', 0)
+
+            # if matches is less than the minimum, return 0 points
+            if matches < min_matches:
+                return None, 0.0
+
             return None, (matches / n) * 100.0
+
+    # 4. signal aggregation (calculates 0 or100 score directly)
 
     # new high/low signals (rank)
     if agg_type == 'rank':
         if op in ['>', '>=', 'high']:
-            is_high = recent_data.max() >= look_data.max()
+            is_high = recent_data.max() >= lookback_data.max()
 
             return None, 100.0 if is_high else 0.0
 
         elif op in ['<', '<=', 'low']:
-            is_low = recent_data.min() <= look_data.min()
+            is_low = recent_data.min() <= lookback_data.min()
 
             return None, 100.0 if is_low else 0.0
 
@@ -301,10 +316,10 @@ def evaluate_stock_rule(series: pd.Series, config: dict) -> float:
         return 0.0
 
     recent_data = data.iloc[-n:]
-    look_data = data.iloc[-max(n, m) :]
+    lookback_data = data.iloc[-max(n, m) :]
 
     # 3. perform aggregation
-    val, direct_score = _calculate_aggregate(recent_data, look_data, config)
+    val, direct_score = _calculate_aggregate(recent_data, lookback_data, config)
 
     # 4. scoring and return
     # for score-based rules (e.g., hit rate, crossover), return directly
