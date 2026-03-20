@@ -1,4 +1,6 @@
-# Screening Rules Documentation
+# Common Screening Rules
+
+縮排項目: 相似規則，可由父規則涵蓋 (缺值, 縮限, 同語意...)
 
 ## H 類
 
