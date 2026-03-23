@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 # import numpy as np
 import pandas as pd
 
@@ -10,7 +8,7 @@ The `config` is a hierarchical dictionary that defines how raw time-series
 data is transformed, aggregated, and evaluated against specific thresholds.
 
 config (dict):
-    transforms (list[dict]): Data transformation pipeline (steps), applied in order
+    transforms (list[dict]): Data transformation pipeline (chain), applied in order
         {'type': 'ma',   'window': N}        - Simple moving average (SMA/MA)
         {'type': 'ema',  'window': N}        - Exponential moving average (EMA)
         {'type': 'pct_change'}               - Percentage change (growth rate)
@@ -19,8 +17,8 @@ config (dict):
         {'type': 'bias', 'baseline': series} - Bias ratio vs. baseline series
 
     window_n   (int): Main observation window (recent N periods)
-    lookback_m (int, optional): Reference window (lookback M periods), defaults
-                                to window_n if omitted
+    lookback_m (int, optional): Reference window (lookback M periods = past (M-N)
+                                + recent N), defaults to window_n if omitted
 
     aggregate (str): Method applied to windowed data
         - Scalars:
@@ -40,7 +38,7 @@ config (dict):
           'count' - Some periods satisfy the condition (in window N)
                     If min_matches specified and matches count < min_matches,
                     considered as failed (scores 0)
-        - Signals:          
+        - Signals:
           'rank'  - New high or new low (in window N) relative to lookback window M
           'cross' - Crossover signal (golden / death cross) (in window N)
 
@@ -56,16 +54,47 @@ config (dict):
 """
 
 
-# Data transformation
-def _apply_transforms(series: pd.Series, transforms: list) -> pd.Series:
-    """Execute data transformations in sequence (MA, EMA, differences, growth rates, etc.).
+# Helpers
+def _compare(value, op, threshold):
+    """Apply a comparison operator between a value and a threshold.
+
+    Centralises all operator logic so every aggregation and scoring path
+    uses a single, consistent implementation.
 
     Args:
-        series (pd.Series): Series data (index: time, value: numeric, sorted by time)
-        transforms (list[dict]): Data transformation pipeline, see 'Rule Config Schema: transforms'
+        value (float):
+        op (str):
+        threshold (float):
 
     Returns:
-        pd.Series: Transformed series data (index: time, value: numeric, sorted by time)
+        bool:
+    """
+    if op == '>':
+        return value > threshold
+    if op == '>=':
+        return value >= threshold
+    if op == '<':
+        return value < threshold
+    if op == '<=':
+        return value <= threshold
+    if op == '==':
+        return value == threshold
+
+    raise ValueError(f'Error: Unknown operator: {op!r}')
+
+
+# Data transformation pipeline
+def _apply_transforms(series, transforms):
+    """Execute data transformations in sequence
+
+    NOTE: Data is time-indexed numeric series, sorted ascending by time.
+
+    Args:
+        series (pd.Series): Series data
+        transforms (list[dict]): Transformation pipeline, see 'Rule Config Schema: transforms'
+
+    Returns:
+        pd.Series: Transformed series data
     """
     # copy data to avoid mutating source
     data = series.copy()
@@ -76,23 +105,34 @@ def _apply_transforms(series: pd.Series, transforms: list) -> pd.Series:
 
     # transform pipeline
     for step in transforms:
-        t_type = step.get('type')
+        tr_type = step.get('type')
 
-        if t_type == 'ma':
+        # simple moving average (SMA/MA)
+        if tr_type == 'ma':
             n = step.get('window', 5)
             data = data.rolling(window=n).mean()
-        elif t_type == 'ema':
+
+        # exponential moving average (EMA)
+        elif tr_type == 'ema':
             n = step.get('window', 5)
             data = data.ewm(span=n, adjust=False).mean()
-        elif t_type == 'pct_change':
+
+        # percentage change (growth rate)
+        elif tr_type == 'pct_change':
             n = step.get('period', 1)
             data = data.pct_change(periods=n)
-        elif t_type == 'diff':
+
+        # difference (delta between periods)
+        elif tr_type == 'diff':
             n = step.get('period', 1)
             data = data.diff(periods=n)
-        elif t_type == 'abs':
+
+        # sbsolute value
+        elif tr_type == 'abs':
             data = data.abs()
-        elif t_type == 'bias':
+
+        # bias ratio vs. baseline series
+        elif tr_type == 'bias':
             base = step.get('baseline')
 
             # bias ratio requires a baseline; skip if absent
@@ -101,151 +141,175 @@ def _apply_transforms(series: pd.Series, transforms: list) -> pd.Series:
                 base = base.reindex(data.index)
                 data = (data - base) / base
 
+        else:
+            raise ValueError(f'Error: Unknown transform type: {tr_type!r}')
+
         # drop NaNs produced by transformations (e.g., rolling window) to prevent downstream errors
         data = data.dropna()
 
     return data
 
 
-# Data aggregation and score in special cases
-def _calculate_aggregate(
-    recent_data: pd.Series, lookback_data: pd.Series, config: dict
-) -> Tuple[Optional[float], Optional[float]]:
-    """Calculate aggregate value according to rule config.
+# Data aggregation
+def _calc_aggregate_scalar(recent_data, lookback_data, config):
+    """Reduce the windowed series to a single numeric value according to rule config
+
+    For scalar/custom aggregates the value is later passed to the scorer.
 
     Args:
         recent_data (pd.Series): Series data for evaluation
-        lookback_data (pd.Series, optional): Reference series data
+        lookback_data (pd.Series, optional): Reference series data (= past_data + recent_data)
         config (dict): Rule configuration dictionary, see 'Rule Config Schema'
 
     Returns:
-        Tuple[Optional[float], Optional[float]]: (value val, score direct_score)
-            - For "value-based" rules (e.g., mean, latest), returns (val, None) for subsequent scoring
-            - For "score-based" rules (e.g., all, rank, cross), returns (None, score) as final result
+        Optional[float]: Numeric value, or None if the computation is undefined
+                         (caller will treat None as score 0)
     """
     # get rule
-    agg_type = config.get('aggregate', 'latest')
+    agg = config.get('aggregate', 'latest')
+
+    n = len(recent_data)
+
+    if n == 0:
+        return None
+
+    # 1. scalar aggregates -> raw numeric value (fed to scorer later)
+
+    # latest (most recent) value
+    if agg == 'latest':
+        return recent_data.iloc[-1]
+
+    # mean (average) of the values
+    if agg == 'mean':
+        return recent_data.mean()
+
+    # maximum value
+    if agg == 'max':
+        return recent_data.max()
+
+    # minimum value
+    if agg == 'min':
+        return recent_data.min()
+
+    # summation of all values
+    if agg == 'sum':
+        return recent_data.sum()
+
+    # standard deviation
+    if agg == 'std':
+        return recent_data.std()
+
+    # 2. custom aggregates -> derived numeric value (fed to scorer later)
+
+    # range compression ratio (min/max ratio within window)
+    if agg == 'min_max_ratio':
+        min_v, max_v = recent_data.min(), recent_data.max()
+
+        return 0.0 if max_v == 0 else min_v / max_v
+
+    # comparison with past mean (growth rate of recent mean vs. past mean)
+    if agg == 'vs_past_mean':
+        past_only = lookback_data.iloc[: max(0, len(lookback_data) - n)]
+
+        if past_only.empty or past_only.mean() == 0:
+            return None
+
+        recent_mean = recent_data.mean()
+        past_mean = past_only.mean()
+
+        return (recent_mean - past_mean) / abs(past_mean)
+
+    raise ValueError(f'Error: Unknown aggregate type: {agg!r}')
+    # or
+    # return None
+
+
+def _calc_aggregate_score(recent_data, lookback_data, config):
+    """Reduce the windowed series to a single score according to rule config
+
+    For consecutive/signal aggregates the value IS the final 0-100 score
+
+    Args:
+        recent_data (pd.Series): Series data for evaluation
+        lookback_data (pd.Series, optional): Reference series data (= past_data + recent_data)
+        config (dict): Rule configuration dictionary, see 'Rule Config Schema'
+
+    Returns:
+        Optional[float]: Numeric value, or None if the computation is undefined
+                         (caller will treat None as score 0)
+    """
+    agg = config.get('aggregate', 'latest')
     op = config.get('operator', '>')
     threshold = config.get('threshold', 0.0)
 
     n = len(recent_data)
 
     if n == 0:
-        return None, 0.0
+        return None
 
-    # 1. scalar aggregation (requires subsequent linear scoring)
-    if agg_type == 'latest':
-        return recent_data.iloc[-1], None
-
-    if agg_type == 'mean':
-        return recent_data.mean(), None
-
-    if agg_type == 'max':
-        return recent_data.max(), None
-
-    if agg_type == 'min':
-        return recent_data.min(), None
-
-    if agg_type == 'std':
-        return recent_data.std(), None
-
-    if agg_type == 'sum':
-        return recent_data.sum(), None
-
-    # 2. custom aggregation (requires subsequent linear scoring)
-
-    # range compression ratio (min/max ratio within window)
-    if agg_type == 'min_max_ratio':
-        min_v, max_v = recent_data.min(), recent_data.max()
-
-        return (0.0 if max_v == 0 else min_v / max_v), None
-
-    # comparison with past mean (growth rate of recent mean vs. past mean)
-    if agg_type == 'vs_past_mean':
-        past_only = lookback_data.iloc[: max(0, len(lookback_data) - n)]
-
-        if past_only.empty or past_only.mean() == 0:
-            return None, 0.0
-
-        recent_mean = recent_data.mean()
-        past_mean = past_only.mean()
-
-        val = (recent_mean - past_mean) / abs(past_mean)
-
-        return val, None
-
-    # 3. consecutive aggregation (calculates 0-100 score directly)
+    # 3. Consecutive aggregates -> 0-100 score
 
     # consecutive, presence, or partial (all, any, count)
-    if agg_type in ['all', 'any', 'count']:
-        # if op == '>':
-        #     matches = sum(x > threshold for x in recent_data)
-        # if op == '>=':
-        if op in ['>', '>=']:
-            matches = sum(x >= threshold for x in recent_data)
-        # elif op == '<':
-        #     matches = sum(x < threshold for x in recent_data)
-        # elif op == '<=':
-        elif op in ['>', '>=']:
-            matches = sum(x <= threshold for x in recent_data)
-        elif op == '==':
-            matches = sum(x == threshold for x in recent_data)
-        else:
-            matches = 0
+    if agg in ('all', 'any', 'count'):
+        matches = sum(_compare(float(x), op, threshold) for x in recent_data)
 
-        if agg_type == 'all':
-            return None, 100.0 if matches == n else 0.0
+        if agg == 'all':
+            return 100.0 if matches == n else 0.0
 
-        elif agg_type == 'any':
-            return None, 100.0 if matches > 0 else 0.0
+        elif agg == 'any':
+            return 100.0 if matches > 0 else 0.0
 
-        elif agg_type == 'count':
+        elif agg == 'count':
             min_matches = config.get('min_matches', 0)
 
-            # if matches is less than the minimum, return 0 points
             if matches < min_matches:
-                return None, 0.0
+                return 0.0  # less than the minimum
 
-            return None, (matches / n) * 100.0
+            return (matches / n) * 100.0
 
-    # 4. signal aggregation (calculates 0 or100 score directly)
+    # 4. signal aggregates -> 0 or 100 score
 
     # new high/low signals (rank)
-    if agg_type == 'rank':
-        if op in ['>', '>=', 'high']:
+    if agg == 'rank':
+        if op in ('>', '>=', 'high'):
             is_high = recent_data.max() >= lookback_data.max()
 
-            return None, 100.0 if is_high else 0.0
+            return 100.0 if is_high else 0.0
 
-        elif op in ['<', '<=', 'low']:
+        elif op in ('<', '<=', 'low'):
             is_low = recent_data.min() <= lookback_data.min()
 
-            return None, 100.0 if is_low else 0.0
+            return 100.0 if is_low else 0.0
+
+        raise ValueError(f'Error: Unknown operator type: {agg!r}')
 
     # crossover signals (cross)
-    if agg_type == 'cross':
+    if agg == 'cross':
         if n < 2:
-            return None, 0.0
+            return None
 
         prev_val, curr_val = recent_data.iloc[-2], recent_data.iloc[-1]
 
-        if op in ['>', '>=']:  # crossover from below (golden cross)
+        if op in ('>', '>='):  # crossover from below (golden cross)
             is_cross = (prev_val <= threshold) and (curr_val > threshold)
 
-            return None, 100.0 if is_cross else 0.0
+            return 100.0 if is_cross else 0.0
 
-        elif op in ['<', '<=']:  # crossover from above (death cross)
+        elif op in ('<', '<='):  # crossover from above (death cross)
             is_cross = (prev_val >= threshold) and (curr_val < threshold)
 
-            return None, 100.0 if is_cross else 0.0
+            return 100.0 if is_cross else 0.0
 
-    # unrecognized aggregation type
-    return None, 0.0
+        raise ValueError(f'Error: Unknown operator type: {agg!r}')
+
+    raise ValueError(f'Error: Unknown aggregate type: {agg!r}')
+    # or
+    # return None
 
 
-# Scoring logic
-def _calculate_score(val: float, config: dict) -> float:
-    """Linearly map values to 0-100 scores based on threshold and saturation.
+# Scoring logic (value -> 0-100)
+def _calc_score(val, config):
+    """Linearly map aggregated value to 0-100 scores
 
     Args:
         val (float): Value to score
@@ -258,24 +322,25 @@ def _calculate_score(val: float, config: dict) -> float:
     threshold = config.get('threshold', 0.0)  # pass threshold
     saturation = config.get('saturation', None)  # saturation threshold (optional)
 
-    # case A: no saturation threshold -> binary scoring (100 if passed)
-    if saturation is None:
-        if op in ['>', '>=']:
-            return 100.0 if val >= threshold else 0.0
-        if op in ['<', '<=']:
-            return 100.0 if val <= threshold else 0.0
+    if val is None:
         return 0.0
 
-    # case B: saturation threshold set -> linear interpolation
-    if op in ['>', '>=']:
-        # higher is better (e.g., revenue growth)
+    # case A: no saturation -> binary scoring (100 if passed)
+    if saturation is None:
+        passed = _compare(val, op, threshold)
+
+        return 100.0 if passed else 0.0
+
+    # case B: saturation set -> linear interpolation
+    if op in ('>', '>='):
+        # higher is better (e.g., revenue growth; threshold usually < saturation)
         if val <= threshold:
             return 0.0
 
         if val >= saturation:
             return 100.0
 
-        # linear mapping: (actual - threshold) / (saturation - threshold) * 100
+        # linear mapping for val between
         return (val - threshold) / (saturation - threshold) * 100.0
 
     elif op in ['<', '<=']:
@@ -286,15 +351,27 @@ def _calculate_score(val: float, config: dict) -> float:
         if val <= saturation:
             return 100.0
 
-        # linear mapping: (threshold - actual) / (threshold - saturation) * 100
+        # linear mapping for val between
         return (threshold - val) / (threshold - saturation) * 100.0
 
-    return 0.0
+    # '==' with saturation is ambiguous – fall back to binary
+    return 100.0 if _compare(val, op, threshold) else 0.0
 
 
-# Main Coordinator: Stock rule evaluation
-def evaluate_stock_rule(series: pd.Series, config: dict) -> float:
+# these aggregates whose output is already a final 0-100 score
+# and should bypass _calc_score()
+_SCORE_DIRECT_AGGS = frozenset({'all', 'any', 'count', 'rank', 'cross'})
+
+
+# Main Coordinator: stock rule evaluation
+def evaluate_stock_rule(series, config):
     """General stock rule evaluation function (0-100 scale).
+
+    Step:
+        1. Transform – execute configured transform pipeline (chain)
+        2. Slice     – extract recent (window_n) and reference (lookback_m) windows
+        3. Aggregate – reduce to a single value (or direct score)
+        4. Score     – map value to [0, 100] via threshold / saturation
 
     Args:
         series (pd.Series): Series data (index: time, value: numeric, sorted by time)
@@ -319,17 +396,17 @@ def evaluate_stock_rule(series: pd.Series, config: dict) -> float:
     lookback_data = data.iloc[-max(n, m) :]
 
     # 3. perform aggregation
-    val, direct_score = _calculate_aggregate(recent_data, lookback_data, config)
+    agg = config.get('aggregate', 'latest')
 
-    # 4. scoring and return
-    # for score-based rules (e.g., hit rate, crossover), return directly
-    if direct_score is not None:
-        return round(direct_score, 2)
+    if agg in _SCORE_DIRECT_AGGS:
+        val = _calc_aggregate_score(recent_data, lookback_data, config)
 
-    # for value-based rules (e.g., mean, sum), perform linear scoring
-    if val is not None:
-        final_score = _calculate_score(val, config)
+        # direct score
+        final_score = val if val is not None else 0.0
+    else:
+        val = _calc_aggregate_scalar(recent_data, lookback_data, config)
 
-        return round(final_score, 2)
+        # 4. scoring
+        final_score = _calc_score(val, config)
 
-    return 0.0
+    return round(final_score, 2)
