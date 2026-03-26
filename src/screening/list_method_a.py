@@ -4,52 +4,48 @@ import pandas as pd
 
 # ruff: noqa: I001
 from screening.list_metrics import (
-    # H02: 近 N 季營業利益率最少 > T%
-    #      近 N 季營業利益率 > T%
-    list_opr_margin_min_above,
-    # H06: 近 N 季稅後純益率平均 > T%
+    # H02_05: 近 N 季營業利益率最少 > T%  (全部)
+    # -> 營業利益率連續 M 季 > T%
+    list_opr_margin_above,
+    # H06_13: 近 N 季稅後純益率平均 > T%
     list_net_margin_avg_above,
-    # H07: 近 N 季營業利益率最小/最大 > T%
+    # H07_14: 近 N 季營業利益率最小/最大 > T%
     list_opr_margin_min_max_ratio_above,
-    # H01: 近 N 季營業利益率為近 M 季最大  (P.S. 近 N 季中_有任何一季_)
-    #      近 N 季營業利益率創近 M 季新高  (P.S. 近 N 季中_有任何一季_)
+    # H01_02: 近 N 季營業利益率為近 M 季最大  (P.S. 近 N 季中_有任何一季_)
     list_opr_margin_is_max,
-    # H02: 營業利益率季增率連續 M 季 > T%
-    #      近 M 季營業利益率季增率 > T%  (P.S. 全部)
+    # H02_06: 近 N 季營業利益率季增率 > T%  (全部) 
+    # -> 營業利益率季增率連續 M 季 > T%
     list_opr_margin_qoq_above,
-    # H02: 營業利益率年增率連續 M 季 > T%
-    #      近 M 季營業利益率年增率 > T%  (P.S. 全部)
+    # H02_07: 近 N 季營業利益率年增率 > T%  (全部)
+    # -> 營業利益率年增率連續 M 季 > T%
     list_opr_margin_yoy_above,
 )
 from screening.list_price import (
-    # H04: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
+    # H04_11: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
     list_price_growth_above,
-    # H05: 最新股價 > 近 N 個月月均價
+    # H05_12: 最新股價 > 近 N 個月月均價
     list_price_above_avg,
-    # F01: 近 N 日內有 K 日股價創近 M 日新高
+    # F01_02: 近 N 日內有 K 日股價創近 M 日新高
     list_price_hit_new_high_days,
-    # F06: 近 N 日成交量平均 > T 張
+    # F06_04: 近 N 日成交量平均 > T 張
     list_volume_avg_above,
 )
 from screening.list_revenue import (
-    # H01: 近 N 個月營收創近 M 月新高  (P.S. 近 N 個月中_有任何一個月_)
-    #      近 N 個月營收為近 M 月最大  (P.S. 近 N 個月中_有任何一個月_)
+    # H01_01: 近 N 個月營收創近 M 月新高  (P.S. 近 N 個月中_有任何一個月_)
     list_revenue_hit_new_high,
-    # H02: 營收月增率連續 M 個月 > T%
-    #      近 M 個月營收月增率 > T%  (P.S. 全部)
+    # H02_03: 營收月增率連續 M 個月 > T%
     list_revenue_mom_above,
-    # H02: 營收年增率連續 M 個月 > T%
-    #      近 M 個月營收年增率 > T%  (P.S. 全部)
+    # H02_04: 營收年增率連續 M 個月 > T%
     list_revenue_yoy_above,
-    # H03: N 個月平均(MA)營收連續 M 個月成長  (P.S. 數值遞增)
+    # H03_08: N 個月平均(MA)營收連續 M 個月成長  (P.S. 數值遞增)
     list_revenue_ma_growth,
-    # H03: N 個月平均(MA)累積營收年增率連續 M 個月成長  (P.S. 年增率遞增)
+    # H03_09: N 個月平均(MA)累積營收年增率連續 M 個月成長  (P.S. 年增率遞增)
     list_accum_revenue_yoy_ma_growth,
-    # H04: (最新一期) N 個月平均(MA)累積營收年增率成長幅度 > T%  (P.S. 年增率遞增幅度)
+    # H04_11: (最新一期) N 個月平均(MA)累積營收年增率成長幅度 > T%  (P.S. 年增率遞增幅度)
     list_accum_revenue_yoy_ma_growth_above,
-    # F01: (最新一期) N 個月平均(MA)營收創近 M 月新高
+    # F01_01: (最新一期) N 個月平均(MA)營收創近 M 月新高
     list_revenue_ma_hit_new_high,
-    # F12: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
+    # F12_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
     list_revenue_ma_greater_than,
 )
 from screening.operation import add_lists
@@ -75,8 +71,8 @@ def list_method_test(db, test_case=1, input_df=None):
     ###########
 
     if test_case == 1:
-        print('# 近 4 季營業利益率最少 > 0%')
-        return list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0, input_df=input_df)
+        print('# 營業利益率連續 4 季 > 0%')
+        return list_opr_margin_above(db, recent_n_quarters=4, threshold=0, input_df=input_df)
 
     if test_case == 2:
         print('# 近 1 季稅後純益率平均 > 0%')
@@ -188,9 +184,11 @@ def list_method_steady(db, input_df=None):
     )
 
     print('# (+) 近 2 季營業利益率年增率 > 0%')
+    # -> 營業利益率年增率連續 2 季 > 0%
     df3 = list_opr_margin_yoy_above(db, cont_m_quarters=2, threshold=0, input_df=df)
 
     print('# (+) 近 3 季營業利益率季增率 > 0%')
+    # -> 營業利益率季增率連續 3 季 > 0%
     df4 = list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0, input_df=df)
 
     df = add_lists(df1, df2)
@@ -201,7 +199,8 @@ def list_method_steady(db, input_df=None):
     df = list_net_margin_avg_above(db, recent_n_quarters=1, threshold=0, input_df=df)
 
     print('# 近 4 季營業利益率最少 > 0%')
-    df = list_opr_margin_min_above(db, recent_n_quarters=4, threshold=0, input_df=df)
+    # -> 營業利益率連續 4 季 > T%
+    df = list_opr_margin_above(db, recent_n_quarters=4, threshold=0, input_df=df)
 
     print('# Done')
     return df

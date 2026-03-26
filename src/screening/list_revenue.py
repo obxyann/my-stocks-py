@@ -6,7 +6,8 @@ from screening.helper import get_target_stocks
 
 
 # H01: 近 N 個月營收創近 M 月新高  (P.S. 近 N 個月中_有任何一個月_)
-#      近 N 個月營收為近 M 月最大  (P.S. 近 N 個月中_有任何一個月_)
+#
+# NOTE: this is like list_opr_margin_is_max
 def list_revenue_hit_new_high(
     db, recent_n_months=3, lookback_m_months=12, input_df=None
 ):
@@ -110,7 +111,6 @@ def list_revenue_hit_new_high(
 
 
 # H02: 營收月增率連續 M 個月 > T%
-#      近 M 個月營收月增率 > T%  (P.S. 全部)
 def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue MoM above threshold consecutively
 
@@ -189,7 +189,6 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
 
 
 # H02: 營收年增率連續 M 個月 > T%
-#      近 M 個月營收年增率 > T%  (P.S. 全部)
 def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
     """Get stocks with revenue YoY above threshold consecutively
 
