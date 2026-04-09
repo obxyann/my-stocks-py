@@ -8,7 +8,110 @@ from dateutil.relativedelta import relativedelta
 from screening.helper import get_target_stocks
 
 
-# H04: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
+# H02_03: 最新股價 > 近 N 個月月均價
+def list_price_above_avg(db, recent_n_months=1, input_df=None):
+    """Get stocks with latest price above recent average price
+
+    Find stocks whose latest price is greater than the average price of
+    the last N months.
+
+    Args:
+        db (StockDatabase): Database instance
+        recent_n_months (int): Number of recent months to average
+        input_df (pd.DataFrame): Optional input list of stocks
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if recent_n_months < 1:
+        raise ValueError('recent_n_months must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # because we don't know the exact latest date of price in database
+    # estimate a start date to ensure we find the date N months ago
+    # + 2 months to be safe
+    need_months = recent_n_months + 2
+
+    start_date = datetime.now() - relativedelta(months=need_months)
+    start_date_str = start_date.strftime('%Y-%m-%d')
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get latest price
+        # by fetching a small window of daily prices for the latest price
+        # NOTE: already sorted by date ascending (old -> new)
+        last_month_date = datetime.now() - relativedelta(days=30)
+
+        price_df = db.get_prices_by_code(
+            code, start_date=last_month_date.strftime('%Y-%m-%d')
+        )
+
+        if price_df.empty:
+            continue
+
+        latest_val = price_df.iloc[-1]['close_price']
+
+        # get monthly averages
+        # NOTE: already sorted by date ascending (old -> new)
+        price_avg_df = db.get_monthly_avg_prices_by_code(
+            code, start_date=start_date_str
+        )
+
+        if price_avg_df.empty:
+            continue
+
+        # take last N records
+        # Note: price_avg_df is sorted by year, month
+        # if we have fewer than N records, use what we have?
+        # usually "recent N months" implies strict N
+        # But if the stock is young, maybe N is too large
+        # Let's use up to last N records
+
+        target_months = price_avg_df.tail(recent_n_months)
+
+        if target_months.empty:
+            continue
+
+        avg_price = target_months['price'].mean()
+
+        if pd.isna(avg_price) or avg_price <= 0:
+            continue
+
+        if latest_val > avg_price:
+            # calculate score
+            # = percentage above average
+            diff_percent = (latest_val - avg_price) / avg_price * 100
+
+            # accumulate existing score
+            final_score = row['score'] + diff_percent
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# H07_14: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
 def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None):
     """Get stocks with recent price growth rate above threshold
 
@@ -129,110 +232,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     return result_df
 
 
-# H05: 最新股價 > 近 N 個月月均價
-def list_price_above_avg(db, recent_n_months=1, input_df=None):
-    """Get stocks with latest price above recent average price
-
-    Find stocks whose latest price is greater than the average price of
-    the last N months.
-
-    Args:
-        db (StockDatabase): Database instance
-        recent_n_months (int): Number of recent months to average
-        input_df (pd.DataFrame): Optional input list of stocks
-
-    Returns:
-        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
-    """
-    # check input parameters
-    if recent_n_months < 1:
-        raise ValueError('recent_n_months must be >= 1')
-
-    # determine source stocks
-    target_df = get_target_stocks(db, input_df)
-    if target_df.empty:
-        return pd.DataFrame(columns=['code', 'name', 'score'])
-
-    results = []
-
-    # because we don't know the exact latest date of price in database
-    # estimate a start date to ensure we find the date N months ago
-    # + 2 months to be safe
-    need_months = recent_n_months + 2
-
-    start_date = datetime.now() - relativedelta(months=need_months)
-    start_date_str = start_date.strftime('%Y-%m-%d')
-
-    for _, row in target_df.iterrows():
-        code = row['code']
-
-        # get latest price
-        # by fetching a small window of daily prices for the latest price
-        # NOTE: already sorted by date ascending (old -> new)
-        last_month_date = datetime.now() - relativedelta(days=30)
-
-        price_df = db.get_prices_by_code(
-            code, start_date=last_month_date.strftime('%Y-%m-%d')
-        )
-
-        if price_df.empty:
-            continue
-
-        latest_val = price_df.iloc[-1]['close_price']
-
-        # get monthly averages
-        # NOTE: already sorted by date ascending (old -> new)
-        price_avg_df = db.get_monthly_avg_prices_by_code(
-            code, start_date=start_date_str
-        )
-
-        if price_avg_df.empty:
-            continue
-
-        # take last N records
-        # Note: price_avg_df is sorted by year, month
-        # if we have fewer than N records, use what we have?
-        # usually "recent N months" implies strict N
-        # But if the stock is young, maybe N is too large
-        # Let's use up to last N records
-
-        target_months = price_avg_df.tail(recent_n_months)
-
-        if target_months.empty:
-            continue
-
-        avg_price = target_months['price'].mean()
-
-        if pd.isna(avg_price) or avg_price <= 0:
-            continue
-
-        if latest_val > avg_price:
-            # calculate score
-            # = percentage above average
-            diff_percent = (latest_val - avg_price) / avg_price * 100
-
-            # accumulate existing score
-            final_score = row['score'] + diff_percent
-
-            # append to results
-            results.append(
-                {
-                    'code': code,
-                    'name': row['name'],
-                    'score': round(final_score, 2),
-                }
-            )
-
-    # create result DataFrame and sort by score descending
-    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
-    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
-        drop=True
-    )
-
-    return result_df
-
-
-# F01: 近 N 日內有 K 日股價創近 M 日新高
+# F01_02: 近 N 日內有 K 日股價創近 M 日新高
 def list_price_hit_new_high_days(
     db, recent_n_days=5, target_k_days=2, lookback_m_days=60, input_df=None
 ):
@@ -326,7 +326,7 @@ def list_price_hit_new_high_days(
     return result_df
 
 
-# F06: 近 N 日成交量平均 > T 張
+# F06_04: 近 N 日成交量平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 
