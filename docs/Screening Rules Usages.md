@@ -1,7 +1,7 @@
-# Usages for Basic Screening Rules (基本篩選規則用例集)
+# Screening Rules Use Cases (篩選規則用例集)
 
 NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
-      2. F0? are H0?
+      2. Those F0* are equal to H0*
 
 主項目: 父規則
 縮排項目: 相似規則，可由父規則涵蓋 (缺值, 縮限, 同語意...)
@@ -23,21 +23,21 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 - H07: 近 N 期間 XXX 成長幅度 > T       (期間成長幅度)   
        n-MA XXX 成長幅度 > T            (最新一期)
 
-單一用例:
+用例:
 - H01_01: 近 N 個月營收創近 M 月新高  (近 N 個月中_有任何一個月_)  list_revenue_hit_new_high
 - H01_02: 近 N 季營業利益率為近 M 季最大  (近 N 季中_有任何一季_)  list_opr_margin_is_max
-- H02_03: 最新股價 > 近 N 個月月均價                 list_price_above_avg
-- H03_04: 營收月增率連續 M 個月 > T%                 list_revenue_mom_above
-- H03_05: 營收年增率連續 M 個月 > T%                 list_revenue_yoy_above
-- H03_06: 近 N 季營業利益率最少 > T%  (全部)         list_opr_margin_above
-- H03_07: 近 N 季營業利益率季增率 > T%  (全部)       list_opr_margin_qoq_above
-- H03_08: 近 N 季營業利益率年增率 > T%  (全部)       list_opr_margin_yoy_above
-- H04_09: 近 N 季稅後純益率平均 > T%                 list_net_margin_avg_above
-- H05_10: 近 N 季營業利益率最小/最大 > T%            list_opr_margin_min_max_ratio_above
+- H02_03: 最新股價 > 近 N 個月月均價            list_price_above_avg
+- H03_04: 營收月增率連續 M 個月 > T%            list_revenue_mom_above
+- H03_05: 營收年增率連續 M 個月 > T%            list_revenue_yoy_above
+- H03_06: 近 N 季營業利益率最少 > T%  (全部)    list_opr_margin_above
+- H03_07: 近 N 季營業利益率季增率 > T%  (全部)  list_opr_margin_qoq_above
+- H03_08: 近 N 季營業利益率年增率 > T%  (全部)  list_opr_margin_yoy_above
+- H04_09: 近 N 季稅後純益率平均 > T%            list_net_margin_avg_above
+- H05_10: 近 N 季營業利益率最小/最大 > T%       list_opr_margin_min_max_ratio_above
 - H06_11: N 個月平均(MA)營收連續 M 個月成長  (數值遞增)              list_revenue_ma_growth
 - H06_12: N 個月平均(MA)累積營收年增率連續 M 個月成長  (年增率遞增)  list_accum_revenue_yoy_ma_growth
 - H07_13: (最新一期) N 個月平均(MA)累積營收年增率成長幅度 > T%  (年增率遞增幅度)  list_accum_revenue_yoy_ma_growth_above
-- H07_14: 近 N 個月股價成長幅度 > T%  (N 個月期間)   list_price_growth_above
+- H07_14: 近 N 個月股價成長幅度 > T%  (N 個月期間)  list_price_growth_above
 
 組合用例:
 1. _穩定型成長股 (營收選股: 營收成長趨勢、獲利指標持穩或上升）_
@@ -79,20 +79,22 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 
 ## F 規則
 
-- F01: (=H01) 近 N 期 XXX 出現近 M 期新高
-       n-MA XXX 創近 M 期新高
-       (=H01+) 近 N 期內有 L 期 XXX 創近 M 期新高
+- F01:
+  H01: 近 N 期內有 L 期 XXX 創近 M 期新高
        XXX 創近 M 期新高
-- F03: (=H03) 近 N 期 XXX 有 M 期 > T
+       n-MA XXX 創近 M 期新高
+- F03:  
+  H03: 近 N 期 XXX 有 M 期 > T
        XXX 連續 M 期 > T  
        XXX 連續 M 期 < T 
-- F04: (=H04) 近 N 期 XXX 平均 > T
+- F04:
+  H04: 近 N 期 XXX 平均 > T
 - F21: 連續 M 期 "XXX 近 N 期最小值 / 最新 XXX" < T
 
-單一用例:
-- F01_01: (最新一期) N 個月平均(MA)營收創近 M 月新高  list_revenue_ma_hit_new_high
-- F01_02: 近 N 日內有 L 日股價創近 M 日新高           list_price_hit_new_high_days
-- F01_03: (最新) 股價創近 M 日新高                    list_price_hit_new_high_days (N=1, K=1)   
+用例:
+- F01_01: 近 N 日內有 L 日股價創近 M 日新高           list_price_hit_new_high_days
+- F01_02: (最新) 股價創近 M 日新高                    list_price_hit_new_high_days (N=1, K=1)   
+- F01_03: (最新一期) N 個月平均(MA)營收創近 M 月新高  list_revenue_ma_hit_new_high
 - F03_04: 近 N 個月營收年增率有 M 個月 > T 
 - F03_05: 營收月增率連續 M 個月 > T
 - F03_06: 營收年增率連續 M 個月 < T 
@@ -102,14 +104,14 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 組合用例:
 1. _營收股價雙渦輪_
 
-- F01_01: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
-- F01_02: 近 5 日內有 2 日股價創近 200 日新高
+- F01_03: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
+- F01_01: 近 5 日內有 2 日股價創近 200 日新高
 - F04_07: 近  5 日成交量平均 > 500 張
 - 以上選 (最新一期) 營收年增率前 10 強 (P.S. 買營收爆發)
 
 2. _藏獒_
 
-- F01_03: (最新) 股價創近 250 日新高
+- F01_02: (最新) 股價創近 250 日新高
 - F03_06: 排除: 營收年成長連 3 個月衰退 10% 以上 (=營收年增率連續 3 個月 < -10%)
 - F03_04: 排除: 近 12 個月營收年增率有 8 個月 > 60% (P.S. 月營收成長趨勢過老)
 - F21_08: 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8  (P.S. 確認營收底部，近月營收脫離近年谷底)
@@ -119,8 +121,9 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 
 ## Reserved for future use (RFU)
 
-- F13: 近 N 期 XXX 出現近 M 期新高
-       (=H13+) 近 n 期平均 XXX 大於近 m 期平均 XXX
+- F13:
+  H13: 近 N 期 XXX 長短期差有 M 期 > T%
+       (H13+) 近 n 期平均 XXX 大於近 m 期平均 XXX
 
-單一用例:
+用例:
 - F13_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收  list_revenue_ma_greater_than
