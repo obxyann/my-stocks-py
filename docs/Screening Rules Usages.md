@@ -93,7 +93,7 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 
 用例:
 - F01_01: 近 N 日內有 L 日股價創近 M 日新高           list_price_hit_new_high_days
-- F01_02: (最新) 股價創近 M 日新高                    list_price_hit_new_high_days (N=1, K=1)   
+- F01_02: (最新) 股價創近 M 日新高                    list_price_hit_new_high_days (N=1, L=1)   
 - F01_03: (最新一期) N 個月平均(MA)營收創近 M 月新高  list_revenue_ma_hit_new_high
 - F03_04: 近 N 個月營收年增率有 M 個月 > T 
 - F03_05: 營收月增率連續 M 個月 > T

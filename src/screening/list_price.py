@@ -232,9 +232,9 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
     return result_df
 
 
-# F01_02: 近 N 日內有 K 日股價創近 M 日新高
+# F01_01: 近 N 日內有 L 日股價創近 M 日新高
 def list_price_hit_new_high_days(
-    db, recent_n_days=5, target_k_days=2, lookback_m_days=60, input_df=None
+    db, recent_n_days=5, target_l_days=2, lookback_m_days=60, input_df=None
 ):
     """Get stocks with recent price reaching a new high for some days
 
@@ -244,7 +244,7 @@ def list_price_hit_new_high_days(
     Args:
         db (StockDatabase): Database instance
         recent_n_days (int): Number of recent days to check
-        target_k_days (int): Minimum number of days hitting new highs
+        target_l_days (int): Minimum number of days hitting new highs
         lookback_m_days (int): Number of dayss to look back
         input_df (pd.DataFrame, optional): Input list of stocks with columns
             ['code', 'name', 'score']
@@ -257,12 +257,12 @@ def list_price_hit_new_high_days(
     # check input parameters
     if recent_n_days < 1:
         raise ValueError('recent_n_days must be >= 1')
-    if target_k_days < 1:
-        raise ValueError('target_k_days must be >= 1')
+    if target_l_days < 1:
+        raise ValueError('target_l_days must be >= 1')
     if lookback_m_days < 1:
         raise ValueError('lookback_m_days must be >= 1')
-    if target_k_days > recent_n_days:
-        raise ValueError('target_k_days cannot be greater than recent_n_days')
+    if target_l_days > recent_n_days:
+        raise ValueError('target_l_days cannot be greater than recent_n_days')
 
     # determine source stocks
     target_df = get_target_stocks(db, input_df)
@@ -300,10 +300,10 @@ def list_price_hit_new_high_days(
         new_high_days_count = recent_is_new_high.sum()
 
         # check new_high_days_count
-        if new_high_days_count >= target_k_days:
+        if new_high_days_count >= target_l_days:
             # calculate score:
             # = extra new high days over K
-            score = new_high_days_count - target_k_days + 1
+            score = new_high_days_count - target_l_days + 1
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -326,7 +326,7 @@ def list_price_hit_new_high_days(
     return result_df
 
 
-# F06_04: 近 N 日成交量平均 > T 張
+# F04_07: 近 N 日成交量平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 

@@ -25,9 +25,9 @@ from screening.list_price import (
     list_price_above_avg,
     # H07_14: 近 N 個月股價成長幅度 > T%  (P.S. N 個月期間)
     list_price_growth_above,
-    # F01_02: 近 N 日內有 K 日股價創近 M 日新高
+    # F01_01: 近 N 日內有 L 日股價創近 M 日新高
     list_price_hit_new_high_days,
-    # F06_04: 近 N 日成交量平均 > T 張
+    # F04_07: 近 N 日成交量平均 > T 張
     list_volume_avg_above,
 )
 from screening.list_revenue import (
@@ -43,9 +43,9 @@ from screening.list_revenue import (
     list_accum_revenue_yoy_ma_growth,
     # H07_13: (最新一期) N 個月平均(MA)累積營收年增率成長幅度 > T%  (P.S. 年增率遞增幅度)
     list_accum_revenue_yoy_ma_growth_above,
-    # F01_01: (最新一期) N 個月平均(MA)營收創近 M 月新高
+    # F01_03: (最新一期) N 個月平均(MA)營收創近 M 月新高
     list_revenue_ma_hit_new_high,
-    # F16_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
+    # F13_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
     list_revenue_ma_greater_than,
 )
 from screening.operation import add_lists
@@ -298,9 +298,9 @@ def list_method_sprint(db, input_df=None):
 def list_method_revenue_price_turbo(db, input_df=None):
     """營收股價雙渦輪
 
-    - F01_01: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
-    - F01_02: 近 5 日內有 2 日股價創近 200 日新高
-    - F06_04: 近  5 日成交量平均 > 500 張
+    - F01_03: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
+    - F01_01: 近 5 日內有 2 日股價創近 200 日新高
+    - F04_07: 近  5 日成交量平均 > 500 張
     - 以上選 (最新一期) 營收年增率前 10 強 (P.S. 買營收爆發)
     """
     print('# 2 個月平均營收創 12 個月來新高')
@@ -324,6 +324,16 @@ def list_method_revenue_price_turbo(db, input_df=None):
     return df
 
 def list_method_mastiff(db, input_df=None): 
+    """藏獒
+
+    - F01_02: (最新) 股價創近 250 日新高
+    - F03_06: 排除: 營收年成長連 3 個月衰退 10% 以上 (=營收年增率連續 3 個月 < -10%)
+    - F03_04: 排除: 近 12 個月營收年增率有 8 個月 > 60% (P.S. 月營收成長趨勢過老)
+    - F21_08: 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8  (P.S. 確認營收底部，近月營收脫離近年谷底)
+    - F03_05: 營收月增率連續 3 個月 > -40%
+    - F04_07: 近 10 日成交量平均 > 200 張
+    - 以上選 10 日成交均量最小 5 個 (P.S. 買比較冷門的股票)
+    """
 
     print('# Done')
     return None
