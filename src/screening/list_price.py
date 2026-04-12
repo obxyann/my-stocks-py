@@ -140,7 +140,7 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -206,10 +206,10 @@ def list_price_growth_above(db, recent_n_months=3, threshold=10.0, input_df=None
         growth_rate = (latest_val - base_val) / base_val
 
         # check growth rate
-        if growth_rate > threshold:
-            # calculate score:
+        if growth_rate > threshold_dec:
+            # --- score calculation ---
             # = exceeding amount (decimal to percentage)
-            score = (growth_rate - threshold) * 100
+            score = (growth_rate - threshold_dec) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -301,7 +301,7 @@ def list_price_hit_new_high_days(
 
         # check new_high_days_count
         if new_high_days_count >= target_l_days:
-            # calculate score:
+            # --- score calculation ---
             # = extra new high days over K
             score = new_high_days_count - target_l_days + 1
 
@@ -326,7 +326,7 @@ def list_price_hit_new_high_days(
     return result_df
 
 
-# F04_07: 近 N 日成交量平均 > T 張
+# F04_06: 近 N 日成交量平均 > T 張
 def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
     """Get stocks with average volume above threshold
 
@@ -379,7 +379,7 @@ def list_volume_avg_above(db, recent_n_days=5, threshold=500, input_df=None):
 
         # check average
         if val_avg > threshold:
-            # calculate score:
+            # --- score calculation ---
             # = exceeding amount
             score = val_avg - threshold
 

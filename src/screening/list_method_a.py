@@ -27,7 +27,7 @@ from screening.list_price import (
     list_price_growth_above,
     # F01_01: 近 N 日內有 L 日股價創近 M 日新高
     list_price_hit_new_high_days,
-    # F04_07: 近 N 日成交量平均 > T 張
+    # F04_06: 近 N 日成交量平均 > T 張
     list_volume_avg_above,
 )
 from screening.list_revenue import (
@@ -45,10 +45,16 @@ from screening.list_revenue import (
     list_accum_revenue_yoy_ma_growth_above,
     # F01_03: (最新一期) N 個月平均(MA)營收創近 M 月新高
     list_revenue_ma_hit_new_high,
+    # F03_04: 近 N 個月營收年增率有 M 個月 > T%
+    list_revenue_yoy_above_count,
+    # F03_05: 營收年增率連續 M 個月 < T%
+    list_revenue_yoy_below,
+    # F21_07: 連續 M 個月的 "單月營收近 N 月最小值/近月營收" < T
+    list_revenue_min_ratio_below,
     # F13_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收
     list_revenue_ma_greater_than,
 )
-from screening.operation import add_lists
+from screening.operation import add_lists, minus_lists
 
 
 def list_method_test(db, test_case=1, input_df=None):
@@ -118,35 +124,47 @@ def list_method_test(db, test_case=1, input_df=None):
     # Revenue #
     ###########
 
-    if test_case == 23:
+    if test_case == 21:
         print('# 近 2 個月營收創近 1 年新高')
         return list_revenue_hit_new_high(db, recent_n_months=2, lookback_m_months=12, input_df=input_df)
 
-    if test_case == 27:
+    if test_case == 22:
         print('# 營收月增率連續 2 個月 > 0%')
         return list_revenue_mom_above(db, cont_m_months=2, threshold=0, input_df=input_df)
 
-    if test_case == 28:
+    if test_case == 23:
         print('# 營收年增率連續 1 個月 > 40%')
         return list_revenue_yoy_above(db, cont_m_months=1, threshold=40, input_df=input_df)
 
-    if test_case == 25:
+    if test_case == 24:
         print('# 12 個月平均(MA)營收連續 2 個月成長')
         return list_revenue_ma_growth(db, ma_n_months=12, cont_m_months=2, input_df=input_df)
 
-    if test_case == 21:
+    if test_case == 25:
         print('# 3 個月平均(MA)累積營收年增率連續 1 個月成長')
         return list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=1, input_df=input_df)
 
-    if test_case == 22:
+    if test_case == 26:
         print('# 12 個月平均(MA)累積營收年增率成長幅度 > 2%')
         return list_accum_revenue_yoy_ma_growth_above(db, ma_n_months=12, threshold=2, input_df=input_df)
 
-    if test_case == 26:
+    if test_case == 27:
         print('# 2 個月平均(MA)營收創近 12 月新高')
         return list_revenue_ma_hit_new_high(db, ma_n_months=2, lookback_m_months=12, input_df=input_df)
 
-    if test_case == 24:
+    if test_case == 28:
+        print('# 近 12 個月營收年增率有 8 個月 > 60%')
+        return list_revenue_yoy_above_count(db, recent_n_months=12, target_k_months=8, threshold=60, input_df=input_df)
+
+    if test_case == 29:
+        print('# 營收年增率連續 3 個月 < -10%')
+        return list_revenue_yoy_below(db, cont_m_months=3, threshold=-10, input_df=input_df)
+
+    if test_case == 30:
+        print('# 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8')
+        return list_revenue_min_ratio_below(db, cont_m_months=3, lookback_m_months=12, threshold=0.8, input_df=input_df)
+
+    if test_case == 31:
         print('# 3 個月平均(MA)營收大於 12 個月平均(MA)營收')
         return list_revenue_ma_greater_than(db, ma_n_months=3, ma_m_months=12, input_df=input_df)
 
@@ -300,7 +318,7 @@ def list_method_revenue_price_turbo(db, input_df=None):
 
     - F01_03: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
     - F01_01: 近 5 日內有 2 日股價創近 200 日新高
-    - F04_07: 近  5 日成交量平均 > 500 張
+    - F04_06: 近  5 日成交量平均 > 500 張
     - 以上選 (最新一期) 營收年增率前 10 強 (P.S. 買營收爆發)
     """
     print('# 2 個月平均營收創 12 個月來新高')
@@ -309,31 +327,66 @@ def list_method_revenue_price_turbo(db, input_df=None):
     )
 
     print('# 近 5 日內有 2 日股價創 200 日新高')
-    df = list_price_hit_new_high_days(db, recent_n_days=5, target_k_days=2, lookback_m_days=200, input_df=input_df)
+    df = list_price_hit_new_high_days(
+        db, recent_n_days=5, target_l_days=2, lookback_m_days=200, input_df=df
+    )
 
     print('# 五日成交均量大於 500 張')
     df = list_volume_avg_above(db, recent_n_days=5, threshold=500 * 1000, input_df=df)
 
-    # print('# 單月營收年增率前 10 強')
+    # print('# 營收年增率前 10 強')
     # df = list_revenue_yoy_top(db, recent_n_months=1, top_n=10, input_df=df)
     # 改
     print('# 營收年增率連續 1 個月 > 20%')
-    list_revenue_yoy_above(db, cont_m_months=1, threshold=20, input_df=input_df)
+    list_revenue_yoy_above(db, cont_m_months=1, threshold=20, input_df=df)
 
     print('# Done')
     return df
 
-def list_method_mastiff(db, input_df=None): 
+
+def list_method_mastiff(db, input_df=None):
     """藏獒
 
     - F01_02: (最新) 股價創近 250 日新高
-    - F03_06: 排除: 營收年成長連 3 個月衰退 10% 以上 (=營收年增率連續 3 個月 < -10%)
+    - F03_05: 排除: 營收年成長連 3 個月衰退 10% 以上 (=營收年增率連續 3 個月 < -10%)
     - F03_04: 排除: 近 12 個月營收年增率有 8 個月 > 60% (P.S. 月營收成長趨勢過老)
-    - F21_08: 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8  (P.S. 確認營收底部，近月營收脫離近年谷底)
-    - F03_05: 營收月增率連續 3 個月 > -40%
-    - F04_07: 近 10 日成交量平均 > 200 張
+    - F21_07: 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8  (P.S. 確認營收底部，近月營收脫離近年谷底)
+    - H03_04: 營收月增率連續 3 個月 > -40%
+    - F04_06: 近 10 日成交量平均 > 200 張
     - 以上選 10 日成交均量最小 5 個 (P.S. 買比較冷門的股票)
     """
+    print('# (最新) 股價創 250 日新高')
+    df = list_price_hit_new_high_days(
+        db, recent_n_days=1, target_l_days=1, lookback_m_days=250, input_df=input_df
+    )
+
+    print('# 排除: 營收年增率連續 3 個月 < -10%')
+    df1 = list_revenue_yoy_below(db, cont_m_months=3, threshold=-10, input_df=input_df)
+
+    print('# 排除: 近 12 個月營收年增率有 8 個月 > 60%')
+    df2 = list_revenue_yoy_above_count(
+        db, recent_n_months=12, target_k_months=8, threshold=60, input_df=input_df
+    )
+
+    df = minus_lists(df, df1)
+    df = minus_lists(df, df2)
+
+    print('# 連續 3 個月的 "單月營收近 12 月最小值/近月營收" < 0.8')
+    df = list_revenue_min_ratio_below(
+        db, cont_m_months=3, lookback_m_months=12, threshold=0.8, input_df=df
+    )
+
+    print('# 營收月增率連續 3 個月 > -40%')
+    df = list_revenue_mom_above(db, cont_m_months=3, threshold=-40, input_df=df)
+
+    print('# 五日成交均量大於 500 張')
+    df = list_volume_avg_above(db, recent_n_days=5, threshold=500 * 1000, input_df=df)
+
+    # print('# 10 日成交均量最小 5 個')
+    # df = list_volume_avg_min(db, recent_n_days=10, min_n=5, input_df=df)
+    # 改
+    print('# 營收年增率連續 1 個月 > 20%')
+    list_revenue_yoy_above(db, cont_m_months=1, threshold=20, input_df=df)
 
     print('# Done')
-    return None
+    return df

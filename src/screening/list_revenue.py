@@ -81,7 +81,7 @@ def list_revenue_hit_new_high(
 
         # check if recent max exceeds early max
         if recent_max > early_max:
-            # calculate score:
+            # --- score calculation ---
             # = percentage exceeded
             if early_max == 0:
                 # TODO: reconsider this
@@ -139,7 +139,7 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -162,10 +162,10 @@ def list_revenue_mom_above(db, cont_m_months=3, threshold=0.0, input_df=None):
             continue
 
         # check if all > threshold
-        if (vals > threshold).all():
-            # calculate score:
+        if (vals > threshold_dec).all():
+            # --- score calculation ---
             # = average exceeding amount (decimal to percentage)
-            score = (vals - threshold).mean() * 100
+            score = (vals - threshold_dec).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -217,7 +217,7 @@ def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -240,10 +240,10 @@ def list_revenue_yoy_above(db, cont_m_months=3, threshold=0.0, input_df=None):
             continue
 
         # check if all > threshold
-        if (vals > threshold).all():
-            # calculate score:
+        if (vals > threshold_dec).all():
+            # --- score calculation ---
             # = average exceeding amount (decimal to percentage)
-            score = (vals - threshold).mean() * 100
+            score = (vals - threshold_dec).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -333,7 +333,7 @@ def list_revenue_ma_growth(db, ma_n_months, cont_m_months=3, input_df=None):
         is_increasing = (vals.diff().iloc[1:] > 0).all()
 
         if is_increasing:
-            # calculate score:
+            # --- score calculation ---
             # = growth percentage over the period
             start_val = vals.iloc[0]
             end_val = vals.iloc[-1]
@@ -434,7 +434,7 @@ def list_accum_revenue_yoy_ma_growth(db, ma_n_months=3, cont_m_months=3, input_d
         is_increasing = (vals.diff().iloc[1:] > 0).all()
 
         if is_increasing:
-            # calculate score:
+            # --- score calculation ---
             # = growth percentage over the period
             start_val = vals.iloc[0]
             end_val = vals.iloc[-1]
@@ -498,7 +498,7 @@ def list_accum_revenue_yoy_ma_growth_above(
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -542,10 +542,10 @@ def list_accum_revenue_yoy_ma_growth_above(
             growth_rate = (curr_val - prev_val) / abs(prev_val)
 
         # check growth rate
-        if growth_rate > threshold:
-            # calculate score:
+        if growth_rate > threshold_dec:
+            # --- score calculation ---
             # = exceeding amount (decimal to percentage)
-            score = (growth_rate - threshold) * 100
+            score = (growth_rate - threshold_dec) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -644,13 +644,299 @@ def list_revenue_ma_hit_new_high(
 
         # check if recent val exceeds early max
         if recent_val > early_max:
-            # calculate score:
+            # --- score calculation ---
             # = percentage exceeded
             if early_max == 0:
                 # TODO: reconsider this
                 score = 0
             else:
                 score = (recent_val - early_max) / abs(early_max) * 100
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# F03_04: 近 N 個月營收年增率有 M 個月 > T%
+def list_revenue_yoy_above_count(
+    db, recent_n_months=6, count_m_months=3, threshold=0.0, input_df=None
+):
+    """Get stocks with revenue YoY above threshold for at least months
+
+    Find stocks whose revenue YoY exceeds the specified threshold
+    for at least M months out of the most recent N months.
+
+    Args:
+        db (StockDatabase): Database instance
+        recent_n_months (int): Number of recent months to examine
+        count_m_months (int): Minimum number of months that must exceed threshold
+        threshold (float): Threshold percentage (e.g. 5.0 for 5%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if recent_n_months < 1:
+        raise ValueError('recent_n_months must be >= 1')
+    if count_m_months < 1:
+        raise ValueError('count_m_months must be >= 1')
+    if count_m_months > recent_n_months:
+        raise ValueError('count_m_months must be <= recent_n_months')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    # convert threshold to decimal for comparison
+    threshold_dec = threshold / 100
+
+    results = []
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent revenue data
+        # NOTE: already sorted by date ascending (old -> new)
+        revenue_df = db.get_recent_revenue_by_code(code, limit=recent_n_months)
+
+        # skip if not enough data
+        if len(revenue_df) < recent_n_months:
+            continue
+
+        # get data series
+        vals = revenue_df['revenue_yoy']
+
+        # skip if any value is missing
+        if vals.isna().any():
+            continue
+
+        # count months exceeding threshold
+        above_mask = vals > threshold_dec
+        above_count = above_mask.sum()
+
+        # check if enough months exceed threshold
+        if above_count >= count_m_months:
+            # --- score calculation ---
+            # = average exceeding amount of qualifying months (decimal to percentage)
+            above_vals = vals[above_mask]
+            score = (above_vals - threshold_dec).mean() * 100
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# F03_05: 營收年增率連續 M 個月 < T%
+def list_revenue_yoy_below(db, cont_m_months=3, threshold=0.0, input_df=None):
+    """Get stocks with revenue YoY below threshold consecutively
+
+    Find stocks whose revenue YoY
+    is below the specified threshold for M consecutive months.
+
+    Args:
+        db (StockDatabase): Database instance
+        cont_m_months (int): Number of consecutive months to check
+        threshold (float): Threshold percentage (e.g. -10.0 for -10%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if cont_m_months < 1:
+        raise ValueError('cont_m_months must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    # convert threshold to decimal for comparison
+    threshold_dec = threshold / 100
+
+    results = []
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent revenue data
+        # NOTE: already sorted by date ascending (old -> new)
+        revenue_df = db.get_recent_revenue_by_code(code, limit=cont_m_months)
+
+        # skip if not enough data
+        if len(revenue_df) < cont_m_months:
+            continue
+
+        # get data series
+        vals = revenue_df['revenue_yoy']
+
+        # skip if any value is missing
+        if vals.isna().any():
+            continue
+
+        # check if all < threshold
+        if (vals < threshold_dec).all():
+            # --- score calculation ---
+            # = average shortfall amount (decimal to percentage)
+            # (higher score = further below threshold = worse fundamentals)
+            score = (threshold_dec - vals).mean() * 100
+
+            # accumulate existing score
+            final_score = row['score'] + score
+
+            # append to results
+            results.append(
+                {
+                    'code': code,
+                    'name': row['name'],
+                    'score': round(final_score, 2),
+                }
+            )
+
+    # create result DataFrame and sort by score descending
+    result_df = pd.DataFrame(results, columns=['code', 'name', 'score'])
+    result_df = result_df.sort_values(by='score', ascending=False).reset_index(
+        drop=True
+    )
+
+    return result_df
+
+
+# F21_07: 連續 M 個月的 "單月營收近 N 月最小值/近月營收" < T
+def list_revenue_min_ratio_below(
+    db, lookback_n_months=12, cont_m_months=3, threshold=0.8, input_df=None
+):
+    """Get stocks with revenue min-ratio below threshold consecutively
+
+    For each of the most recent M months, calculate (N-month min revenue /
+    that month's revenue). Check if all M ratios are below threshold T.
+    A low ratio means revenue is consistently near its recent high.
+
+    Args:
+        db (StockDatabase): Database instance
+        lookback_n_months (int): Window size to find minimum revenue
+        cont_m_months (int): Number of consecutive months to check
+        threshold (float): Threshold ratio (e.g. 0.8 for 80%)
+        input_df (pd.DataFrame, optional): Input list of stocks with columns
+            ['code', 'name', 'score']
+            If provided, filter only stocks in this list and accumulate scores
+            If None, use get_industrial_stocks as default
+
+    Returns:
+        pd.DataFrame: Sorted DataFrame with columns ['code', 'name', 'score']
+    """
+    # check input parameters
+    if lookback_n_months < 2:
+        raise ValueError('lookback_n_months must be >= 2')
+    if cont_m_months < 1:
+        raise ValueError('cont_m_months must be >= 1')
+
+    # determine source stocks
+    target_df = get_target_stocks(db, input_df)
+    if target_df.empty:
+        return pd.DataFrame(columns=['code', 'name', 'score'])
+
+    results = []
+
+    # for each of the M months, we need N months of lookback data
+    # the oldest check point needs (lookback_n_months) data before it
+    # total data points needed = lookback_n_months + cont_m_months - 1
+    needed_points = lookback_n_months + cont_m_months - 1
+
+    for _, row in target_df.iterrows():
+        code = row['code']
+
+        # get recent revenue data
+        # NOTE: already sorted by date ascending (old -> new)
+        revenue_df = db.get_recent_revenue_by_code(code, limit=needed_points)
+
+        # skip if not enough data
+        if len(revenue_df) < needed_points:
+            continue
+
+        # get data series
+        vals = revenue_df['revenue'].values
+
+        # skip if any value is missing
+        if pd.isna(vals).any():
+            continue
+
+        # calculate min-ratio for each of the last M months
+        # for month at position i (0-indexed from end, newest=0):
+        #   min_of_n = min of N months ending at that month
+        #   ratio = min_of_n / revenue_of_that_month
+        ratios = []
+        all_below = True
+
+        for i in range(cont_m_months):
+            # index from end: newest is at [-1], going backwards
+            month_idx = len(vals) - 1 - i
+            month_revenue = vals[month_idx]
+
+            # skip if revenue is zero or negative (avoid division issues)
+            if month_revenue <= 0:
+                all_below = False
+                break
+
+            # N-month window ending at this month
+            window_start = month_idx - lookback_n_months + 1
+            window = vals[window_start : month_idx + 1]
+            min_revenue = window.min()
+
+            ratio = min_revenue / month_revenue
+
+            if ratio >= threshold:
+                all_below = False
+                break
+
+            ratios.append(ratio)
+
+        if all_below and len(ratios) == cont_m_months:
+            # --- score calculation ---
+            # = average shortfall below threshold (as percentage)
+            # (higher score = ratio is further below threshold)
+            avg_ratio = sum(ratios) / len(ratios)
+            score = (threshold - avg_ratio) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -740,7 +1026,7 @@ def list_revenue_ma_greater_than(db, ma_n_months=3, ma_m_months=12, input_df=Non
 
         # check if N-month average > M-month average
         if n_avg > m_avg:
-            # calculate score:
+            # --- score calculation ---
             # = percentage exceeded
             if m_avg == 0:
                 # TODO: reconsider this

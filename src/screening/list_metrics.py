@@ -75,7 +75,7 @@ def list_opr_margin_is_max(
 
         # check if recent max exceeds early max
         if recent_max > early_max:
-            # calculate score:
+            # --- score calculation ---
             # = percentage exceeded
             if early_max == 0:
                 # TODO: reconsider this
@@ -135,7 +135,7 @@ def list_opr_margin_above(db, cont_m_quarters=4, threshold=0.0, input_df=None):
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -160,10 +160,10 @@ def list_opr_margin_above(db, cont_m_quarters=4, threshold=0.0, input_df=None):
             continue
 
         # check if all > threshold
-        if (vals > threshold).all():
-            # calculate score:
+        if (vals > threshold_dec).all():
+            # --- score calculation ---
             # = average exceeding amount (decimal to percentage)
-            score = (vals - threshold).mean() * 100
+            score = (vals - threshold_dec).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -216,7 +216,7 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -241,10 +241,10 @@ def list_opr_margin_qoq_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
             continue
 
         # check if all > threshold
-        if (vals > threshold).all():
-            # calculate score:
+        if (vals > threshold_dec).all():
+            # --- score calculation ---
             # = average exceeding amount (decimal to percentage)
-            score = (vals - threshold).mean() * 100
+            score = (vals - threshold_dec).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -297,7 +297,7 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -322,10 +322,10 @@ def list_opr_margin_yoy_above(db, cont_m_quarters=3, threshold=0.0, input_df=Non
             continue
 
         # check if all > threshold
-        if (vals > threshold).all():
-            # calculate score:
+        if (vals > threshold_dec).all():
+            # --- score calculation ---
             # = average exceeding amount (decimal to percentage)
-            score = (vals - threshold).mean() * 100
+            score = (vals - threshold_dec).mean() * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -377,7 +377,7 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -405,10 +405,10 @@ def list_net_margin_avg_above(db, recent_n_quarters=4, threshold=0.0, input_df=N
         val_avg = vals.mean()
 
         # check average
-        if val_avg >= threshold:
-            # calculate score:
+        if val_avg >= threshold_dec:
+            # --- score calculation ---
             # = exceeding amount (decimal to percentage)
-            score = (val_avg - threshold) * 100
+            score = (val_avg - threshold_dec) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
@@ -464,7 +464,7 @@ def list_opr_margin_min_max_ratio_above(
         return pd.DataFrame(columns=['code', 'name', 'score'])
 
     # convert threshold to decimal for comparison
-    threshold = threshold / 100
+    threshold_dec = threshold / 100
 
     results = []
 
@@ -500,10 +500,10 @@ def list_opr_margin_min_max_ratio_above(
         ratio = (val_min / val_max) * 100
 
         # check ratio
-        if ratio >= threshold:
-            # calculate score:
+        if ratio >= threshold_dec:
+            # --- score calculation ---
             # = exceeding amount (decimal to percentage)
-            score = (ratio - threshold) * 100
+            score = (ratio - threshold_dec) * 100
 
             # accumulate existing score
             final_score = row['score'] + score
