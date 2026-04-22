@@ -1,6 +1,7 @@
 # Database Schema Documentation
 
 ## Overview
+
 This database stores financial and market-related data used by the stock analysis system.
 
 - Database: SQLite
@@ -10,6 +11,7 @@ This database stores financial and market-related data used by the stock analysi
 ---
 
 ## Naming Conventions
+
 - Table names: 'snake_case'
 - Column names: 'snake_case'
 - Boolean fields: 'is_', 'has_' prefix
@@ -71,7 +73,6 @@ business_type           | Business Type: 'basi', 'bd', 'ci', 'fh', 'ins', 'mim' 
     'ins'   Insurance                               保險業
     'mim'   Multiple Industrial and Manufacturing   異業 (跨產業型態)
 
-
 ## Table: 'daily_prices'
 
 Daily stock price data.
@@ -86,7 +87,6 @@ high_price              | Highest Price
 low_price               | Lowest Price
 close_price             | Closing Price
 volume                  | Trading Volume
-
 
 ## Table: 'monthly_revenue'
 
@@ -167,7 +167,6 @@ fin_cash_flow           | Financing Cash Flow, CFC                  | 籌資現�
 cash_equivs             | Cash and Cash Equivalents                 | 現金及約當現金      <= 期末現金及約當現金
 divs_paid               | Dividends Paid                            | !配發股利           <- 籌資活動之現金流量 > 發放現金股利
 
-
 ## Table: 'financial_metrics'
 
 Financial metrics calculated from financial statements.
@@ -224,14 +223,13 @@ div_yield               | Dividend Yield                            | 殖利率
 annual_payout_ratio     | Annual Payout Ratio, DPR                  | 年配息率
 irr                     | Internal Rate of Return, IRR              | 內部報酬率
 
-
 NOTE: 1. all XX Growth are in decimal (e.g. 0.05 for 5%)
       2. all XX Margin are in decimal (e.g. 0.05 for 5%)
       3. all XX Ratio are in decimal (e.g. 0.05 for 5%)
          but some are not displayed as percentage typically
          (e.g. P/E Ratio, P/B Ratio, PBR, ...)
       4. ROA, ROE and their annualized are in decimal (e.g. 0.05 for 5%)
- 
+
 ## Table: 'dividends'
 
 Dividends paid by a company.

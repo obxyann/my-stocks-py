@@ -12,18 +12,19 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
        近 N 期 XXX 創近 M 期新高        (至少一期)
 - H02: 近 N 期 XXX > 近 M 期平均        (各期 > 平均)  
        最新 XXX > 近 M 期平均
-- H03: 近 N 期 XXX 有 M 期 > T          (各期比較)             
+- H03: 近 N 期 XXX 有 M 期 > T          (各期比較)
        近 N 期 XXX 最少 > T             (連續)
        近 N 期 XXX > T                  (連續)  
-       XXX 連續 M 期 > T 
-- H04: 近 N 期 XXX 平均 > T             (期間平均)                    
-- H05: 近 N 期 XXX 最小/最大 > T    
+       XXX 連續 M 期 > T
+- H04: 近 N 期 XXX 平均 > T             (期間平均)
+- H05: 近 N 期 XXX 最小/最大 > T
 - H06: 近 N 期 XXX 成長幅度有 M 期 > T  (計算各期成長幅度)
-       n-MA XXX 連續 M 期成長           (各期遞增)        
-- H07: 近 N 期間 XXX 成長幅度 > T       (期間成長幅度)   
+       n-MA XXX 連續 M 期成長           (各期遞增)
+- H07: 近 N 期間 XXX 成長幅度 > T       (期間成長幅度)
        n-MA XXX 成長幅度 > T            (最新一期)
 
 用例:
+
 - H01_01: 近 N 個月營收創近 M 月新高  (近 N 個月中_有任何一個月_)  list_revenue_hit_new_high
 - H01_02: 近 N 季營業利益率為近 M 季最大  (近 N 季中_有任何一季_)  list_opr_margin_is_max
 - H02_03: 最新股價 > 近 N 個月月均價            list_price_above_avg
@@ -40,6 +41,7 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 - H07_14: 近 N 個月股價成長幅度 > T%  (N 個月期間)  list_price_growth_above
 
 組合用例:
+
 1. _穩定型成長股 (營收選股: 營收成長趨勢、獲利指標持穩或上升）_
 
 - H06_11: 12 個月平均(MA)營收連續 2 個月成長
@@ -64,10 +66,12 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 - H02_03: 最新股價 > 近 2 個月月均價
 
 (寬鬆版 1)
+
 - H03_04: 營收月增率連續 2 個月 > 0%
 - H02_03: 最新股價 > 近 2 個月月均價
 
 (寬鬆版 2)
+
 - H07_14: 近 6 個月股價成長幅度 > 0%
 
 4. _衝刺型成長股_
@@ -91,6 +95,7 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 - F21: 連續 M 期 "XXX 近 N 期最小值/最新 XXX" < T
 
 用例:
+
 - F01_01: 近 N 日內有 L 日股價創近 M 日新高           list_price_hit_new_high_days
 - F01_02: (最新) 股價創近 M 日新高                    list_price_hit_new_high_days (N=1, L=1)   
 - F01_03: (最新一期) N 個月平均(MA)營收創近 M 月新高  list_revenue_ma_hit_new_high
@@ -100,6 +105,7 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
 - F21_07: 連續 M 個月的 "單月營收近 N 月最小值/近月營收" < T  list_revenue_min_ratio_below
 
 組合用例:
+
 1. _營收股價雙渦輪_
 
 - F01_03: (最新一期) 2 個月平均(MA)營收創近 12 個月來新高
@@ -124,4 +130,5 @@ NOTE: 1. Only basic rules H01 ~ H07 and F21 in Evaluating Rules.txt
        (H13+) 近 n 期平均 XXX 大於近 m 期平均 XXX
 
 用例:
+
 - F13_00: (最新一期) N 個月平均(MA)營收大於 M 個月平均(MA)營收  list_revenue_ma_greater_than

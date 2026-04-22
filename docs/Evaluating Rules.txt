@@ -58,6 +58,7 @@ H08 ~ H14 項目: Advanced rules
   * 近 N 期 XXX 創近 M 期新高             (至少一期)
   * XXX 創近 M 期新高                     (缺 N -> N=1, 最新一期)
   + n-MA XXX 創近 M 期新高                (n-MA 預處理, 缺 N -> N=1, 最新一期)
+  
   (H01+)
   + 近 N 期內有 L 期 XXX 創近 M 期新高    (至少 L 期...)
 
@@ -210,6 +211,7 @@ H08 ~ H14 項目: Advanced rules
 - H13: 近 N 期 XXX 長短期差有 M 期 > T%   (計算 3MA 12MA, 各期(短-長)/長 > T...)
   * XXX 長短期差 > T%                     (缺 N,M -> N=M=1, 最新一期)
   + 短期平均 XXX > 長期平均 XXX           (缺 N,M -> N=M=1, 最新一期, T=0)
+
   (H13+)
   + 近 n 期平均 XXX 大於近 m 期平均 XXX   (計算 n-MA m-MA, 最新一期, T=0)
 
